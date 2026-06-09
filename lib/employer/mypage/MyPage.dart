@@ -267,7 +267,7 @@ class _MyPageState extends State<MyPage> {
 
       style: TextStyle(
         color: Colors.grey.shade400,
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: FontWeight.w600,
       ),
     );

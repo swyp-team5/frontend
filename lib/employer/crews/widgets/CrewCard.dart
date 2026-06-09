@@ -59,7 +59,6 @@ class CrewCard extends StatelessWidget {
                   ),
                 ),
 
-                const SizedBox(height: 2),
 
                 Text(
                   crew.name,
@@ -68,12 +67,12 @@ class CrewCard extends StatelessWidget {
                   TextOverflow.ellipsis,
 
                   style: const TextStyle(
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
 
-                const SizedBox(height: 8),
+                const SizedBox(height: 5),
 
                 SingleChildScrollView(
                   scrollDirection:
@@ -105,11 +104,7 @@ class CrewCard extends StatelessWidget {
 
           /// 버튼 영역
           SizedBox(
-            width:
-            crew.status == 'waiting'
-                ? 110
-                : 120,
-
+            width: 90,
             child: _buildButtons(),
           ),
         ],

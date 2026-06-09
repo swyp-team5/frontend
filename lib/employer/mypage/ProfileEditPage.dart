@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
 import '../crews/CrewsPage.dart';
@@ -16,6 +19,29 @@ class ProfileEditPage extends StatefulWidget {
 
 class _ProfileEditPageState
     extends State<ProfileEditPage> {
+
+  File? profileImage;
+
+  final ImagePicker picker =
+  ImagePicker();
+
+  /// 프로필 이미지 선택
+  Future<void> pickProfileImage() async {
+
+    final XFile? image =
+    await picker.pickImage(
+      source: ImageSource.gallery,
+    );
+
+    if (image != null) {
+
+      setState(() {
+
+        profileImage =
+            File(image.path);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,8 +91,10 @@ class _ProfileEditPageState
 
           /// 마이페이지
           else if (index == 4) {
+
             Navigator.push(
               context,
+
               MaterialPageRoute(
                 builder: (_) =>
                 const MyPage(),
@@ -98,6 +126,7 @@ class _ProfileEditPageState
 
                     GestureDetector(
                       onTap: () {
+
                         Navigator.pop(
                           context,
                         );
@@ -141,27 +170,42 @@ class _ProfileEditPageState
 
                       children: [
 
+                        /// 프로필 이미지
                         Container(
                           width: 92,
                           height: 92,
 
                           decoration:
                           BoxDecoration(
+                            shape:
+                            BoxShape.circle,
+
                             color:
                             Colors
                                 .grey
                                 .shade300,
 
-                            shape:
-                            BoxShape
-                                .circle,
+                            image:
+                            profileImage !=
+                                null
+                                ? DecorationImage(
+                              image:
+                              FileImage(
+                                profileImage!,
+                              ),
+
+                              fit:
+                              BoxFit.cover,
+                            )
+                                : null,
                           ),
                         ),
 
+                        /// 추가 버튼
                         GestureDetector(
-                          onTap: () {
+                          onTap: () async {
 
-                            /// 프로필 이미지 변경
+                            await pickProfileImage();
                           },
 
                           child: Container(
@@ -356,12 +400,12 @@ class _ProfileEditPageState
 
     return Padding(
       padding:
-        const EdgeInsets.fromLTRB(30, 20, 30, 0),
-      // const EdgeInsets.symmetric(
-      //   horizontal: 30,
-      //   vertical: 20,
-      // ),
-
+      const EdgeInsets.fromLTRB(
+        30,
+        20,
+        30,
+        0,
+      ),
 
       child: Column(
         crossAxisAlignment:
@@ -408,8 +452,6 @@ class _ProfileEditPageState
                     onPressed: () {
 
                       /// 네비게이션 가능
-                      /// Navigator.push(...);
-
                     },
 
                     style:
@@ -433,23 +475,34 @@ class _ProfileEditPageState
 
                           style: TextStyle(
                             color:
-                            item.value == '설정하기'
+                            item.value ==
+                                '설정하기'
                                 ? Colors.grey.shade500
                                 : Colors.black,
 
                             fontSize: 20,
-                            fontWeight: FontWeight.w500,
+                            fontWeight:
+                            FontWeight.w500,
                           ),
                         ),
 
                         Padding(
-                          padding: const EdgeInsets.only(left: 0),
+                          padding:
+                          const EdgeInsets.only(
+                            left: 0,
+                          ),
 
-                          child: item.isArrow
+                          child:
+                          item.isArrow
                               ? Icon(
-                            Icons.chevron_right,
+                            Icons
+                                .chevron_right,
+
                             size: 24,
-                            color: Colors.grey.shade500,
+
+                            color:
+                            Colors.grey
+                                .shade500,
                           )
                               : const SizedBox(
                             width: 24,

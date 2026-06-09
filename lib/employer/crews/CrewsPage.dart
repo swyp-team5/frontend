@@ -110,8 +110,8 @@ class _CrewsPageState
           child: Padding(
             padding:
             const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
+              horizontal: 25,
+              vertical: 35,
             ),
 
             child: Column(
@@ -132,7 +132,7 @@ class _CrewsPageState
                       '동료',
 
                       style: TextStyle(
-                        fontSize: 28,
+                        fontSize: 25,
                         fontWeight:
                         FontWeight.w700,
                       ),
@@ -144,6 +144,7 @@ class _CrewsPageState
                       icon: const Icon(
                         Icons
                             .person_add_alt_1_outlined,
+                        size: 35,
                       ),
                     ),
                   ],
@@ -204,7 +205,7 @@ class _CrewsPageState
                           '김다빈 (나)',
 
                           style: TextStyle(
-                            fontSize: 22,
+                            fontSize: 18,
                             fontWeight:
                             FontWeight
                                 .bold,

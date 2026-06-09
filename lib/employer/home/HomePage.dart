@@ -71,8 +71,8 @@ class _HomePageState
           child: Padding(
             padding:
             const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
+              horizontal: 25,
+              vertical: 35,
             ),
 
             child: Column(
@@ -93,7 +93,7 @@ class _HomePageState
                           '매장명',
 
                           style: TextStyle(
-                            fontSize: 22,
+                            fontSize: 25,
                             fontWeight:
                             FontWeight.bold,
                           ),
@@ -117,12 +117,13 @@ class _HomePageState
                       icon: const Icon(
                         Icons
                             .notifications_none,
+                        size: 35,
                       ),
                     ),
                   ],
                 ),
 
-                const SizedBox(height: 10),
+                const SizedBox(height: 20),
 
                 /// 공지 배너
                 Container(
@@ -146,14 +147,38 @@ class _HomePageState
                     ),
                   ),
 
-                  child: const Text(
-                    '공지  마감 때 쓰레기 비우는거 잊지 마세요',
+                  child: Row(
+                    children: [
 
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight:
-                      FontWeight.w500,
-                    ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+
+                        child: const Text(
+                          '공지',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 13,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(width: 10),
+
+                      const Expanded(
+                        child: Text(
+                          '마감 때 쓰레기 비우는거 잊지 마세요',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
 
@@ -302,7 +327,7 @@ class _HomePageState
                             '오늘 근무',
 
                             style: TextStyle(
-                              fontSize: 20,
+                              fontSize: 18,
                               fontWeight:
                               FontWeight
                                   .bold,
@@ -414,7 +439,7 @@ class _HomePageState
             title,
 
             style: const TextStyle(
-              fontSize: 20,
+              fontSize: 18,
               fontWeight:
               FontWeight.bold,
             ),
