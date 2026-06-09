@@ -1,112 +1,76 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+
+import '../../../common/widgets/BottomNavBar.dart';
 import '../crews/CrewsPage.dart';
+import '../mypage/MyPage.dart';
 
 class HomePage extends StatefulWidget {
+
   const HomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<HomePage> createState() =>
+      _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState
+    extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor:
+      const Color(0xFFF5F5F5),
 
-      /// 하단 네비게이션 바
-      bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(
-          vertical: 10,
-        ),
+      /// 공통 BottomNavBar 적용
+      bottomNavigationBar:
+      BottomNavBar(
+        currentIndex: 0,
 
-        decoration: BoxDecoration(
-          color: Colors.white,
+        onTap: (index) {
 
-          border: Border(
-            top: BorderSide(
-              color: Colors.grey.shade300,
-            ),
-          ),
-        ),
+          /// 홈
+          if (index == 0) {}
 
-        child: SafeArea(
-          top: false,
+          /// 동료
+          else if (index == 1) {
 
-          child: Row(
-            mainAxisAlignment:
-            MainAxisAlignment.spaceAround,
+            Navigator.push(
+              context,
 
-            children: [
-
-              /// 홈
-              _buildBottomItem(
-                icon: Icons.home_filled,
-                label: '홈',
-                isSelected: true,
-
-                onTap: () {},
+              MaterialPageRoute(
+                builder: (_) =>
+                const CrewsPage(),
               ),
+            );
+          }
 
-              /// 동료
-              _buildBottomItem(
-                icon: Icons.groups_rounded,
-                label: '동료',
-                isSelected: false,
+          /// 스케줄
+          else if (index == 2) {}
 
-                onTap: () {
+          /// 급여
+          else if (index == 3) {}
 
-                  Navigator.push(
-                    context,
-
-                    MaterialPageRoute(
-                      builder: (_) =>
-                      const CrewsPage(),
-                    ),
-                  );
-                },
+          /// 마이페이지
+          else if (index == 4) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) =>
+                const MyPage(),
               ),
-
-              /// 스케줄
-              _buildBottomItem(
-                icon: Icons.calendar_month,
-                label: '스케줄',
-                isSelected: false,
-
-                onTap: () {},
-              ),
-
-              /// 급여
-              _buildBottomItem(
-                icon: Icons.payments_outlined,
-                label: '급여',
-                isSelected: false,
-
-                onTap: () {},
-              ),
-
-              /// 마이페이지
-              _buildBottomItem(
-                icon: Icons.person_outline,
-                label: '마이페이지',
-                isSelected: false,
-
-                onTap: () {},
-              ),
-            ],
-          ),
-        ),
+            );
+          }
+        },
       ),
 
-      /// body
       body: SafeArea(
         child: SingleChildScrollView(
 
           child: Padding(
-            padding: const EdgeInsets.symmetric(
+            padding:
+            const EdgeInsets.symmetric(
               horizontal: 16,
               vertical: 12,
             ),
@@ -117,7 +81,8 @@ class _HomePageState extends State<HomePage> {
                 /// 상단 헤더
                 Row(
                   mainAxisAlignment:
-                  MainAxisAlignment.spaceBetween,
+                  MainAxisAlignment
+                      .spaceBetween,
 
                   children: [
 
@@ -126,16 +91,21 @@ class _HomePageState extends State<HomePage> {
 
                         const Text(
                           '매장명',
+
                           style: TextStyle(
                             fontSize: 22,
-                            fontWeight: FontWeight.bold,
+                            fontWeight:
+                            FontWeight.bold,
                           ),
                         ),
 
-                        const SizedBox(width: 4),
+                        const SizedBox(
+                          width: 4,
+                        ),
 
                         const Icon(
-                          Icons.keyboard_arrow_down,
+                          Icons
+                              .keyboard_arrow_down,
                           size: 24,
                         ),
                       ],
@@ -145,7 +115,8 @@ class _HomePageState extends State<HomePage> {
                       onPressed: () {},
 
                       icon: const Icon(
-                        Icons.notifications_none,
+                        Icons
+                            .notifications_none,
                       ),
                     ),
                   ],
@@ -157,15 +128,22 @@ class _HomePageState extends State<HomePage> {
                 Container(
                   width: double.infinity,
 
-                  padding: const EdgeInsets.symmetric(
+                  padding:
+                  const EdgeInsets.symmetric(
                     horizontal: 14,
                     vertical: 12,
                   ),
 
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE8E8ED),
+                    color:
+                    const Color(
+                      0xFFE8E8ED,
+                    ),
+
                     borderRadius:
-                    BorderRadius.circular(10),
+                    BorderRadius.circular(
+                      10,
+                    ),
                   ),
 
                   child: const Text(
@@ -173,7 +151,8 @@ class _HomePageState extends State<HomePage> {
 
                     style: TextStyle(
                       fontSize: 13,
-                      fontWeight: FontWeight.w500,
+                      fontWeight:
+                      FontWeight.w500,
                     ),
                   ),
                 ),
@@ -184,40 +163,56 @@ class _HomePageState extends State<HomePage> {
                 Container(
                   width: double.infinity,
 
-                  padding: const EdgeInsets.symmetric(
+                  padding:
+                  const EdgeInsets.symmetric(
                     horizontal: 20,
                     vertical: 28,
                   ),
 
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE8E8ED),
+                    color:
+                    const Color(
+                      0xFFE8E8ED,
+                    ),
+
                     borderRadius:
-                    BorderRadius.circular(18),
+                    BorderRadius.circular(
+                      18,
+                    ),
                   ),
 
                   child: Column(
                     children: [
 
                       const Icon(
-                        Icons.calendar_month_outlined,
+                        Icons
+                            .calendar_month_outlined,
+
                         size: 48,
                       ),
 
-                      const SizedBox(height: 20),
+                      const SizedBox(
+                        height: 20,
+                      ),
 
                       const Text(
                         '직원의 스케줄을 자동으로 만들고\n편하게 스케줄을 만들어 보세요!',
 
-                        textAlign: TextAlign.center,
+                        textAlign:
+                        TextAlign.center,
 
                         style: TextStyle(
                           fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                          fontWeight:
+                          FontWeight.bold,
+
                           height: 1.5,
                         ),
                       ),
 
-                      const SizedBox(height: 24),
+                      const SizedBox(
+                        height: 24,
+                      ),
 
                       SizedBox(
                         width: double.infinity,
@@ -226,7 +221,8 @@ class _HomePageState extends State<HomePage> {
                         child: ElevatedButton(
                           onPressed: () {},
 
-                          style: ElevatedButton.styleFrom(
+                          style:
+                          ElevatedButton.styleFrom(
                             backgroundColor:
                             Colors.black,
 
@@ -243,8 +239,11 @@ class _HomePageState extends State<HomePage> {
                             '스케줄 만들기',
 
                             style: TextStyle(
-                              color: Colors.white,
+                              color:
+                              Colors.white,
+
                               fontSize: 16,
+
                               fontWeight:
                               FontWeight.bold,
                             ),
@@ -268,17 +267,27 @@ class _HomePageState extends State<HomePage> {
                 Container(
                   width: double.infinity,
 
-                  padding: const EdgeInsets.all(18),
+                  padding:
+                  const EdgeInsets.all(
+                    18,
+                  ),
 
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE8E8ED),
+                    color:
+                    const Color(
+                      0xFFE8E8ED,
+                    ),
+
                     borderRadius:
-                    BorderRadius.circular(18),
+                    BorderRadius.circular(
+                      18,
+                    ),
                   ),
 
                   child: Column(
                     crossAxisAlignment:
-                    CrossAxisAlignment.start,
+                    CrossAxisAlignment
+                        .start,
 
                     children: [
 
@@ -295,7 +304,8 @@ class _HomePageState extends State<HomePage> {
                             style: TextStyle(
                               fontSize: 20,
                               fontWeight:
-                              FontWeight.bold,
+                              FontWeight
+                                  .bold,
                             ),
                           ),
 
@@ -305,22 +315,30 @@ class _HomePageState extends State<HomePage> {
                         ],
                       ),
 
-                      const SizedBox(height: 50),
+                      const SizedBox(
+                        height: 50,
+                      ),
 
                       Center(
                         child: Text(
                           '오늘 근무하는 직원이 없어요',
 
                           style: TextStyle(
-                            color: Colors.grey.shade500,
+                            color:
+                            Colors.grey
+                                .shade500,
+
                             fontSize: 16,
+
                             fontWeight:
                             FontWeight.w500,
                           ),
                         ),
                       ),
 
-                      const SizedBox(height: 40),
+                      const SizedBox(
+                        height: 40,
+                      ),
 
                       Center(
                         child: Row(
@@ -334,15 +352,20 @@ class _HomePageState extends State<HomePage> {
 
                               style: TextStyle(
                                 fontSize: 18,
+
                                 fontWeight:
-                                FontWeight.bold,
+                                FontWeight
+                                    .bold,
                               ),
                             ),
 
-                            SizedBox(width: 4),
+                            SizedBox(
+                              width: 4,
+                            ),
 
                             Icon(
-                              Icons.chevron_right,
+                              Icons
+                                  .chevron_right,
                             ),
                           ],
                         ),
@@ -351,7 +374,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
 
-                const SizedBox(height: 30),
+                const SizedBox(height: 20),
               ],
             ),
           ),
@@ -367,19 +390,23 @@ class _HomePageState extends State<HomePage> {
     return Container(
       width: double.infinity,
 
-      padding: const EdgeInsets.symmetric(
+      padding:
+      const EdgeInsets.symmetric(
         horizontal: 18,
         vertical: 22,
       ),
 
       decoration: BoxDecoration(
         color: const Color(0xFFE8E8ED),
-        borderRadius: BorderRadius.circular(18),
+
+        borderRadius:
+        BorderRadius.circular(18),
       ),
 
       child: Row(
         mainAxisAlignment:
-        MainAxisAlignment.spaceBetween,
+        MainAxisAlignment
+            .spaceBetween,
 
         children: [
 
@@ -388,7 +415,8 @@ class _HomePageState extends State<HomePage> {
 
             style: const TextStyle(
               fontSize: 20,
-              fontWeight: FontWeight.bold,
+              fontWeight:
+              FontWeight.bold,
             ),
           ),
 
@@ -396,55 +424,6 @@ class _HomePageState extends State<HomePage> {
             Icons.chevron_right,
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildBottomItem({
-    required IconData icon,
-    required String label,
-    required bool isSelected,
-    VoidCallback? onTap,
-  }) {
-
-    return InkWell(
-      onTap: onTap,
-
-      borderRadius: BorderRadius.circular(12),
-
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-
-          children: [
-
-            Icon(
-              icon,
-
-              color:
-              isSelected
-                  ? Colors.grey.shade700
-                  : Colors.grey.shade400,
-            ),
-
-            const SizedBox(height: 4),
-
-            Text(
-              label,
-
-              style: TextStyle(
-                color:
-                isSelected
-                    ? Colors.grey.shade700
-                    : Colors.grey.shade400,
-
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

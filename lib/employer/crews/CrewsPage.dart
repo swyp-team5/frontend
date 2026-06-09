@@ -1,3 +1,4 @@
+import 'package:chack_chack/employer/mypage/MyPage.dart';
 import 'package:flutter/material.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
@@ -74,7 +75,6 @@ class _CrewsPageState
           if (index == 0) {
             Navigator.push(
               context,
-
               MaterialPageRoute(
                 builder: (_) =>
                 const HomePage(),
@@ -92,7 +92,15 @@ class _CrewsPageState
           else if (index == 3) {}
 
           /// 마이페이지
-          else if (index == 4) {}
+          else if (index == 4) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) =>
+                const MyPage(),
+              ),
+            );
+          }
         },
       ),
 
