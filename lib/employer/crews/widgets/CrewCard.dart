@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../CrewDetailsPage.dart';
 import '../model/CrewModel.dart';
 import 'TagChip.dart';
 
@@ -105,14 +106,14 @@ class CrewCard extends StatelessWidget {
           /// 버튼 영역
           SizedBox(
             width: 90,
-            child: _buildButtons(),
+            child: _buildButtons(context),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildButtons() {
+  Widget _buildButtons(BuildContext context,) {
 
     switch (crew.status) {
 
@@ -120,6 +121,7 @@ class CrewCard extends StatelessWidget {
       case 'invite':
 
         return _singleButton(
+          context: context,
           text: '초대하기',
           backgroundColor:
           Colors.grey.shade200,
@@ -136,6 +138,7 @@ class CrewCard extends StatelessWidget {
           children: [
 
             _singleButton(
+              context: context,
               text: '초대 취소',
               backgroundColor:
               Colors.grey.shade600,
@@ -145,6 +148,7 @@ class CrewCard extends StatelessWidget {
             const SizedBox(height: 8),
 
             _singleButton(
+              context: context,
               text: '다시 초대',
               backgroundColor:
               Colors.grey.shade200,
@@ -157,10 +161,23 @@ class CrewCard extends StatelessWidget {
       case 'completed':
 
         return _singleButton(
+          context: context,
           text: '상세 보기',
           backgroundColor:
           Colors.grey.shade200,
           textColor: Colors.black,
+
+          onTap: () {
+
+            Navigator.push(
+              context,
+
+              MaterialPageRoute(
+                builder: (_) =>
+                const CrewDetailsPage(),
+              ),
+            );
+          },
         );
 
       default:
@@ -169,9 +186,11 @@ class CrewCard extends StatelessWidget {
   }
 
   Widget _singleButton({
+    required BuildContext context,
     required String text,
     required Color backgroundColor,
     required Color textColor,
+    VoidCallback? onTap,
   }) {
 
     return SizedBox(
@@ -179,7 +198,7 @@ class CrewCard extends StatelessWidget {
       height: 40,
 
       child: ElevatedButton(
-        onPressed: () {},
+        onPressed: onTap ?? () {},
 
         style: ElevatedButton.styleFrom(
           backgroundColor:

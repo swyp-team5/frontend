@@ -413,6 +413,7 @@ class _ProfileEditPageState
 
         children: [
 
+          /// 섹션 타이틀
           Text(
             title,
 
@@ -435,11 +436,12 @@ class _ProfileEditPageState
               child: Row(
                 children: [
 
+                  /// 섹션 디테일
                   Text(
                     item.title,
 
                     style: const TextStyle(
-                      fontSize: 20,
+                      fontSize: 18,
                       fontWeight:
                       FontWeight.w500,
                     ),
