@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../CrewDetailsPage.dart';
-import '../model/CrewModel.dart';
-import 'TagChip.dart';
+import '../RCrewDetailPage.dart';
+import '../model/RCrewModel.dart';
+import 'RTagChip.dart';
 
 class CrewCard extends StatelessWidget {
 

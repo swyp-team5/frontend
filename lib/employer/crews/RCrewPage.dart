@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
 
-import '../home/HomePage.dart';
-import 'model/CrewModel.dart';
+import '../home/RHomePage.dart';
+import 'model/RCrewModel.dart';
 
-import 'widgets/CrewCard.dart';
-import 'widgets/SectionTitle.dart';
+import 'widgets/RCrewCard.dart';
+import 'widgets/RSectionTitle.dart';
 
 class CrewsPage extends StatefulWidget {
   const CrewsPage({super.key});

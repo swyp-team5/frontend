@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
-import '../crews/CrewsPage.dart';
+import '../crews/RCrewPage.dart';
 import '../mypage/MyPage.dart';
 
 class HomePage extends StatefulWidget {

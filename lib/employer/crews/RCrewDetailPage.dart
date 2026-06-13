@@ -1,11 +1,11 @@
-import 'package:chack_chack/employer/crews/widgets/InfoSectionCard.dart';
-import 'package:chack_chack/employer/crews/widgets/TagChip.dart';
+import 'package:chack_chack/employer/crews/widgets/RInfoSectionCard.dart';
+import 'package:chack_chack/employer/crews/widgets/RTagChip.dart';
 import 'package:flutter/material.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
-import '../home/HomePage.dart';
+import '../home/RHomePage.dart';
 import '../mypage/MyPage.dart';
-import 'CrewsPage.dart';
+import 'RCrewPage.dart';
 
 
 class CrewDetailsPage extends StatefulWidget {

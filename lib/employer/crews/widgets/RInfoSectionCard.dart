@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'InfoRow.dart';
+import 'RInfoRow.dart';
 
 class InfoSectionCard extends StatelessWidget {
 

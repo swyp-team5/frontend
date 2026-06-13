@@ -1,9 +1,9 @@
-import 'package:chack_chack/employer/home/HomePage.dart';
+import 'package:chack_chack/employer/home/RHomePage.dart';
 import 'package:chack_chack/employer/mypage/ProfileEditPage.dart';
 import 'package:flutter/material.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
-import '../crews/CrewsPage.dart';
+import '../crews/RCrewPage.dart';
 
 class MyPage extends StatefulWidget {
 

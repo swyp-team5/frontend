@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
-import '../crews/CrewsPage.dart';
-import '../home/HomePage.dart';
+import '../crews/RCrewPage.dart';
+import '../home/RHomePage.dart';
 import 'MyPage.dart';
 
 class ProfileEditPage extends StatefulWidget {
