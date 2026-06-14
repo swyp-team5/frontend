@@ -65,7 +65,7 @@ class _ProfileEditPageState
 
               MaterialPageRoute(
                 builder: (_) =>
-                const HomePage(),
+                const RHomePage(),
               ),
             );
           }
@@ -78,7 +78,7 @@ class _ProfileEditPageState
 
               MaterialPageRoute(
                 builder: (_) =>
-                const CrewsPage(),
+                const RCrewPage(),
               ),
             );
           }

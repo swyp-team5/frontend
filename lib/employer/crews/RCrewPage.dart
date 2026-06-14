@@ -9,16 +9,16 @@ import 'model/RCrewModel.dart';
 import 'widgets/RCrewCard.dart';
 import 'widgets/RSectionTitle.dart';
 
-class CrewsPage extends StatefulWidget {
-  const CrewsPage({super.key});
+class RCrewPage extends StatefulWidget {
+  const RCrewPage({super.key});
 
   @override
-  State<CrewsPage> createState() =>
-      _CrewsPageState();
+  State<RCrewPage> createState() =>
+      _RCrewPageState();
 }
 
-class _CrewsPageState
-    extends State<CrewsPage> {
+class _RCrewPageState
+    extends State<RCrewPage> {
 
   final List<CrewModel> inviteCrews = [
 
@@ -77,7 +77,7 @@ class _CrewsPageState
               context,
               MaterialPageRoute(
                 builder: (_) =>
-                const HomePage(),
+                const RHomePage(),
               ),
             );
           }

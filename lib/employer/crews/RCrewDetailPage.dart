@@ -8,17 +8,17 @@ import '../mypage/MyPage.dart';
 import 'RCrewPage.dart';
 
 
-class CrewDetailsPage extends StatefulWidget {
+class RCrewDetailPage extends StatefulWidget {
 
-  const CrewDetailsPage({super.key});
+  const RCrewDetailPage({super.key});
 
   @override
-  State<CrewDetailsPage> createState() =>
-      _CrewDetailsPageState();
+  State<RCrewDetailPage> createState() =>
+      _RCrewDetailPageState();
 }
 
-class _CrewDetailsPageState
-    extends State<CrewDetailsPage> {
+class _RCrewDetailPageState
+    extends State<RCrewDetailPage> {
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +42,7 @@ class _CrewDetailsPageState
 
               MaterialPageRoute(
                 builder: (_) =>
-                const HomePage(),
+                const RHomePage(),
               ),
             );
           }
@@ -55,7 +55,7 @@ class _CrewDetailsPageState
 
               MaterialPageRoute(
                 builder: (_) =>
-                const CrewsPage(),
+                const RCrewPage(),
               ),
             );
           }

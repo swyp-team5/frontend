@@ -174,7 +174,7 @@ class CrewCard extends StatelessWidget {
 
               MaterialPageRoute(
                 builder: (_) =>
-                const CrewDetailsPage(),
+                const RCrewDetailPage(),
               ),
             );
           },
