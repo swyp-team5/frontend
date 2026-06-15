@@ -4,21 +4,23 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
-import '../crews/RCrewPage.dart';
-import '../home/RHomePage.dart';
-import 'RMyPage.dart';
 
-class RProfileEditPage extends StatefulWidget {
+import '../home/EHomePage.dart';
 
-  const RProfileEditPage({super.key});
+import 'EMyPage.dart';
+
+
+class EProfileEditPage extends StatefulWidget {
+
+  const EProfileEditPage({super.key});
 
   @override
-  State<RProfileEditPage> createState() =>
-      _RProfileEditPageState();
+  State<EProfileEditPage> createState() =>
+      _EProfileEditPageState();
 }
 
-class _RProfileEditPageState
-    extends State<RProfileEditPage> {
+class _EProfileEditPageState
+    extends State<EProfileEditPage> {
 
   File? profileImage;
 
@@ -65,7 +67,7 @@ class _RProfileEditPageState
 
               MaterialPageRoute(
                 builder: (_) =>
-                const RHomePage(),
+                const EHomePage(),
               ),
             );
           }
@@ -73,14 +75,14 @@ class _RProfileEditPageState
           /// 동료
           else if (index == 1) {
 
-            Navigator.push(
-              context,
-
-              MaterialPageRoute(
-                builder: (_) =>
-                const RCrewPage(),
-              ),
-            );
+            // Navigator.push(
+            //   context,
+            //
+            //   MaterialPageRoute(
+            //     builder: (_) =>
+            //     const RCrewPage(),
+            //   ),
+            // );
           }
 
           /// 스케줄
@@ -97,7 +99,7 @@ class _RProfileEditPageState
 
               MaterialPageRoute(
                 builder: (_) =>
-                const RMyPage(),
+                const EMyPage(),
               ),
             );
           }
@@ -238,7 +240,7 @@ class _RProfileEditPageState
                     const SizedBox(height: 18),
 
                     const Text(
-                      '집게사장',
+                      '스폰지밥',
 
                       style: TextStyle(
                         fontSize: 25,
@@ -337,7 +339,7 @@ class _RProfileEditPageState
 
                   _ProfileItem(
                     title: '이름',
-                    value: '집게사장',
+                    value: '스폰지밥',
                     isArrow: false,
                   ),
 
@@ -356,31 +358,6 @@ class _RProfileEditPageState
               Container(
                 height: 15,
                 color: const Color(0xFFE8E8ED),
-              ),
-
-              /// 매장 정보
-              _buildSection(
-                context: context,
-
-                title: '매장 정보',
-
-                items: [
-
-                  _ProfileItem(
-                    title: '매장 로고',
-                    value: '설정하기',
-                  ),
-
-                  _ProfileItem(
-                    title: '매장 이름',
-                    value: '집게리아',
-                  ),
-
-                  _ProfileItem(
-                    title: '매장 전화번호',
-                    value: '설정하기',
-                  ),
-                ],
               ),
 
               const SizedBox(height: 30),

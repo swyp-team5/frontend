@@ -1,8 +1,8 @@
-import 'package:chack_chack/employer/mypage/RProfileEditPage.dart';
 import 'package:flutter/material.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
 import '../home/EHomePage.dart';
+import 'EProfileEditPage.dart';
 
 class EMyPage extends StatefulWidget {
 
@@ -136,7 +136,7 @@ class _EMyPageState extends State<EMyPage> {
 
                           MaterialPageRoute(
                             builder: (_) =>
-                            const RProfileEditPage(),
+                            const EProfileEditPage(),
                           ),
                         );
                       },
