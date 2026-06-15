@@ -1,3 +1,4 @@
+import 'package:chack_chack/employee/mypage/EMyPage.dart';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 
@@ -66,13 +67,15 @@ class _EHomePageState
 
           /// 마이페이지
           else if (index == 4) {
-            // Navigator.push(
-            //   context,
-            //   MaterialPageRoute(
-            //     builder: (_) =>
-            //     const RMyPage(),
-            //   ),
-            // );
+
+            Navigator.push(
+              context,
+
+              MaterialPageRoute(
+                builder: (_) =>
+                const EMyPage(),
+              ),
+            );
           }
         },
       ),
@@ -200,8 +203,7 @@ class _EHomePageState
                 const EdgeInsets.all(16),
 
                 decoration: BoxDecoration(
-                  color:
-                  Colors.grey.shade300,
+                  color: const Color(0xFFE8E8ED,),
 
                   borderRadius:
                   BorderRadius.circular(18),
@@ -294,8 +296,7 @@ class _EHomePageState
                 const EdgeInsets.all(20),
 
                 decoration: BoxDecoration(
-                  color:
-                  Colors.grey.shade300,
+                  color: const Color(0xFFE8E8ED,),
 
                   borderRadius:
                   BorderRadius.circular(18),
@@ -315,10 +316,7 @@ class _EHomePageState
 
                         const Spacer(),
 
-                        Icon(
-                          Icons.chevron_right,
-                          color: Colors.grey.shade700,
-                        ),
+                        Icon(Icons.chevron_right,),
                       ],
                     ),
 
@@ -384,8 +382,7 @@ class _EHomePageState
       const EdgeInsets.all(24),
 
       decoration: BoxDecoration(
-        color:
-        Colors.grey.shade300,
+        color: const Color(0xFFE8E8ED,),
 
         borderRadius:
         BorderRadius.circular(18),
@@ -460,8 +457,7 @@ class _EHomePageState
       const EdgeInsets.all(24),
 
       decoration: BoxDecoration(
-        color:
-        Colors.grey.shade300,
+        color: const Color(0xFFE8E8ED,),
 
         borderRadius:
         BorderRadius.circular(18),
@@ -535,8 +531,7 @@ class _EHomePageState
       ),
 
       decoration: BoxDecoration(
-        color:
-        Colors.grey.shade300,
+        color: const Color(0xFFE8E8ED,),
 
         borderRadius:
         BorderRadius.circular(18),

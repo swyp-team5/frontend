@@ -196,10 +196,7 @@ class _RHomePageState
                   ),
 
                   decoration: BoxDecoration(
-                    color:
-                    const Color(
-                      0xFFE8E8ED,
-                    ),
+                    color: const Color(0xFFE8E8ED,),
 
                     borderRadius:
                     BorderRadius.circular(
