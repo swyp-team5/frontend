@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
 import '../home/RHomePage.dart';
-import '../mypage/MyPage.dart';
+import '../mypage/RMyPage.dart';
 import 'RCrewPage.dart';
 
 
@@ -74,7 +74,7 @@ class _RCrewDetailPageState
 
               MaterialPageRoute(
                 builder: (_) =>
-                const MyPage(),
+                const RMyPage(),
               ),
             );
           }

@@ -6,19 +6,19 @@ import 'package:image_picker/image_picker.dart';
 import '../../../common/widgets/BottomNavBar.dart';
 import '../crews/RCrewPage.dart';
 import '../home/RHomePage.dart';
-import 'MyPage.dart';
+import 'RMyPage.dart';
 
-class ProfileEditPage extends StatefulWidget {
+class RProfileEditPage extends StatefulWidget {
 
-  const ProfileEditPage({super.key});
+  const RProfileEditPage({super.key});
 
   @override
-  State<ProfileEditPage> createState() =>
-      _ProfileEditPageState();
+  State<RProfileEditPage> createState() =>
+      _RProfileEditPageState();
 }
 
-class _ProfileEditPageState
-    extends State<ProfileEditPage> {
+class _RProfileEditPageState
+    extends State<RProfileEditPage> {
 
   File? profileImage;
 
@@ -97,7 +97,7 @@ class _ProfileEditPageState
 
               MaterialPageRoute(
                 builder: (_) =>
-                const MyPage(),
+                const RMyPage(),
               ),
             );
           }

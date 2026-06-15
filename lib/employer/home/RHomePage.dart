@@ -1,8 +1,9 @@
+import 'package:chack_chack/employee/home/EHomePage.dart';
 import 'package:flutter/material.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
 import '../crews/RCrewPage.dart';
-import '../mypage/MyPage.dart';
+import '../mypage/RMyPage.dart';
 
 class RHomePage extends StatefulWidget {
 
@@ -47,7 +48,17 @@ class _RHomePageState
           }
 
           /// 스케줄
-          else if (index == 2) {}
+          else if (index == 2) {
+
+            Navigator.push(
+              context,
+
+              MaterialPageRoute(
+                builder: (_) =>
+                const EHomePage(),
+              ),
+            );
+          }
 
           /// 급여
           else if (index == 3) {}
@@ -58,7 +69,7 @@ class _RHomePageState
               context,
               MaterialPageRoute(
                 builder: (_) =>
-                const MyPage(),
+                const RMyPage(),
               ),
             );
           }
@@ -80,32 +91,23 @@ class _RHomePageState
 
                 /// 상단 헤더
                 Row(
-                  mainAxisAlignment:
-                  MainAxisAlignment
-                      .spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
                   children: [
 
                     Row(
                       children: [
 
-                        const Text(
-                          '매장명',
-
-                          style: TextStyle(
+                        const Text('매장명', style: TextStyle(
                             fontSize: 25,
-                            fontWeight:
-                            FontWeight.bold,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
 
-                        const SizedBox(
-                          width: 4,
-                        ),
+                        const SizedBox(width: 4,),
 
                         const Icon(
-                          Icons
-                              .keyboard_arrow_down,
+                          Icons.keyboard_arrow_down,
                           size: 24,
                         ),
                       ],
@@ -115,8 +117,7 @@ class _RHomePageState
                       onPressed: () {},
 
                       icon: const Icon(
-                        Icons
-                            .notifications_none,
+                        Icons.notifications_none,
                         size: 35,
                       ),
                     ),

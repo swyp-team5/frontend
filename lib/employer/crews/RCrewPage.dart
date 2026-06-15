@@ -1,4 +1,4 @@
-import 'package:chack_chack/employer/mypage/MyPage.dart';
+import 'package:chack_chack/employer/mypage/RMyPage.dart';
 import 'package:flutter/material.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
@@ -97,7 +97,7 @@ class _RCrewPageState
               context,
               MaterialPageRoute(
                 builder: (_) =>
-                const MyPage(),
+                const RMyPage(),
               ),
             );
           }

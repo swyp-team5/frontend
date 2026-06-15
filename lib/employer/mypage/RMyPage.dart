@@ -1,20 +1,20 @@
 import 'package:chack_chack/employer/home/RHomePage.dart';
-import 'package:chack_chack/employer/mypage/ProfileEditPage.dart';
+import 'package:chack_chack/employer/mypage/RProfileEditPage.dart';
 import 'package:flutter/material.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
 import '../crews/RCrewPage.dart';
 
-class MyPage extends StatefulWidget {
+class RMyPage extends StatefulWidget {
 
-  const MyPage({super.key});
+  const RMyPage({super.key});
 
   @override
-  State<MyPage> createState() =>
-      _MyPageState();
+  State<RMyPage> createState() =>
+      _RMyPageState();
 }
 
-class _MyPageState extends State<MyPage> {
+class _RMyPageState extends State<RMyPage> {
 
   @override
   Widget build(BuildContext context) {
@@ -138,7 +138,7 @@ class _MyPageState extends State<MyPage> {
 
                           MaterialPageRoute(
                             builder: (_) =>
-                            const ProfileEditPage(),
+                            const RProfileEditPage(),
                           ),
                         );
                       },
