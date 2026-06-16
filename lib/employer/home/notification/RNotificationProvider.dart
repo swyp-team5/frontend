@@ -3,12 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'RNotificationModel.dart';
 
-final NotificationProvider = StateNotifierProvider<NotificationNotifier, List<RNotificationModel>>((ref) {
-  return NotificationNotifier();
+final RNotificationProvider = StateNotifierProvider<RNotificationNotifier, List<RNotificationModel>>((ref) {
+  return RNotificationNotifier();
 });
 
-class NotificationNotifier extends StateNotifier<List<RNotificationModel>> {
-  NotificationNotifier() : super([]) {
+class RNotificationNotifier extends StateNotifier<List<RNotificationModel>> {
+  RNotificationNotifier() : super([]) {
     _init();
   }
 

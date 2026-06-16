@@ -5,7 +5,7 @@ import '../../../common/widgets/BottomNavBar.dart';
 import '../../crews/RCrewPage.dart';
 import '../../mypage/RMyPage.dart';
 import '../RHomePage.dart';
-import 'NotificationProvider.dart';
+import 'RNotificationProvider.dart';
 import 'RNotificationModel.dart';
 
 class RNotiWritingPage extends ConsumerStatefulWidget {
@@ -83,7 +83,7 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
                         );
 
                         // 저장이 완료될 때까지 기다림 (await 추가)
-                        await ref.read(NotificationProvider.notifier).addNotice(newNotice);
+                        await ref.read(RNotificationProvider.notifier).addNotice(newNotice);
 
                         // 저장이 끝난 후 이전 화면으로 돌아감
                         if (mounted) {

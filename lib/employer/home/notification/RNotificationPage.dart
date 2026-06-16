@@ -4,7 +4,7 @@ import '../../../common/widgets/BottomNavBar.dart';
 import '../../crews/RCrewPage.dart';
 import '../../mypage/RMyPage.dart';
 import '../RHomePage.dart';
-import 'NotificationProvider.dart';
+import 'RNotificationProvider.dart';
 import 'RNotiWritingPage.dart';
 import 'RNotificationModel.dart';
 
@@ -47,7 +47,7 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
                     onTap: () {
                       // Provider를 통해 리액션 추가 및 자동 저장
                       ref
-                          .read(NotificationProvider.notifier)
+                          .read(RNotificationProvider.notifier)
                           .addReaction(index, emoji);
                       Navigator.pop(context);
                     },
@@ -66,7 +66,7 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
   @override
   Widget build(BuildContext context) {
     // Provider로부터 저장된 공지 목록을 실시간으로 가져옴
-    final notices = ref.watch(NotificationProvider);
+    final notices = ref.watch(RNotificationProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
