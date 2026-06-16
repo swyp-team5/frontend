@@ -65,41 +65,18 @@ class _RCrewPageState
       const Color(0xFFF5F5F5),
 
       /// 공통 BottomNavBar 적용
-      bottomNavigationBar:
-      BottomNavBar(
-        currentIndex: 1,
-
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: 0,
         onTap: (index) {
-
-          /// 홈
           if (index == 0) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const RHomePage()));
+          } else if (index == 1) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const RCrewPage()));
+          } else if (index == 4) {
             Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) =>
-                const RHomePage(),
-              ),
-            );
-          }
-
-          /// 동료
-          else if (index == 1) {}
-
-          /// 스케줄
-          else if (index == 2) {}
-
-          /// 급여
-          else if (index == 3) {}
-
-          /// 마이페이지
-          else if (index == 4) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) =>
-                const RMyPage(),
-              ),
-            );
+                context, MaterialPageRoute(builder: (_) => const RMyPage()));
           }
         },
       ),
@@ -115,16 +92,13 @@ class _RCrewPageState
             ),
 
             child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
 
               children: [
 
                 /// 헤더
                 Row(
-                  mainAxisAlignment:
-                  MainAxisAlignment
-                      .spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
                   children: [
 
@@ -133,8 +107,7 @@ class _RCrewPageState
 
                       style: TextStyle(
                         fontSize: 25,
-                        fontWeight:
-                        FontWeight.w700,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
 
@@ -142,8 +115,7 @@ class _RCrewPageState
                       onPressed: () {},
 
                       icon: const Icon(
-                        Icons
-                            .person_add_alt_1_outlined,
+                        Icons.person_add_alt_1_outlined,
                         size: 35,
                       ),
                     ),
@@ -162,38 +134,24 @@ class _RCrewPageState
 
                       decoration:
                       BoxDecoration(
-                        color: Colors
-                            .grey.shade300,
+                        color: Colors.grey.shade300,
 
-                        borderRadius:
-                        BorderRadius
-                            .circular(
-                          14,
-                        ),
+                        borderRadius: BorderRadius.circular(14,),
                       ),
                     ),
 
                     const SizedBox(width: 14),
 
                     Column(
-                      crossAxisAlignment:
-                      CrossAxisAlignment
-                          .start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
 
                       children: [
 
                         Text(
-                          '사장님',
-
-                          style: TextStyle(
-                            color: Colors
-                                .grey
-                                .shade600,
-
+                          '사장님', style: TextStyle(
+                            color: Colors.grey.shade600,
                             fontSize: 13,
-                            fontWeight:
-                            FontWeight
-                                .w600,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
 
@@ -206,9 +164,7 @@ class _RCrewPageState
 
                           style: TextStyle(
                             fontSize: 18,
-                            fontWeight:
-                            FontWeight
-                                .bold,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ],

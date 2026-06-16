@@ -40,10 +40,9 @@ class EmployeeCrewCard extends StatelessWidget {
 
               Text(
                 crew.role,
-
                 style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 15,
+                  color: Colors.grey.shade500,
+                  fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -51,8 +50,9 @@ class EmployeeCrewCard extends StatelessWidget {
               const SizedBox(height: 2),
 
               Text(
-                crew.name,
-
+                crew.isMe
+                    ? '${crew.name} (나)'
+                    : crew.name,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,

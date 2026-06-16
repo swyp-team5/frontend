@@ -1,10 +1,11 @@
 class EmployeeCrewModel {
-
-  final String role;
   final String name;
+  final String role;
+  final bool isMe;
 
   EmployeeCrewModel({
-    required this.role,
     required this.name,
+    required this.role,
+    this.isMe = false,
   });
 }

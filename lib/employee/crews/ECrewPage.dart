@@ -3,22 +3,24 @@ import 'package:flutter/material.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
 
+import '../home/EHomePage.dart';
+import '../mypage/EMyPage.dart';
 import 'model/ECrewModel.dart';
 
-class EmployeeCrewPage extends StatelessWidget {
+class ECrewPage extends StatelessWidget {
 
-  const EmployeeCrewPage({super.key});
+  const ECrewPage({super.key});
 
   @override
   Widget build(BuildContext context) {
 
     final myInfo = EmployeeCrewModel(
       role: '근무자',
-      name: '모수연 (나)',
+      name: '모수연',
+      isMe: true,
     );
 
     final crews = [
-
       EmployeeCrewModel(
         role: '사장님',
         name: '김나나',
@@ -48,27 +50,37 @@ class EmployeeCrewPage extends StatelessWidget {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
 
+      /// 공통 BottomNavBar 적용
       bottomNavigationBar: BottomNavBar(
         currentIndex: 1,
-        onTap: (index) {},
+        onTap: (index) {
+          if (index == 0) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const EHomePage()));
+          } else if (index == 1) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const ECrewPage()));
+          } else if (index == 4) {
+            Navigator.push(
+                context, MaterialPageRoute(builder: (_) => const EMyPage()));
+          }
+        },
       ),
 
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(28),
-
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 25,
+            vertical: 35,
+          ),
           child: Column(
-            crossAxisAlignment:
-            CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
 
             children: [
 
-              const Text(
-                '동료',
-
-                style: TextStyle(
-                  fontSize: 34,
-                  fontWeight: FontWeight.bold,
+              const Text('동료', style: TextStyle(
+                fontSize: 25,
+                fontWeight: FontWeight.w700,
                 ),
               ),
 
@@ -81,8 +93,8 @@ class EmployeeCrewPage extends StatelessWidget {
                 child: Container(
                   width: double.infinity,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 28,
-                    vertical: 26,
+                    horizontal: 25,
+                    vertical: 35,
                   ),
 
                   decoration: BoxDecoration(
@@ -95,10 +107,7 @@ class EmployeeCrewPage extends StatelessWidget {
                     children: [
 
                       const Expanded(
-                        child: Text(
-                          '교대 근무 신청하기',
-
-                          style: TextStyle(
+                        child: Text('교대 근무 신청하기', style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -122,38 +131,29 @@ class EmployeeCrewPage extends StatelessWidget {
                 crew: myInfo,
               ),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 36),
 
               Text(
                 '내 동료',
-
                 style: TextStyle(
-                  color: Colors.grey.shade400,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade500,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
                 ),
               ),
 
               const SizedBox(height: 24),
 
-              Expanded(
-                child: ListView.builder(
-                  padding: EdgeInsets.zero,
-
-                  itemCount: crews.length,
-
-                  itemBuilder:
-                      (context, index) {
-
-                    return EmployeeCrewCard(
-                      crew: crews[index],
-                    );
-                  },
-                ),
+              Column(
+                children: crews.map((crew) {
+                  return EmployeeCrewCard(
+                    crew: crew,
+                  );
+                }).toList(),
               ),
             ],
           ),
-        ),
+        )
       ),
     );
   }

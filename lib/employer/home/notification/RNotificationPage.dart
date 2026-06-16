@@ -1,11 +1,11 @@
-import 'package:chack_chack/employer/notification/RNotiWritingPage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../common/widgets/BottomNavBar.dart';
-import '../crews/RCrewPage.dart';
-import '../home/RHomePage.dart';
-import '../mypage/RMyPage.dart';
+import '../../../common/widgets/BottomNavBar.dart';
+import '../../crews/RCrewPage.dart';
+import '../../mypage/RMyPage.dart';
+import '../RHomePage.dart';
 import 'NotificationProvider.dart';
+import 'RNotiWritingPage.dart';
 import 'RNotificationModel.dart';
 
 class RNotificationPage extends ConsumerStatefulWidget {
@@ -65,11 +65,12 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Provider로부터 저장된 공지 목록을 실시간으로 가져옵니다.
+    // Provider로부터 저장된 공지 목록을 실시간으로 가져옴
     final notices = ref.watch(NotificationProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
+
       bottomNavigationBar: BottomNavBar(
         currentIndex: 0,
         onTap: (index) {
@@ -85,6 +86,7 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
           }
         },
       ),
+
       body: SafeArea(
         child: SingleChildScrollView(
           child: Column(

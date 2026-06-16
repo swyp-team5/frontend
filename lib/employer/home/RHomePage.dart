@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../common/widgets/BottomNavBar.dart';
 import '../crews/RCrewPage.dart';
 import '../mypage/RMyPage.dart';
-import '../notification/RNotificationPage.dart';
+import 'notification/RNotificationPage.dart';
 
 class RHomePage extends StatefulWidget {
 

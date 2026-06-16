@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../common/widgets/BottomNavBar.dart';
-import '../crews/RCrewPage.dart';
-import '../home/RHomePage.dart';
-import '../mypage/RMyPage.dart';
+import '../../../common/widgets/BottomNavBar.dart';
+import '../../crews/RCrewPage.dart';
+import '../../mypage/RMyPage.dart';
+import '../RHomePage.dart';
 import 'NotificationProvider.dart';
 import 'RNotificationModel.dart';
 
@@ -50,6 +50,7 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
               child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   SizedBox(
                     width: 90,
@@ -61,16 +62,9 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
                       ),
                     ),
                   ),
-                  const Expanded(
-                    child: Center(
-                      child: Text('공지 작성',
-                          style: TextStyle(
-                              fontSize: 22, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
                   SizedBox(
-                    width: 90,
-                    height: 50,
+                    width: 88,
+                    height: 40,
                     child: ElevatedButton(
                       onPressed: () async { // async 추가
                         if (titleController.text.trim().isEmpty ||
@@ -88,10 +82,10 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
                           reactions: [],
                         );
 
-                        // 1. 저장이 완료될 때까지 기다립니다 (await 추가)
+                        // 저장이 완료될 때까지 기다림 (await 추가)
                         await ref.read(NotificationProvider.notifier).addNotice(newNotice);
 
-                        // 2. 저장이 끝난 후 이전 화면으로 돌아갑니다.
+                        // 저장이 끝난 후 이전 화면으로 돌아감
                         if (mounted) {
                           Navigator.pop(context);
                         }
