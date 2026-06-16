@@ -1,3 +1,4 @@
+import 'package:chack_chack/common/notification/NotificationPage.dart';
 import 'package:chack_chack/employee/mypage/EMyPage.dart';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -52,14 +53,14 @@ class _EHomePageState
           /// 스케줄
           else if (index == 2) {
 
-            Navigator.push(
-              context,
-
-              MaterialPageRoute(
-                builder: (_) =>
-                const EHomePage(),
-              ),
-            );
+            // Navigator.push(
+            //   context,
+            //
+            //   MaterialPageRoute(
+            //     builder: (_) =>
+            //     const EHomePage(),
+            //   ),
+            // );
           }
 
           /// 급여
@@ -283,8 +284,18 @@ class _EHomePageState
               const SizedBox(height: 14),
 
               /// 공지
-              _buildMenuSection(
-                title: '공지',
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const NotificationPage(),
+                    ),
+                  );
+                },
+                child: _buildMenuSection(
+                  title: '공지',
+                ),
               ),
 
               const SizedBox(height: 14),

@@ -106,7 +106,8 @@ class _EProfileEditPageState
         },
       ),
 
-      body: SafeArea(
+      body:
+      SafeArea(
         child: SingleChildScrollView(
 
           child: Column(

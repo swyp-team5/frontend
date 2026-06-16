@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../common/widgets/BottomNavBar.dart';
 import '../crews/RCrewPage.dart';
 import '../mypage/RMyPage.dart';
+import '../notification/RNotificationPage.dart';
 
 class RHomePage extends StatefulWidget {
 
@@ -50,14 +51,14 @@ class _RHomePageState
           /// 스케줄
           else if (index == 2) {
 
-            Navigator.push(
-              context,
-
-              MaterialPageRoute(
-                builder: (_) =>
-                const EHomePage(),
-              ),
-            );
+            // Navigator.push(
+            //   context,
+            //
+            //   MaterialPageRoute(
+            //     builder: (_) =>
+            //     const EHomePage(),
+            //   ),
+            // );
           }
 
           /// 급여
@@ -280,8 +281,18 @@ class _RHomePageState
                 const SizedBox(height: 14),
 
                 /// 공지 작성 카드
-                _buildMenuCard(
-                  title: '공지 작성',
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const RNotificationPage(),
+                      ),
+                    );
+                  },
+                  child: _buildMenuCard(
+                    title: '공지 작성',
+                  ),
                 ),
 
                 const SizedBox(height: 14),
