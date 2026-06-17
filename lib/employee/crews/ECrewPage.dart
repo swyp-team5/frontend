@@ -75,7 +75,6 @@ class ECrewPage extends StatelessWidget {
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-
             children: [
 
               const Text('동료', style: TextStyle(
@@ -99,15 +98,15 @@ class ECrewPage extends StatelessWidget {
 
                   decoration: BoxDecoration(
                     color: Colors.grey.shade200,
-                    borderRadius:
-                    BorderRadius.circular(24),
+                    borderRadius: BorderRadius.circular(24),
                   ),
 
                   child: Row(
                     children: [
 
                       const Expanded(
-                        child: Text('교대 근무 신청하기', style: TextStyle(
+                        child: Text('교대 근무 신청하기',
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -133,8 +132,7 @@ class ECrewPage extends StatelessWidget {
 
               const SizedBox(height: 36),
 
-              Text(
-                '내 동료',
+              Text('내 동료',
                 style: TextStyle(
                   color: Colors.grey.shade500,
                   fontSize: 15,
@@ -146,9 +144,7 @@ class ECrewPage extends StatelessWidget {
 
               Column(
                 children: crews.map((crew) {
-                  return EmployeeCrewCard(
-                    crew: crew,
-                  );
+                  return EmployeeCrewCard(crew: crew,);
                 }).toList(),
               ),
             ],

@@ -48,8 +48,7 @@ class _RCrewDetailPageState
         child: SingleChildScrollView(
 
           child: Padding(
-            padding:
-            const EdgeInsets.symmetric(
+            padding: const EdgeInsets.symmetric(
               horizontal: 25,
               vertical: 35,
             ),
@@ -59,16 +58,12 @@ class _RCrewDetailPageState
 
                 /// 상단 헤더
                 Row(
-                  mainAxisAlignment:
-                  MainAxisAlignment.spaceBetween,
-
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
 
                     GestureDetector(
                       onTap: () {
-                        Navigator.pop(
-                          context,
-                        );
+                        Navigator.pop(context,);
                       },
 
                       child: const Icon(
@@ -77,24 +72,19 @@ class _RCrewDetailPageState
                       ),
                     ),
 
-                    const Text(
-                      '상세 정보',
-
+                    const Text('상세 정보',
                       style: TextStyle(
                         fontSize: 22,
-                        fontWeight:
-                        FontWeight.bold,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
 
                     GestureDetector(
                       onTap: () {
-                        // Navigator.push(
-                        //   context,
+                        // Navigator.push(context,
                         //
                         //   MaterialPageRoute(
-                        //     builder: (_) =>
-                        //     const MyPage(),
+                        //     builder: (_) =>const MyPage(),
                         //   ),
                         // );
                       },
@@ -110,31 +100,22 @@ class _RCrewDetailPageState
                 const SizedBox(height: 30),
 
                 /// 프로필 이미지
-                Container(
-                  width: 92,
-                  height: 92,
+                Container(width: 92, height: 92,
 
                   decoration: BoxDecoration(
                     color: Colors.grey.shade300,
-
-                    borderRadius:
-                    BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(16),
                   ),
                 ),
 
                 const SizedBox(height: 18),
 
                 /// 역할
-                Text(
-                  '동료',
-
+                Text('동료',
                   style: TextStyle(
-                    color:
-                    Colors.grey.shade600,
-
+                    color: Colors.grey.shade600,
                     fontSize: 15,
-                    fontWeight:
-                    FontWeight.w600,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
 
@@ -142,48 +123,35 @@ class _RCrewDetailPageState
 
                 /// 이름 + 상태
                 Row(
-                  mainAxisAlignment:
-                  MainAxisAlignment.center,
-
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
 
-                    const Text(
-                      '박지연',
-
+                    const Text('박지연',
                       style: TextStyle(
                         fontSize: 30,
-                        fontWeight:
-                        FontWeight.bold,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
 
                     const SizedBox(width: 10),
 
                     Container(
-                      padding:
-                      const EdgeInsets.symmetric(
+                      padding: const EdgeInsets.symmetric(
                         horizontal: 10,
                         vertical: 6,
                       ),
 
                       decoration: BoxDecoration(
-                        color:
-                        Colors.grey.shade800,
+                        color: Colors.grey.shade800,
 
-                        borderRadius:
-                        BorderRadius.circular(
-                          10,
-                        ),
+                        borderRadius: BorderRadius.circular(10,),
                       ),
 
-                      child: const Text(
-                        '재직중',
-
+                      child: const Text('재직중',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 12,
-                          fontWeight:
-                          FontWeight.w700,
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
@@ -263,41 +231,32 @@ class _RCrewDetailPageState
                   child: Container(
                     width: double.infinity,
 
-                    padding:
-                    const EdgeInsets.symmetric(
+                    padding: const EdgeInsets.symmetric(
                       horizontal: 18,
                       vertical: 22,
                     ),
 
                     decoration: BoxDecoration(
-                      color:
-                      Colors.grey.shade200,
-
-                      borderRadius:
-                      BorderRadius.circular(24),
+                      color: Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(24),
                     ),
 
                     child: Row(
-                      mainAxisAlignment:
-                      MainAxisAlignment.spaceBetween,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
                       children: [
 
-                        const Text(
-                          '지난 달 급여 정보',
-
+                        const Text('지난 달 급여 정보',
                           style: TextStyle(
                             fontSize: 20,
-                            fontWeight:
-                            FontWeight.bold,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
 
                         Icon(
                           Icons.chevron_right,
                           size: 28,
-                          color:
-                          Colors.grey.shade600,
+                          color: Colors.grey.shade600,
                         ),
                       ],
                     ),

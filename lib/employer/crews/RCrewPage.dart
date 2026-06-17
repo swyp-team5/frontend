@@ -13,12 +13,10 @@ class RCrewPage extends StatefulWidget {
   const RCrewPage({super.key});
 
   @override
-  State<RCrewPage> createState() =>
-      _RCrewPageState();
+  State<RCrewPage> createState() => _RCrewPageState();
 }
 
-class _RCrewPageState
-    extends State<RCrewPage> {
+class _RCrewPageState extends State<RCrewPage> {
 
   final List<CrewModel> inviteCrews = [
 
@@ -85,8 +83,7 @@ class _RCrewPageState
         child: SingleChildScrollView(
 
           child: Padding(
-            padding:
-            const EdgeInsets.symmetric(
+            padding: const EdgeInsets.symmetric(
               horizontal: 25,
               vertical: 35,
             ),
@@ -102,9 +99,7 @@ class _RCrewPageState
 
                   children: [
 
-                    const Text(
-                      '동료',
-
+                    const Text('동료',
                       style: TextStyle(
                         fontSize: 25,
                         fontWeight: FontWeight.w700,
@@ -128,14 +123,10 @@ class _RCrewPageState
                 Row(
                   children: [
 
-                    Container(
-                      width: 68,
-                      height: 68,
+                    Container(width: 68, height: 68,
 
-                      decoration:
-                      BoxDecoration(
+                      decoration: BoxDecoration(
                         color: Colors.grey.shade300,
-
                         borderRadius: BorderRadius.circular(14,),
                       ),
                     ),
@@ -148,20 +139,17 @@ class _RCrewPageState
                       children: [
 
                         Text(
-                          '사장님', style: TextStyle(
+                          '사장님',
+                          style: TextStyle(
                             color: Colors.grey.shade600,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
 
-                        const SizedBox(
-                          height: 4,
-                        ),
+                        const SizedBox(height: 4,),
 
-                        const Text(
-                          '김다빈 (나)',
-
+                        const Text('김다빈 (나)',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -176,24 +164,17 @@ class _RCrewPageState
 
                 /// 초대 예정
                 SectionTitle(
-                  title:
-                  '초대 예정 ${inviteCrews.length}',
+                  title: '초대 예정 ${inviteCrews.length}',
                 ),
 
                 const SizedBox(height: 16),
 
-                ...inviteCrews.map(
-                      (crew) {
+                ...inviteCrews.map((crew) {
 
                     return Padding(
-                      padding:
-                      const EdgeInsets.only(
-                        bottom: 16,
-                      ),
+                      padding: const EdgeInsets.only(bottom: 16,),
 
-                      child: CrewCard(
-                        crew: crew,
-                      ),
+                      child: CrewCard(crew: crew,),
                     );
                   },
                 ),
@@ -202,24 +183,17 @@ class _RCrewPageState
 
                 /// 초대 수락 대기중
                 SectionTitle(
-                  title:
-                  '초대 수락 대기 중 ${waitingCrews.length}',
+                  title: '초대 수락 대기 중 ${waitingCrews.length}',
                 ),
 
                 const SizedBox(height: 16),
 
-                ...waitingCrews.map(
-                      (crew) {
+                ...waitingCrews.map((crew) {
 
                     return Padding(
-                      padding:
-                      const EdgeInsets.only(
-                        bottom: 16,
-                      ),
+                      padding: const EdgeInsets.only(bottom: 16,),
 
-                      child: CrewCard(
-                        crew: crew,
-                      ),
+                      child: CrewCard(crew: crew,),
                     );
                   },
                 ),
@@ -231,18 +205,12 @@ class _RCrewPageState
 
                 const SizedBox(height: 16),
 
-                ...completedCrews.map(
-                      (crew) {
+                ...completedCrews.map((crew) {
 
                     return Padding(
-                      padding:
-                      const EdgeInsets.only(
-                        bottom: 16,
-                      ),
+                      padding: const EdgeInsets.only(bottom: 16,),
 
-                      child: CrewCard(
-                        crew: crew,
-                      ),
+                      child: CrewCard(crew: crew,),
                     );
                   },
                 ),

@@ -20,13 +20,10 @@ class TagChip extends StatelessWidget {
 
       decoration: BoxDecoration(
         color: Colors.grey.shade400,
-        borderRadius:
-        BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(20),
       ),
 
-      child: Text(
-        text,
-
+      child: Text(text,
         style: const TextStyle(
           color: Colors.white,
           fontSize: 11,

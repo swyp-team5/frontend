@@ -15,15 +15,12 @@ class InfoRow extends StatelessWidget {
   Widget build(BuildContext context) {
 
     return Padding(
-      padding: const EdgeInsets.only(
-        bottom: 18,
-      ),
+      padding: const EdgeInsets.only(bottom: 18,),
 
       child: Row(
         children: [
 
-          Text(
-            label,
+          Text(label,
 
             style: TextStyle(
               color: Colors.grey.shade600,
@@ -34,9 +31,7 @@ class InfoRow extends StatelessWidget {
 
           const Spacer(),
 
-          Text(
-            value,
-
+          Text(value,
             style: const TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,

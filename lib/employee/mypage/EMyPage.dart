@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
+import '../crews/ECrewPage.dart';
 import '../home/EHomePage.dart';
 import 'EProfileEditPage.dart';
 
@@ -9,8 +10,7 @@ class EMyPage extends StatefulWidget {
   const EMyPage({super.key});
 
   @override
-  State<EMyPage> createState() =>
-      _EMyPageState();
+  State<EMyPage> createState() => _EMyPageState();
 }
 
 class _EMyPageState extends State<EMyPage> {
@@ -23,42 +23,19 @@ class _EMyPageState extends State<EMyPage> {
       const Color(0xFFF5F5F5),
 
       /// 공통 BottomNavBar 적용
-      bottomNavigationBar:
-      BottomNavBar(
+      bottomNavigationBar: BottomNavBar(
         currentIndex: 4,
-
         onTap: (index) {
-
-          /// 홈
           if (index == 0) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const EHomePage()));
+          } else if (index == 1) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const ECrewPage()));
+          } else if (index == 4) {
             Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) =>
-                const EHomePage(),
-              ),
-            );
+                context, MaterialPageRoute(builder: (_) => const EMyPage()));
           }
-
-          /// 동료
-          else if (index == 1) {
-            // Navigator.push(
-            //   context,
-            //   MaterialPageRoute(
-            //     builder: (_) =>
-            //     const RCrewPage(),
-            //   ),
-            // );
-          }
-
-          /// 스케줄
-          else if (index == 2) {}
-
-          /// 급여
-          else if (index == 3) {}
-
-          /// 마이페이지
-          else if (index == 4) {}
         },
       ),
 
@@ -66,26 +43,15 @@ class _EMyPageState extends State<EMyPage> {
         child: SingleChildScrollView(
 
           child: Padding(
-            padding:
-            const EdgeInsets.symmetric(
-              horizontal: 25,
-              vertical: 35,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 35,),
 
             child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
-
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 /// 타이틀
-                const Text(
-                  '마이페이지',
-
-                  style: TextStyle(
+                const Text('마이페이지', style: TextStyle(
                     fontSize: 25,
-                    fontWeight:
-                    FontWeight.w700,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
 
@@ -100,16 +66,11 @@ class _EMyPageState extends State<EMyPage> {
 
                 Row(
                   children: [
-
                     /// 프로필 이미지
-                    Container(
-                      width: 40,
-                      height: 40,
+                    Container(width: 40, height: 40,
 
                       decoration: BoxDecoration(
-                        color:
-                        Colors.grey.shade300,
-
+                        color: Colors.grey.shade300,
                         shape: BoxShape.circle,
                       ),
                     ),
@@ -118,10 +79,7 @@ class _EMyPageState extends State<EMyPage> {
 
                     /// 이름
                     const Expanded(
-                      child: Text(
-                        '스폰지밥',
-
-                        style: TextStyle(
+                      child: Text('스폰지밥', style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
                         ),
@@ -131,12 +89,9 @@ class _EMyPageState extends State<EMyPage> {
                     /// 버튼
                     OutlinedButton(
                       onPressed: () {
-                        Navigator.push(
-                          context,
-
+                        Navigator.push(context,
                           MaterialPageRoute(
-                            builder: (_) =>
-                            const EProfileEditPage(),
+                            builder: (_) => const EProfileEditPage(),
                           ),
                         );
                       },
@@ -144,33 +99,20 @@ class _EMyPageState extends State<EMyPage> {
                       style:
                       OutlinedButton.styleFrom(
                         side: BorderSide(
-                          color:
-                          Colors.grey.shade500,
+                          color: Colors.grey.shade500,
                         ),
 
-                        padding:
-                        const EdgeInsets.symmetric(
-                          horizontal: 13,
-                          vertical: 10,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 10,),
 
-                        shape:
-                        RoundedRectangleBorder(
-                          borderRadius:
-                          BorderRadius.circular(
-                            0,
-                          ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(0,),
                         ),
                       ),
 
-                      child: const Text(
-                        '프로필 변경하기',
-
-                        style: TextStyle(
+                      child: const Text('프로필 변경하기', style: TextStyle(
                           color: Colors.black,
                           fontSize: 12,
-                          fontWeight:
-                          FontWeight.w600,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
@@ -188,16 +130,14 @@ class _EMyPageState extends State<EMyPage> {
 
 
                 _buildMenuItem(
-                  icon:
-                  Icons.calendar_month_rounded,
+                  icon: Icons.calendar_month_rounded,
                   title: '근무 스케줄',
                 ),
 
                 const SizedBox(height: 15),
 
                 _buildMenuItem(
-                  icon:
-                  Icons.access_time_outlined,
+                  icon: Icons.access_time_outlined,
                   title: '출퇴근 기록',
                 ),
 
@@ -211,16 +151,14 @@ class _EMyPageState extends State<EMyPage> {
                 const SizedBox(height: 20),
 
                 _buildMenuItem(
-                  icon:
-                  Icons.send_outlined,
+                  icon: Icons.send_outlined,
                   title: '교대 요청 내역',
                 ),
 
                 const SizedBox(height: 15),
 
                 _buildMenuItem(
-                  icon:
-                  Icons.send_outlined,
+                  icon: Icons.send_outlined,
                   title: '교대 수락 내역',
                 ),
 
@@ -234,16 +172,14 @@ class _EMyPageState extends State<EMyPage> {
                 const SizedBox(height: 20),
 
                 _buildMenuItem(
-                  icon:
-                  Icons.support_agent_outlined,
+                  icon: Icons.support_agent_outlined,
                   title: '고객 센터',
                 ),
 
                 const SizedBox(height: 15),
 
                 _buildMenuItem(
-                  icon:
-                  Icons.settings_outlined,
+                  icon: Icons.settings_outlined,
                   title: '계정 설정',
                 ),
 
@@ -257,13 +193,9 @@ class _EMyPageState extends State<EMyPage> {
   }
 
   /// 섹션 제목
-  Widget _buildSectionTitle(
-      String title,
-      ) {
-
+  Widget _buildSectionTitle(String title,) {
     return Text(
       title,
-
       style: TextStyle(
         color: Colors.grey.shade400,
         fontSize: 13,

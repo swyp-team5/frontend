@@ -17,26 +17,19 @@ class CrewCard extends StatelessWidget {
   Widget build(BuildContext context) {
 
     return Container(
-      padding: const EdgeInsets.symmetric(
-        vertical: 6,
-      ),
+      padding: const EdgeInsets.symmetric(vertical: 6,),
 
       child: Row(
-        crossAxisAlignment:
-        CrossAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
 
         children: [
 
           /// 프로필 이미지
-          Container(
-            width: 68,
-            height: 68,
+          Container(width: 68, height: 68,
 
             decoration: BoxDecoration(
               color: Colors.grey.shade300,
-
-              borderRadius:
-              BorderRadius.circular(14),
+              borderRadius: BorderRadius.circular(14),
             ),
           ),
 
@@ -45,14 +38,11 @@ class CrewCard extends StatelessWidget {
           /// 정보 영역
           Expanded(
             child: Column(
-              crossAxisAlignment:
-              CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
 
               children: [
 
-                Text(
-                  crew.role,
-
+                Text(crew.role,
                   style: TextStyle(
                     color: Colors.grey.shade600,
                     fontSize: 13,
@@ -61,12 +51,8 @@ class CrewCard extends StatelessWidget {
                 ),
 
 
-                Text(
-                  crew.name,
-
-                  overflow:
-                  TextOverflow.ellipsis,
-
+                Text(crew.name,
+                  overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -76,22 +62,15 @@ class CrewCard extends StatelessWidget {
                 const SizedBox(height: 5),
 
                 SingleChildScrollView(
-                  scrollDirection:
-                  Axis.horizontal,
+                  scrollDirection: Axis.horizontal,
 
                   child: Row(
-                    children:
-                    crew.tags.map((tag) {
+                    children: crew.tags.map((tag) {
 
                       return Padding(
-                        padding:
-                        const EdgeInsets.only(
-                          right: 6,
-                        ),
+                        padding: const EdgeInsets.only(right: 6,),
 
-                        child: TagChip(
-                          text: tag,
-                        ),
+                        child: TagChip(text: tag,),
                       );
 
                     }).toList(),
@@ -132,8 +111,7 @@ class CrewCard extends StatelessWidget {
       case 'waiting':
 
         return Column(
-          mainAxisSize:
-          MainAxisSize.min,
+          mainAxisSize: MainAxisSize.min,
 
           children: [
 
@@ -169,12 +147,9 @@ class CrewCard extends StatelessWidget {
 
           onTap: () {
 
-            Navigator.push(
-              context,
-
+            Navigator.push(context,
               MaterialPageRoute(
-                builder: (_) =>
-                const RCrewDetailPage(),
+                builder: (_) => const RCrewDetailPage(),
               ),
             );
           },
@@ -201,33 +176,24 @@ class CrewCard extends StatelessWidget {
         onPressed: onTap ?? () {},
 
         style: ElevatedButton.styleFrom(
-          backgroundColor:
-          backgroundColor,
+          backgroundColor: backgroundColor,
 
           elevation: 0,
 
           padding: EdgeInsets.zero,
 
-          tapTargetSize:
-          MaterialTapTargetSize
-              .shrinkWrap,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
 
           shape: RoundedRectangleBorder(
-            borderRadius:
-            BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
 
-        child: Text(
-          text,
+        child: Text(text,
 
           maxLines: 1,
-
-          overflow:
-          TextOverflow.ellipsis,
-
+          overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
-
           style: TextStyle(
             color: textColor,
             fontSize: 12,

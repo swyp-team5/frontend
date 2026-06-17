@@ -26,20 +26,15 @@ class InfoSectionCard extends StatelessWidget {
 
       decoration: BoxDecoration(
         color: Colors.grey.shade200,
-
-        borderRadius:
-        BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(24),
       ),
 
       child: Column(
-        crossAxisAlignment:
-        CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
 
         children: [
 
-          Text(
-            title,
-
+          Text(title,
             style: const TextStyle(
               fontSize: 20,
               fontWeight:
@@ -49,8 +44,7 @@ class InfoSectionCard extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          ...items.map(
-                (item) => InfoRow(
+          ...items.map((item) => InfoRow(
               label: item[0],
               value: item[1],
             ),

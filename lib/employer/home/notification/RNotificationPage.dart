@@ -71,6 +71,7 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
 
+      /// 공통 BottomNavBar 적용
       bottomNavigationBar: BottomNavBar(
         currentIndex: 0,
         onTap: (index) {

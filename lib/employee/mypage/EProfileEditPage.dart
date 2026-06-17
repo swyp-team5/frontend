@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
 
+import '../crews/ECrewPage.dart';
 import '../home/EHomePage.dart';
 
 import 'EMyPage.dart';
@@ -15,17 +16,14 @@ class EProfileEditPage extends StatefulWidget {
   const EProfileEditPage({super.key});
 
   @override
-  State<EProfileEditPage> createState() =>
-      _EProfileEditPageState();
+  State<EProfileEditPage> createState() => _EProfileEditPageState();
 }
 
-class _EProfileEditPageState
-    extends State<EProfileEditPage> {
+class _EProfileEditPageState extends State<EProfileEditPage> {
 
   File? profileImage;
 
-  final ImagePicker picker =
-  ImagePicker();
+  final ImagePicker picker = ImagePicker();
 
   /// 프로필 이미지 선택
   Future<void> pickProfileImage() async {
@@ -38,9 +36,7 @@ class _EProfileEditPageState
     if (image != null) {
 
       setState(() {
-
-        profileImage =
-            File(image.path);
+        profileImage = File(image.path);
       });
     }
   }
@@ -53,55 +49,18 @@ class _EProfileEditPageState
       const Color(0xFFF5F5F5),
 
       /// 공통 BottomNavBar 적용
-      bottomNavigationBar:
-      BottomNavBar(
+      bottomNavigationBar: BottomNavBar(
         currentIndex: 4,
-
         onTap: (index) {
-
-          /// 홈
           if (index == 0) {
-
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const EHomePage()));
+          } else if (index == 1) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const ECrewPage()));
+          } else if (index == 4) {
             Navigator.push(
-              context,
-
-              MaterialPageRoute(
-                builder: (_) =>
-                const EHomePage(),
-              ),
-            );
-          }
-
-          /// 동료
-          else if (index == 1) {
-
-            // Navigator.push(
-            //   context,
-            //
-            //   MaterialPageRoute(
-            //     builder: (_) =>
-            //     const RCrewPage(),
-            //   ),
-            // );
-          }
-
-          /// 스케줄
-          else if (index == 2) {}
-
-          /// 급여
-          else if (index == 3) {}
-
-          /// 마이페이지
-          else if (index == 4) {
-
-            Navigator.push(
-              context,
-
-              MaterialPageRoute(
-                builder: (_) =>
-                const EMyPage(),
-              ),
-            );
+                context, MaterialPageRoute(builder: (_) => const EMyPage()));
           }
         },
       ),
@@ -109,32 +68,20 @@ class _EProfileEditPageState
       body:
       SafeArea(
         child: SingleChildScrollView(
-
           child: Column(
-            crossAxisAlignment:
-            CrossAxisAlignment.start,
-
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               /// 상단 헤더
               Padding(
                 padding:
-                const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 30,
-                ),
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 30,),
 
                 child: Row(
                   children: [
-
                     GestureDetector(
                       onTap: () {
-
-                        Navigator.pop(
-                          context,
-                        );
+                        Navigator.pop(context,);
                       },
-
                       child: const Icon(
                         Icons.arrow_back_ios_new,
                         size: 22,
@@ -143,13 +90,9 @@ class _EProfileEditPageState
 
                     const Expanded(
                       child: Center(
-                        child: Text(
-                          '프로필 변경',
-
-                          style: TextStyle(
+                        child: Text('프로필 변경', style: TextStyle(
                             fontSize: 22,
-                            fontWeight:
-                            FontWeight.bold,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
@@ -168,37 +111,23 @@ class _EProfileEditPageState
                   children: [
 
                     Stack(
-                      alignment:
-                      Alignment.bottomRight,
+                      alignment: Alignment.bottomRight,
 
                       children: [
 
                         /// 프로필 이미지
-                        Container(
-                          width: 92,
-                          height: 92,
+                        Container(width: 92, height: 92,
 
-                          decoration:
-                          BoxDecoration(
-                            shape:
-                            BoxShape.circle,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.grey.shade300,
 
-                            color:
-                            Colors
-                                .grey
-                                .shade300,
-
-                            image:
-                            profileImage !=
-                                null
+                            image: profileImage != null
                                 ? DecorationImage(
                               image:
-                              FileImage(
-                                profileImage!,
-                              ),
+                              FileImage(profileImage!,),
 
-                              fit:
-                              BoxFit.cover,
+                              fit: BoxFit.cover,
                             )
                                 : null,
                           ),
@@ -211,20 +140,11 @@ class _EProfileEditPageState
                             await pickProfileImage();
                           },
 
-                          child: Container(
-                            width: 30,
-                            height: 30,
+                          child: Container(width: 30, height: 30,
 
-                            decoration:
-                            BoxDecoration(
-                              color:
-                              Colors
-                                  .grey
-                                  .shade500,
-
-                              shape:
-                              BoxShape
-                                  .circle,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade500,
+                              shape: BoxShape.circle,
                             ),
 
                             child: const Icon(
@@ -240,29 +160,18 @@ class _EProfileEditPageState
 
                     const SizedBox(height: 18),
 
-                    const Text(
-                      '스폰지밥',
-
-                      style: TextStyle(
+                    const Text('스폰지밥', style: TextStyle(
                         fontSize: 25,
-                        fontWeight:
-                        FontWeight.bold,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
 
                     const SizedBox(height: 10),
 
-                    Text(
-                      '010-XXXX-XXXX',
-
-                      style: TextStyle(
-                        color:
-                        Colors.grey
-                            .shade600,
-
+                    Text('010-XXXX-XXXX', style: TextStyle(
+                        color: Colors.grey.shade600,
                         fontSize: 15,
-                        fontWeight:
-                        FontWeight.w500,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
 
@@ -274,47 +183,28 @@ class _EProfileEditPageState
                         /// 상태 메시지 수정
                       },
 
-                      style:
-                      TextButton.styleFrom(
-                        padding:
-                        EdgeInsets.zero,
-
-                        minimumSize:
-                        Size.zero,
-
-                        tapTargetSize:
-                        MaterialTapTargetSize
-                            .shrinkWrap,
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
 
                       child: Row(
-                        mainAxisSize:
-                        MainAxisSize.min,
-
+                        mainAxisSize: MainAxisSize.min,
                         children: [
 
-                          const Text(
-                            '상태 메시지 입력',
-
-                            style: TextStyle(
-                              color:
-                              Colors.black,
-
+                          const Text('상태 메시지 입력', style: TextStyle(
+                              color: Colors.black,
                               fontSize: 15,
-
-                              fontWeight:
-                              FontWeight.w500,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
 
                           const SizedBox(width: 8),
 
-                          Icon(
-                            Icons.edit_outlined,
+                          Icon(Icons.edit_outlined,
                             size: 20,
-                            color:
-                            Colors.grey
-                                .shade600,
+                            color: Colors.grey.shade600,
                           ),
                         ],
                       ),
@@ -333,26 +223,12 @@ class _EProfileEditPageState
               /// 개인 정보
               _buildSection(
                 context: context,
-
                 title: '개인 정보',
 
                 items: [
-
-                  _ProfileItem(
-                    title: '이름',
-                    value: '스폰지밥',
-                    isArrow: false,
-                  ),
-
-                  _ProfileItem(
-                    title: '생년월일',
-                    value: '설정하기',
-                  ),
-
-                  _ProfileItem(
-                    title: '이메일',
-                    value: '설정하기',
-                  ),
+                  _ProfileItem(title: '이름', value: '스폰지밥', isArrow: false,),
+                  _ProfileItem(title: '생년월일', value: '설정하기',),
+                  _ProfileItem(title: '이메일', value: '설정하기',),
                 ],
               ),
 
@@ -377,28 +253,18 @@ class _EProfileEditPageState
   }) {
 
     return Padding(
-      padding:
-      const EdgeInsets.fromLTRB(
-        30,
-        20,
-        30,
-        0,
-      ),
+      padding: const EdgeInsets.fromLTRB(30, 20, 30, 0,),
 
       child: Column(
-        crossAxisAlignment:
-        CrossAxisAlignment.start,
-
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
 
           /// 섹션 타이틀
           Text(
             title,
-
             style: const TextStyle(
               fontSize: 22,
-              fontWeight:
-              FontWeight.bold,
+              fontWeight: FontWeight.bold,
             ),
           ),
 
@@ -406,10 +272,7 @@ class _EProfileEditPageState
 
           ...items.map(
                 (item) => Padding(
-              padding:
-              const EdgeInsets.only(
-                bottom: 25,
-              ),
+              padding: const EdgeInsets.only(bottom: 25,),
 
               child: Row(
                 children: [
@@ -417,11 +280,9 @@ class _EProfileEditPageState
                   /// 섹션 디테일
                   Text(
                     item.title,
-
                     style: const TextStyle(
                       fontSize: 18,
-                      fontWeight:
-                      FontWeight.w500,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
 
@@ -436,57 +297,33 @@ class _EProfileEditPageState
 
                     style:
                     TextButton.styleFrom(
-                      padding:
-                      EdgeInsets.zero,
-
-                      minimumSize:
-                      Size.zero,
-
-                      tapTargetSize:
-                      MaterialTapTargetSize
-                          .shrinkWrap,
+                      padding: EdgeInsets.zero,
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
 
                     child: Row(
                       children: [
 
-                        Text(
-                          item.value,
-
+                        Text(item.value,
                           style: TextStyle(
-                            color:
-                            item.value ==
-                                '설정하기'
+                            color: item.value == '설정하기'
                                 ? Colors.grey.shade500
                                 : Colors.black,
-
                             fontSize: 20,
-                            fontWeight:
-                            FontWeight.w500,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
 
                         Padding(
-                          padding:
-                          const EdgeInsets.only(
-                            left: 0,
-                          ),
+                          padding: const EdgeInsets.only(left: 0,),
 
-                          child:
-                          item.isArrow
-                              ? Icon(
-                            Icons
-                                .chevron_right,
-
+                          child: item.isArrow ? Icon(
+                            Icons.chevron_right,
                             size: 24,
-
-                            color:
-                            Colors.grey
-                                .shade500,
+                            color: Colors.grey.shade500,
                           )
-                              : const SizedBox(
-                            width: 24,
-                          ),
+                              : const SizedBox(width: 24,),
                         ),
                       ],
                     ),

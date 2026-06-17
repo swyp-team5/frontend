@@ -11,12 +11,10 @@ class EHomePage extends StatefulWidget {
   const EHomePage({super.key});
 
   @override
-  State<EHomePage> createState() =>
-      _EHomePageState();
+  State<EHomePage> createState() => _EHomePageState();
 }
 
-class _EHomePageState
-    extends State<EHomePage> {
+class _EHomePageState extends State<EHomePage> {
 
   DateTime focusedDay = DateTime.now();
   DateTime? selectedDay;
@@ -47,11 +45,8 @@ class _EHomePageState
 
       body: SafeArea(
         child: SingleChildScrollView(
-          padding:
-          const EdgeInsets.symmetric(
-            horizontal: 25,
-            vertical: 35,
-          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 25, vertical: 35,),
 
           child: Column(
             children: [
@@ -65,7 +60,8 @@ class _EHomePageState
                   Row(
                     children: [
 
-                      const Text('매장명', style: TextStyle(
+                      const Text('매장명',
+                        style: TextStyle(
                         fontSize: 25,
                         fontWeight: FontWeight.bold,
                       ),
@@ -97,22 +93,12 @@ class _EHomePageState
               Container(
                 width: double.infinity,
 
-                padding:
-                const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 12,
-                ),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14, vertical: 12,),
 
                 decoration: BoxDecoration(
-                  color:
-                  const Color(
-                    0xFFE8E8ED,
-                  ),
-
-                  borderRadius:
-                  BorderRadius.circular(
-                    10,
-                  ),
+                  color: const Color(0xFFE8E8ED,),
+                  borderRadius: BorderRadius.circular(10,),
                 ),
 
                 child: Row(
@@ -120,12 +106,9 @@ class _EHomePageState
 
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
+                        horizontal: 8, vertical: 4,),
 
-                      child: const Text(
-                        '공지',
+                      child: const Text('공지',
                         style: TextStyle(
                           color: Colors.black,
                           fontSize: 13,
@@ -137,8 +120,7 @@ class _EHomePageState
                     const SizedBox(width: 10),
 
                     const Expanded(
-                      child: Text(
-                        '마감 때 쓰레기 비우는거 잊지 마세요',
+                      child: Text('마감 때 쓰레기 비우는거 잊지 마세요',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
@@ -164,47 +146,33 @@ class _EHomePageState
 
               /// 캘린더
               Container(
-                padding:
-                const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
 
                 decoration: BoxDecoration(
                   color: const Color(0xFFE8E8ED,),
-
-                  borderRadius:
-                  BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(18),
                 ),
 
-                child:
-                TableCalendar(
+                child: TableCalendar(
                   locale: 'ko_KR', // 한국어 적용
 
-                  firstDay:
-                  DateTime.utc(2020, 1, 1),
+                  firstDay: DateTime.utc(2020, 1, 1),
 
-                  lastDay:
-                  DateTime.utc(2035, 12, 31),
+                  lastDay: DateTime.utc(2035, 12, 31),
 
                   focusedDay: focusedDay,
 
                   weekendDays: const [DateTime.sunday], // 일요일을 주말로 설정
 
                   selectedDayPredicate:
-                      (day) =>
-                      isSameDay(
-                        selectedDay,
-                        day,
-                      ),
+                      (day) => isSameDay(selectedDay, day,),
 
-                  onDaySelected:
-                      (selected, focused) {
+                  onDaySelected: (selected, focused) {
 
                     setState(() {
+                      selectedDay = selected;
 
-                      selectedDay =
-                          selected;
-
-                      focusedDay =
-                          focused;
+                      focusedDay = focused;
                     });
                   },
 
@@ -250,10 +218,8 @@ class _EHomePageState
               /// 공지
               GestureDetector(
                 onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const NotificationPage(),
+                  Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const NotificationPage(),
                     ),
                   );
                 },
@@ -267,14 +233,11 @@ class _EHomePageState
               /// 이번달 근무
               Container(
                 width: double.infinity,
-                padding:
-                const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(20),
 
                 decoration: BoxDecoration(
                   color: const Color(0xFFE8E8ED,),
-
-                  borderRadius:
-                  BorderRadius.circular(18),
+                  borderRadius: BorderRadius.circular(18),
                 ),
 
                 child: Column(
@@ -283,7 +246,8 @@ class _EHomePageState
                     Row(
                       children: [
 
-                        const Text('이번달 근무', style: TextStyle(
+                        const Text('이번달 근무',
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -297,13 +261,9 @@ class _EHomePageState
 
                     const SizedBox(height: 50),
 
-                    Text(
-                      '이번달 근무 현황이 없어요.',
-
+                    Text('이번달 근무 현황이 없어요.',
                       style: TextStyle(
-                        color:
-                        Colors.grey.shade500,
-
+                        color: Colors.grey.shade500,
                         fontSize: 18,
                       ),
                     ),
@@ -316,8 +276,8 @@ class _EHomePageState
 
                       children: [
 
-                        Text(
-                          '자세히보기', style: TextStyle(
+                        Text('자세히보기',
+                          style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -325,9 +285,7 @@ class _EHomePageState
 
                         SizedBox(width: 4),
 
-                        Icon(
-                          Icons.chevron_right,
-                        ),
+                        Icon(Icons.chevron_right,),
                       ],
                     ),
                   ],
@@ -353,14 +311,11 @@ class _EHomePageState
 
     return Container(
       width: double.infinity,
-      padding:
-      const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(24),
 
       decoration: BoxDecoration(
         color: const Color(0xFFE8E8ED,),
-
-        borderRadius:
-        BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(18),
       ),
 
       child: Column(
@@ -373,12 +328,8 @@ class _EHomePageState
 
           const SizedBox(height: 20),
 
-          const Text(
-            '사장님의 매장 크루에 참여하고 근무 시간을 입력해\n자동스케줄을 만들어보세요!',
-
-            textAlign:
-            TextAlign.center,
-
+          const Text('사장님의 매장 크루에 참여하고 근무 시간을 입력해\n자동스케줄을 만들어보세요!',
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w600,
@@ -394,27 +345,19 @@ class _EHomePageState
             child: ElevatedButton(
               onPressed: () {},
 
-              style:
-              ElevatedButton.styleFrom(
-                backgroundColor:
-                Colors.black,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
 
                 shape:
                 RoundedRectangleBorder(
-                  borderRadius:
-                  BorderRadius.circular(
-                    30,
-                  ),
+                  borderRadius: BorderRadius.circular(30,),
                 ),
               ),
 
-              child: const Text(
-                '스케줄 제출하기',
-
+              child: const Text('스케줄 제출하기',
                 style: TextStyle(
                   color: Colors.white,
-                  fontWeight:
-                  FontWeight.bold,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
@@ -428,29 +371,21 @@ class _EHomePageState
 
     return Container(
       width: double.infinity,
-      padding:
-      const EdgeInsets.all(24),
+      padding: const EdgeInsets.all(24),
 
       decoration: BoxDecoration(
         color: const Color(0xFFE8E8ED,),
-
-        borderRadius:
-        BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(18),
       ),
 
       child: Column(
         children: [
 
-          const Text(
-            '출근 후 출근하기를 누르면 자동으로\n출근에 반영이 돼요!',
-
-            textAlign:
-            TextAlign.center,
-
+          const Text('출근 후 출근하기를 누르면 자동으로\n출근에 반영이 돼요!',
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 18,
-              fontWeight:
-              FontWeight.w700,
+              fontWeight: FontWeight.w700,
             ),
           ),
 
@@ -463,27 +398,17 @@ class _EHomePageState
             child: ElevatedButton(
               onPressed: () {},
 
-              style:
-              ElevatedButton.styleFrom(
-                backgroundColor:
-                Colors.green,
-
-                shape:
-                RoundedRectangleBorder(
-                  borderRadius:
-                  BorderRadius.circular(
-                    10,
-                  ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10,),
                 ),
               ),
 
-              child: const Text(
-                '출근하기',
-
+              child: const Text('출근하기',
                 style: TextStyle(
                   color: Colors.white,
-                  fontWeight:
-                  FontWeight.bold,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ),
@@ -493,23 +418,15 @@ class _EHomePageState
     );
   }
 
-  Widget _buildMenuSection({
-    required String title,
-  }) {
+  Widget _buildMenuSection({required String title,}) {
 
     return Container(
       width: double.infinity,
-      padding:
-      const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 20,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20,),
 
       decoration: BoxDecoration(
         color: const Color(0xFFE8E8ED,),
-
-        borderRadius:
-        BorderRadius.circular(18),
+        borderRadius: BorderRadius.circular(18),
       ),
 
       child: Row(
@@ -517,19 +434,15 @@ class _EHomePageState
 
           Text(
             title,
-
             style: const TextStyle(
               fontSize: 18,
-              fontWeight:
-              FontWeight.bold,
+              fontWeight: FontWeight.bold,
             ),
           ),
 
           const Spacer(),
 
-          const Icon(
-            Icons.chevron_right,
-          ),
+          const Icon(Icons.chevron_right,),
         ],
       ),
     );
