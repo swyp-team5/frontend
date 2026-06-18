@@ -1,97 +1,223 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'dart:io';
-import 'dart:typed_data';
 import 'package:photo_manager/photo_manager.dart';
-import '../../../common/widgets/BottomNavBar.dart';
-import '../../crews/RCrewPage.dart';
-import '../../mypage/RMyPage.dart';
-import '../RHomePage.dart';
-import 'RNotificationProvider.dart';
-import 'RNotificationModel.dart';
 
-class RNotiWritingPage extends ConsumerStatefulWidget {
-  const RNotiWritingPage({super.key});
+import 'RNotificationModel.dart';
+import 'RNotificationProvider.dart';
+
+class RNotiEditPage extends ConsumerStatefulWidget {
+  final RNotificationModel notice;
+  final int noticeIndex;
+
+  const RNotiEditPage({
+    super.key,
+    required this.notice,
+    required this.noticeIndex,
+  });
 
   @override
-  ConsumerState<RNotiWritingPage> createState() => _RNotiWritingPageState();
+  ConsumerState<RNotiEditPage> createState() =>
+      _RNotiEditPageState();
 }
 
-class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
-  final TextEditingController titleController = TextEditingController();
-  final TextEditingController contentController = TextEditingController();
+class _RNotiEditPageState
+    extends ConsumerState<RNotiEditPage> {
+  late TextEditingController titleController;
+  late TextEditingController contentController;
 
   File? selectedImage;
 
-  Future<void> _registerNotice() async {
+  @override
+  void initState() {
+    super.initState();
 
-    final newNotice = RNotificationModel(
+    titleController =
+        TextEditingController(text: widget.notice.title);
+
+    contentController =
+        TextEditingController(text: widget.notice.content);
+
+    if (widget.notice.imagePath != null) {
+      selectedImage = File(widget.notice.imagePath!);
+    }
+  }
+
+  @override
+  void dispose() {
+    titleController.dispose();
+    contentController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _updateNotice() async {
+    final updatedNotice = RNotificationModel(
       title: titleController.text,
       content: contentController.text,
-      writer: '김다빈',
+      writer: widget.notice.writer,
       date: DateFormat('M월 d일 HH:mm')
           .format(DateTime.now()),
       imagePath: selectedImage?.path,
-      reactions: [],
+      reactions: widget.notice.reactions,
     );
 
     await ref
         .read(RNotificationProvider.notifier)
-        .addNotice(newNotice);
+        .updateNotice(
+      widget.noticeIndex,
+      updatedNotice,
+    );
 
     if (!mounted) return;
 
-    Navigator.pop(context); // 바텀시트 닫기
-    Navigator.pop(context); // 작성페이지 닫기
+    Navigator.pop(context);
+    Navigator.pop(context);
   }
 
-  Future<void> _showGalleryBottomSheet() async {
-    // 1. 권한 요청 및 확인
-    final PermissionState ps = await PhotoManager.requestPermissionExtend();
-
-    // 권한이 거부된 경우 설정창 안내 등
-    if (!ps.isAuth && ps != PermissionState.limited) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('갤러리 접근 권한이 필요합니다. 설정에서 허용해주세요.')),
-        );
-      }
+  Future<void> _showEditDialog() async {
+    if (titleController.text.trim().isEmpty ||
+        contentController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('제목과 내용을 모두 입력해주세요.'),
+        ),
+      );
       return;
     }
 
-    // 2. 앨범 목록 가져오기 (전체 사진 포함)
-    final List<AssetPathEntity> albums = await PhotoManager.getAssetPathList(
+    final confirm = await showDialog<bool>(
+      context: context,
+      barrierColor: Colors.black54,
+      builder: (context) {
+        return Align(
+          alignment: Alignment.bottomCenter,
+          child: Container(
+            margin: const EdgeInsets.only(
+              left: 16,
+              right: 16,
+              bottom: 20,
+            ),
+            child: Material(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      '공지글을 수정하시겠습니까?',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                        decoration: TextDecoration.none,
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    /// 수정하기
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context, true);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0084FF),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                            BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          '수정하기',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    /// 취소
+                    SizedBox(
+                      width: double.infinity,
+                      height: 52,
+                      child: OutlinedButton(
+                        onPressed: () {
+                          Navigator.pop(context, false);
+                        },
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                            BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          '취소',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+
+    if (confirm == true) {
+      await _updateNotice();
+    }
+  }
+
+  Future<void> _showGalleryBottomSheet() async {
+    final PermissionState ps =
+    await PhotoManager.requestPermissionExtend();
+
+    if (!ps.isAuth &&
+        ps != PermissionState.limited) {
+      return;
+    }
+
+    final albums =
+    await PhotoManager.getAssetPathList(
       type: RequestType.image,
       onlyAll: true,
     );
 
-    if (albums.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('불러올 사진이 없습니다.')),
-        );
-      }
-      return;
-    }
+    if (albums.isEmpty) return;
 
-    final AssetPathEntity recentAlbum = albums.first;
-    final List<AssetEntity> images = await recentAlbum.getAssetListPaged(
+    final images =
+    await albums.first.getAssetListPaged(
       page: 0,
       size: 100,
     );
 
-    // 사진 최신 -> 오래된 순
     images.sort(
-          (a, b) => b.createDateTime.compareTo(a.createDateTime),
+          (a, b) =>
+          b.createDateTime.compareTo(
+            a.createDateTime,
+          ),
     );
 
     if (!mounted) return;
 
-    // 바텀 시트 내부에서 선택된 이미지를 추적하기 위한 변수
-    AssetEntity? tempSelectedAsset;
-
-    // 3. 바텀 시트 띄우기
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -326,165 +452,50 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
     );
   }
 
-  Future<void> _showRegisterBottomSheet() async {
-    if (titleController.text.trim().isEmpty ||
-        contentController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('제목과 내용을 모두 입력해주세요.'),
-        ),
-      );
-      return;
-    }
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.fromLTRB(
-            24,
-            16,
-            24,
-            30,
-          ),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(28),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-
-              Container(
-                width: 50,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-
-              const SizedBox(height: 28),
-
-              const Text(
-                '공지글을 등록하시겠습니까?',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-              const SizedBox(height: 28),
-
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _registerNotice,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF007AFF),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    '등록하기',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 18),
-
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: const Text(
-                  '취소',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.black,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  @override
-  void dispose() {
-    titleController.dispose();
-    contentController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      resizeToAvoidBottomInset: true,
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: 0,
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.push(
-                context, MaterialPageRoute(builder: (_) => const RHomePage()));
-          } else if (index == 1) {
-            Navigator.push(
-                context, MaterialPageRoute(builder: (_) => const RCrewPage()));
-          } else if (index == 4) {
-            Navigator.push(
-                context, MaterialPageRoute(builder: (_) => const RMyPage()));
-          }
-        },
-      ),
+
       body: SafeArea(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
+              padding:
+              const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 30,
+              ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment:
+                MainAxisAlignment.spaceBetween,
                 children: [
                   GestureDetector(
-                    onTap: () => Navigator.pop(context),
+                    onTap: () =>
+                        Navigator.pop(context),
                     child: const Icon(
                       Icons.arrow_back_ios_new,
-                      size: 22,
                     ),
                   ),
+
                   Row(
                     children: [
                       IconButton(
-                        onPressed: () async {
-                          await _showGalleryBottomSheet();
-                        },
+                        onPressed:
+                        _showGalleryBottomSheet,
                         icon: const Icon(
                           Icons.image_outlined,
                           size: 34,
                         ),
                       ),
+
                       const SizedBox(width: 8),
+
                       SizedBox(
                         width: 88,
                         height: 40,
                         child: ElevatedButton(
-                          onPressed: () {
-                            _showRegisterBottomSheet();
-                          },
+                          onPressed: _showEditDialog,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFE6F3FF),
                             elevation: 0,
@@ -493,7 +504,7 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
                             ),
                           ),
                           child: const Text(
-                            '등록',
+                            '수정',
                             style: TextStyle(
                               color: Color(0xFF0063BF),
                               fontSize: 18,
@@ -507,97 +518,107 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
                 ],
               ),
             ),
+
             Expanded(
               child: Column(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 10),
-
-                        TextField(
-                          controller: titleController,
-                          decoration: const InputDecoration(
-                            hintText: '제목을 입력해주세요.',
-                            border: InputBorder.none,
-                            hintStyle: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFC8C8C8),
-                            ),
-                          ),
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                    padding:
+                    const EdgeInsets.symmetric(
+                        horizontal: 20),
+                    child: TextField(
+                      controller:
+                      titleController,
+                      decoration:
+                      const InputDecoration(
+                        border:
+                        InputBorder.none,
+                        hintText:
+                        '제목을 입력해주세요.',
+                      ),
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight:
+                        FontWeight.bold,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 10),
+
                   Divider(
                     color: Colors.grey.shade300,
-                    thickness: 1,
-                    height: 1,
                   ),
-                  const SizedBox(height: 20),
+
                   Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child:
+                    SingleChildScrollView(
+                      padding:
+                      const EdgeInsets.all(
+                          20),
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment:
+                        CrossAxisAlignment
+                            .start,
                         children: [
-
                           TextField(
-                            controller: contentController,
+                            controller:
+                            contentController,
                             maxLines: null,
-                            decoration: const InputDecoration(
-                              hintText: '공지내용을 입력해 주세요.',
-                              border: InputBorder.none,
-                              hintStyle: TextStyle(
-                                fontSize: 18,
-                                color: Color(0xFFC8C8C8),
-                              ),
-                            ),
-                            style: const TextStyle(
-                              fontSize: 18,
-
+                            decoration:
+                            const InputDecoration(
+                              border:
+                              InputBorder
+                                  .none,
+                              hintText:
+                              '공지내용을 입력해 주세요.',
                             ),
                           ),
 
-                          const SizedBox(height: 20),
+                          const SizedBox(
+                              height: 20),
 
-                          if (selectedImage != null)
+                          if (selectedImage !=
+                              null)
                             Stack(
                               children: [
                                 ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Image.file(
+                                  borderRadius:
+                                  BorderRadius
+                                      .circular(
+                                      12),
+                                  child:
+                                  Image.file(
                                     selectedImage!,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
                                   ),
                                 ),
 
                                 Positioned(
-                                  top: 10, right: 10,
-                                  child: GestureDetector(
+                                  top: 10,
+                                  right: 10,
+                                  child:
+                                  GestureDetector(
                                     onTap: () {
-                                      setState(() {
-                                        selectedImage = null;
-                                      });
+                                      setState(
+                                            () {
+                                          selectedImage =
+                                          null;
+                                        },
+                                      );
                                     },
-                                    child: Container(width: 32, height: 32,
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey.shade200,
-                                        shape: BoxShape.circle,
+                                    child:
+                                    Container(
+                                      width: 32,
+                                      height: 32,
+                                      decoration:
+                                      const BoxDecoration(
+                                        color: Colors
+                                            .white,
+                                        shape: BoxShape
+                                            .circle,
                                       ),
-                                      child: const Icon(
-                                        Icons.close,
-                                        color: Colors.black,
-                                        size: 18,
+                                      child:
+                                      const Icon(
+                                        Icons
+                                            .close,
                                       ),
                                     ),
                                   ),
@@ -607,7 +628,7 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
                         ],
                       ),
                     ),
-                  )
+                  ),
                 ],
               ),
             ),

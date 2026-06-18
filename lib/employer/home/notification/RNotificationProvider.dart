@@ -63,4 +63,31 @@ class RNotificationNotifier extends StateNotifier<List<RNotificationModel>> {
       print('공지사항 저장 오류: $e');
     }
   }
+
+  // 수정 기능
+  Future<void> updateNotice(int index, RNotificationModel notice,) async {
+    if (index < 0 || index >= state.length) return;
+
+    final updatedList = [...state];
+    updatedList[index] = notice;
+
+    state = updatedList;
+
+    await _saveToPrefs();
+  }
+
+  // 삭제 기능
+  Future<void> removeNotice(int index,) async {
+    if (index < 0 || index >= state.length) {
+      return;
+    }
+
+    final updated = [...state];
+
+    updated.removeAt(index);
+
+    state = updated;
+
+    await _saveToPrefs();
+  }
 }

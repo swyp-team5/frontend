@@ -166,7 +166,7 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
                                               '사장님',
                                               style: TextStyle(
                                                 fontSize: 10,
-                                                color: Colors.blue,
+                                                color: Color(0xFF0063BF),
                                               ),
                                             ),
                                           ),
@@ -322,10 +322,10 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
               MaterialPageRoute(
                   builder: (_) => const RNotiWritingPage()));
         },
-        backgroundColor: Colors.black,
+        backgroundColor: Color(0xFF0084FF),
         elevation: 2,
         shape: const CircleBorder(),
-        child: const Icon(Icons.add, color: Colors.white, size: 32),
+        child: const Icon(Icons.edit, color: Colors.white, size: 28),
       ),
     );
   }

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'RNotiEditPage.dart';
 import 'RNotificationModel.dart';
 import 'RNotificationProvider.dart';
 
@@ -16,9 +17,7 @@ class RNotificationDetailPage extends ConsumerWidget {
     required this.noticeIndex,
   });
 
-  Map<String, int> getReactionCounts(
-      List<String> reactions,
-      ) {
+  Map<String, int> getReactionCounts(List<String> reactions,) {
     final Map<String, int> counts = {};
 
     for (final emoji in reactions) {
@@ -28,11 +27,7 @@ class RNotificationDetailPage extends ConsumerWidget {
     return counts;
   }
 
-  void _showEmojiPicker(
-      BuildContext context,
-      WidgetRef ref,
-      int index,
-      ) {
+  void _showEmojiPicker(BuildContext context, WidgetRef ref, int index,) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -48,9 +43,7 @@ class RNotificationDetailPage extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                width: 40,
-                height: 4,
+              Container(width: 40, height: 4,
                 decoration: BoxDecoration(
                   color: Colors.grey.shade300,
                   borderRadius: BorderRadius.circular(2),
@@ -59,8 +52,7 @@ class RNotificationDetailPage extends ConsumerWidget {
 
               const SizedBox(height: 20),
 
-              const Text(
-                '반응 선택하기',
+              const Text('반응 선택하기',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -72,19 +64,10 @@ class RNotificationDetailPage extends ConsumerWidget {
               Row(
                 mainAxisAlignment:
                 MainAxisAlignment.spaceEvenly,
-                children: [
-                  '❤️',
-                  '👍',
-                  '✅',
-                  '😊',
-                ].map((emoji) {
+                children: ['❤️', '👍', '✅', '😊',].map((emoji) {
                   return GestureDetector(
                     onTap: () {
-                      ref
-                          .read(
-                        RNotificationProvider.notifier,
-                      )
-                          .addReaction(
+                      ref.read(RNotificationProvider.notifier,).addReaction(
                         index,
                         emoji,
                       );
@@ -107,6 +90,179 @@ class RNotificationDetailPage extends ConsumerWidget {
         );
       },
     );
+  }
+
+  void _showMoreMenu(
+      BuildContext context,
+      WidgetRef ref,
+      RelativeRect position,
+      RNotificationModel currentNotice,
+      int noticeIndex,
+      ) async {
+    final result = await showMenu<String>(
+      context: context,
+      position: position,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      items: const [
+        PopupMenuItem(
+          value: 'edit',
+          child: Row(
+            children: [
+              Icon(
+                Icons.edit_outlined,
+                size: 20,
+                color: Colors.black,
+              ),
+              SizedBox(width: 10),
+              Text('수정'),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'delete',
+          child: Row(
+            children: [
+              Icon(
+                Icons.delete_outline,
+                size: 20,
+                color: Colors.red,
+              ),
+              SizedBox(width: 10),
+              Text(
+                '삭제',
+                style: TextStyle(
+                  color: Colors.red,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    /// 수정 → 바로 수정 페이지 이동
+    if (result == 'edit') {
+      if (context.mounted) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => RNotiEditPage(
+              notice: currentNotice,
+              noticeIndex: noticeIndex,
+            ),
+          ),
+        );
+      }
+    }
+
+    /// 삭제
+    if (result == 'delete') {
+      final confirm = await showDialog<bool>(
+        context: context,
+        barrierColor: Colors.black54,
+        builder: (context) {
+          return Align(
+            alignment: Alignment.bottomCenter,
+            child: Container(
+              margin: const EdgeInsets.only(
+                left: 16,
+                right: 16,
+                bottom: 20,
+              ),
+              child: Material(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        '공지글을 삭제하시겠습니까?',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                          decoration: TextDecoration.none,
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      /// 삭제 버튼
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.pop(context, true);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0084FF),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                              BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            '삭제',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      /// 취소 버튼
+                      SizedBox(
+                        width: double.infinity,
+                        height: 52,
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.pop(context, false);
+                          },
+                          style: OutlinedButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                              BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            '취소',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      );
+
+      if (confirm == true) {
+        ref
+            .read(RNotificationProvider.notifier)
+            .removeNotice(noticeIndex);
+
+        if (context.mounted) {
+          Navigator.pop(context);
+        }
+      }
+    }
   }
 
   @override
@@ -141,7 +297,10 @@ class RNotificationDetailPage extends ConsumerWidget {
           children: [
             /// 상단바
             Padding(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 30,
+              ),
               child: Row(
                 children: [
                   GestureDetector(
@@ -171,12 +330,8 @@ class RNotificationDetailPage extends ConsumerWidget {
                           width: 42,
                           height: 42,
                           decoration: BoxDecoration(
-                            color:
-                            Colors.grey.shade300,
-                            borderRadius:
-                            BorderRadius.circular(
-                              10,
-                            ),
+                            color: Colors.grey.shade300,
+                            borderRadius: BorderRadius.circular(10),
                           ),
                         ),
 
@@ -184,50 +339,31 @@ class RNotificationDetailPage extends ConsumerWidget {
 
                         Expanded(
                           child: Column(
-                            crossAxisAlignment:
-                            CrossAxisAlignment
-                                .start,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
                                 children: [
                                   Text(
-                                    currentNotice
-                                        .writer,
-                                    style:
-                                    const TextStyle(
-                                      fontWeight:
-                                      FontWeight
-                                          .bold,
+                                    currentNotice.writer,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
                                     ),
                                   ),
 
-                                  const SizedBox(
-                                      width: 6),
+                                  const SizedBox(width: 6),
 
                                   Container(
-                                    padding:
-                                    const EdgeInsets
-                                        .symmetric(
+                                    padding: const EdgeInsets.symmetric(
                                       horizontal: 6,
                                       vertical: 2,
                                     ),
-                                    decoration:
-                                    BoxDecoration(
-                                      color:
-                                      const Color(
-                                        0xFFE6F3FF,
-                                      ),
-                                      borderRadius:
-                                      BorderRadius
-                                          .circular(
-                                        4,
-                                      ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFE6F3FF),
+                                      borderRadius: BorderRadius.circular(4),
                                     ),
-                                    child:
-                                    const Text(
+                                    child: const Text(
                                       '사장님',
-                                      style:
-                                      TextStyle(
+                                      style: TextStyle(
                                         fontSize: 11,
                                       ),
                                     ),
@@ -235,19 +371,52 @@ class RNotificationDetailPage extends ConsumerWidget {
                                 ],
                               ),
 
-                              const SizedBox(
-                                  height: 2),
-
                               Text(
                                 currentNotice.date,
                                 style: TextStyle(
-                                  color: Colors
-                                      .grey.shade600,
+                                  color: Colors.grey.shade600,
                                   fontSize: 12,
                                 ),
                               ),
                             ],
                           ),
+                        ),
+
+                        Builder(
+                          builder: (buttonContext) {
+                            return IconButton(
+                              onPressed: () {
+                                final RenderBox button =
+                                buttonContext.findRenderObject() as RenderBox;
+
+                                final RenderBox overlay =
+                                Overlay.of(context).context.findRenderObject() as RenderBox;
+
+                                final position = RelativeRect.fromRect(
+                                  Rect.fromPoints(
+                                    button.localToGlobal(
+                                      Offset.zero,
+                                      ancestor: overlay,
+                                    ),
+                                    button.localToGlobal(
+                                      button.size.bottomRight(Offset.zero),
+                                      ancestor: overlay,
+                                    ),
+                                  ),
+                                  Offset.zero & overlay.size,
+                                );
+
+                                _showMoreMenu(
+                                  context,
+                                  ref,
+                                  position,
+                                  currentNotice,
+                                  noticeIndex,
+                                );
+                              },
+                              icon: const Icon(Icons.more_horiz),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -258,9 +427,8 @@ class RNotificationDetailPage extends ConsumerWidget {
                     Text(
                       currentNotice.title,
                       style: const TextStyle(
-                        fontSize: 30,
-                        fontWeight:
-                        FontWeight.bold,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
 
@@ -270,7 +438,7 @@ class RNotificationDetailPage extends ConsumerWidget {
                     Text(
                       currentNotice.content,
                       style: const TextStyle(
-                        fontSize: 17,
+                        fontSize: 16,
                         height: 1.7,
                       ),
                     ),
