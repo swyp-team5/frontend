@@ -6,6 +6,7 @@ import 'package:table_calendar/table_calendar.dart';
 import '../../common/widgets/BottomNavBar.dart';
 import '../../employer/crews/RCrewPage.dart';
 import '../crews/ECrewPage.dart';
+import 'notification/ENotificationPage.dart';
 
 class EHomePage extends StatefulWidget {
   const EHomePage({super.key});
@@ -219,7 +220,7 @@ class _EHomePageState extends State<EHomePage> {
               GestureDetector(
                 onTap: () {
                   Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const NotificationPage(),
+                    MaterialPageRoute(builder: (_) => const ENotificationPage(),
                     ),
                   );
                 },
