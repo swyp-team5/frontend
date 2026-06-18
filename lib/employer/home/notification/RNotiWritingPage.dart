@@ -16,7 +16,6 @@ class RNotiWritingPage extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<RNotiWritingPage> createState() => _RNotiWritingPageState();
-
 }
 
 class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
@@ -42,7 +41,7 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
     // 2. 앨범 목록 가져오기 (전체 사진 포함)
     final List<AssetPathEntity> albums = await PhotoManager.getAssetPathList(
       type: RequestType.image,
-      onlyAll: true, // 전체 보기 앨범만 우선 가져오도록 설정
+      onlyAll: true,
     );
 
     if (albums.isEmpty) {
@@ -57,10 +56,18 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
     final AssetPathEntity recentAlbum = albums.first;
     final List<AssetEntity> images = await recentAlbum.getAssetListPaged(
       page: 0,
-      size: 60, // 로딩 속도를 위해 사이즈 조절
+      size: 100,
+    );
+
+    // 사진 최신 -> 오래된 순
+    images.sort(
+          (a, b) => b.createDateTime.compareTo(a.createDateTime),
     );
 
     if (!mounted) return;
+
+    // 바텀 시트 내부에서 선택된 이미지를 추적하기 위한 변수
+    AssetEntity? tempSelectedAsset;
 
     // 3. 바텀 시트 띄우기
     showModalBottomSheet(
@@ -68,67 +75,238 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
       isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(28),
+        ),
       ),
       builder: (context) {
-        return SizedBox(
-          height: MediaQuery.of(context).size.height * 0.7, // 높이 소폭 조정
-          child: Column(
-            children: [
-              const SizedBox(height: 12),
-              Container(
-                width: 50, height: 5,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                '최근 항목',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 20),
-              Expanded(
-                child: images.isEmpty
-                    ? const Center(child: Text('사진이 없습니다.'))
-                    : GridView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 2),
-                  itemCount: images.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    crossAxisSpacing: 2,
-                    mainAxisSpacing: 2,
+        AssetEntity? tempSelectedAsset;
+
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return SizedBox(
+              height: MediaQuery.of(context).size.height * 0.7,
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+
+                  /// 상단 드래그 바
+                  Container(
+                    width: 50,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
-                  itemBuilder: (context, index) {
-                    return FutureBuilder<Uint8List?>(
-                      future: images[index].thumbnailDataWithSize(const ThumbnailSize(300, 300)),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
-                          return GestureDetector(
-                            onTap: () async {
-                              final file = await images[index].originFile; // file 대신 originFile 사용 권장
-                              if (file != null) {
-                                setState(() {
-                                  selectedImage = file;
-                                });
+
+                  const SizedBox(height: 12),
+
+                  /// 제목 + 닫기 버튼
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: SizedBox(
+                      height: 44,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          const Center(
+                            child: Text(
+                              '최근 항목',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+
+                          Positioned(
+                            right: 0,
+                            child: GestureDetector(
+                              onTap: () {
                                 Navigator.pop(context);
-                              }
-                            },
-                            child: Image.memory(snapshot.data!, fit: BoxFit.cover),
+                              },
+                              child: Container(
+                                width: 36,
+                                height: 36,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFF2F2F7),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.close,
+                                  color: Colors.grey,
+                                  size: 22,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  Expanded(
+                    child: images.isEmpty
+                        ? const Center(
+                      child: Text('사진이 없습니다.'),
+                    )
+                        : GridView.builder(
+                      padding: EdgeInsets.zero,
+                      itemCount: images.length + 1,
+                      gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        crossAxisSpacing: 2,
+                        mainAxisSpacing: 2,
+                      ),
+                      itemBuilder: (context, index) {
+                        /// 첫 번째 셀 = 카메라
+                        if (index == 0) {
+                          return Container(
+                            color: const Color(0xFFE5E5EA),
+                            child: const Center(
+                              child: Icon(
+                                Icons.camera_alt_outlined,
+                                size: 34,
+                                color: Colors.white,
+                              ),
+                            ),
                           );
                         }
-                        return Container(color: Colors.grey.shade100);
+
+                        final asset = images[index - 1];
+                        final isSelected =
+                            tempSelectedAsset?.id == asset.id;
+
+                        return FutureBuilder<Uint8List?>(
+                          future: asset.thumbnailDataWithSize(
+                            const ThumbnailSize(300, 300),
+                          ),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData) {
+                              return Container(
+                                color: Colors.grey.shade200,
+                              );
+                            }
+
+                            return GestureDetector(
+                              onTap: () {
+                                setModalState(() {
+                                  tempSelectedAsset = asset;
+                                });
+                              },
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  border: isSelected
+                                      ? Border.all(
+                                    color: Colors.blue,
+                                    width: 3,
+                                  )
+                                      : null,
+                                ),
+                                child: Stack(
+                                  children: [
+                                    Positioned.fill(
+                                      child: Image.memory(
+                                        snapshot.data!,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+
+                                    /// 체크박스
+                                    Positioned(
+                                      top: 8,
+                                      right: 8,
+                                      child: Container(
+                                        width: 24,
+                                        height: 24,
+                                        decoration: BoxDecoration(
+                                          color: isSelected
+                                              ? Colors.blue
+                                              : Colors.white,
+                                          borderRadius:
+                                          BorderRadius.circular(6),
+                                          border: Border.all(
+                                            color: Colors.grey.shade300,
+                                          ),
+                                        ),
+                                        child: isSelected
+                                            ? const Icon(
+                                          Icons.check,
+                                          size: 16,
+                                          color: Colors.white,
+                                        )
+                                            : null,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
+                        );
                       },
-                    );
-                  },
-                ),
+                    ),
+                  ),
+
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      20,
+                      12,
+                      20,
+                      24,
+                    ),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: tempSelectedAsset == null
+                            ? null
+                            : () async {
+                          final file =
+                          await tempSelectedAsset!.originFile;
+
+                          if (file != null) {
+                            setState(() {
+                              selectedImage = file;
+                            });
+
+                            if (mounted) {
+                              Navigator.pop(context);
+                            }
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF007AFF),
+                          disabledBackgroundColor:
+                          const Color(0xFFE5E5EA),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                            BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          '사진 선택',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
-    );
+    );;
   }
 
   @override
@@ -147,11 +325,14 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
         currentIndex: 0,
         onTap: (index) {
           if (index == 0) {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const RHomePage()));
+            Navigator.push(
+                context, MaterialPageRoute(builder: (_) => const RHomePage()));
           } else if (index == 1) {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const RCrewPage()));
+            Navigator.push(
+                context, MaterialPageRoute(builder: (_) => const RCrewPage()));
           } else if (index == 4) {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => const RMyPage()));
+            Navigator.push(
+                context, MaterialPageRoute(builder: (_) => const RMyPage()));
           }
         },
       ),
@@ -161,115 +342,89 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
           children: [
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
-              child:
-              Padding(
-                padding: const EdgeInsets.all(0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-
-                    /// 뒤로가기
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: const Icon(
-                        Icons.arrow_back_ios_new,
-                        size: 22,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const Icon(
+                      Icons.arrow_back_ios_new,
+                      size: 22,
+                    ),
+                  ),
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () async {
+                          await _showGalleryBottomSheet();
+                        },
+                        icon: const Icon(
+                          Icons.image_outlined,
+                          size: 34,
+                        ),
                       ),
-                    ),
-
-                    /// 이미지 + 등록
-                    Row(
-                      children: [
-                        IconButton(
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 88,
+                        height: 40,
+                        child: ElevatedButton(
                           onPressed: () async {
-                            await _showGalleryBottomSheet();
+                            if (titleController.text.trim().isEmpty ||
+                                contentController.text.trim().isEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text('제목과 내용을 모두 입력해주세요.')));
+                              return;
+                            }
+
+                            final newNotice = RNotificationModel(
+                              title: titleController.text,
+                              content: contentController.text,
+                              writer: '김다빈',
+                              date: DateFormat('M월 d일 HH:mm')
+                                  .format(DateTime.now()),
+                              reactions: [],
+                            );
+
+                            await ref
+                                .read(RNotificationProvider.notifier)
+                                .addNotice(newNotice);
+
+                            if (mounted) {
+                              Navigator.pop(context);
+                            }
                           },
-                          icon: const Icon(
-                            Icons.image_outlined,
-                            size: 34,
-                          ),
-                        ),
-
-                        const SizedBox(width: 8),
-
-                        SizedBox(
-                          width: 88, height: 40,
-                          child: ElevatedButton(
-                            onPressed: () async { // async 추가
-                              if (titleController.text.trim().isEmpty ||
-                                  contentController.text.trim().isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('제목과 내용을 모두 입력해주세요.')));
-                                return;
-                              }
-
-                              final newNotice = RNotificationModel(
-                                title: titleController.text,
-                                content: contentController.text,
-                                writer: '김다빈',
-                                date: DateFormat('M월 d일 HH:mm').format(DateTime.now()),
-                                reactions: [],
-                              );
-
-                              // 저장이 완료될 때까지 기다림 (await 추가)
-                              await ref.read(RNotificationProvider.notifier).addNotice(newNotice);
-
-                              // 저장이 끝난 후 이전 화면으로 돌아감
-                              if (mounted) {
-                                Navigator.pop(context);
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFE8E8ED),
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFE8E8ED),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                            child: const Text(
-                              '등록',
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
+                          child: const Text(
+                            '등록',
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
             Expanded(
               child: Column(
                 children: [
-
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-
                         const SizedBox(height: 10),
-
-                        if (selectedImage != null)
-                          Padding(
-                            padding: const EdgeInsets.only(
-                              bottom: 20,
-                            ),
-                            child: ClipRRect(
-                              borderRadius:
-                              BorderRadius.circular(12),
-                              child: Image.file(
-                                selectedImage!,
-                                width: double.infinity,
-                                height: 180,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
 
                         TextField(
                           controller: titleController,
@@ -290,35 +445,78 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
                       ],
                     ),
                   ),
-
-                  const SizedBox(height: 20,),
+                  const SizedBox(height: 10),
                   Divider(
                     color: Colors.grey.shade300,
                     thickness: 1,
                     height: 1,
                   ),
-                  const SizedBox(height: 20,),
-
+                  const SizedBox(height: 20),
                   Expanded(
-                    child: Padding(
+                    child: SingleChildScrollView(
                       padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: TextField(
-                        controller: contentController,
-                        maxLines: null,
-                        expands: true,
-                        textAlignVertical: TextAlignVertical.top,
-                        decoration: const InputDecoration(
-                          hintText: '공지내용을 입력해 주세요.',
-                          border: InputBorder.none,
-                          hintStyle: TextStyle(
-                            fontSize: 18,
-                            color: Color(0xFFC8C8C8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+
+                          TextField(
+                            controller: contentController,
+                            maxLines: null,
+                            decoration: const InputDecoration(
+                              hintText: '공지내용을 입력해 주세요.',
+                              border: InputBorder.none,
+                              hintStyle: TextStyle(
+                                fontSize: 18,
+                                color: Color(0xFFC8C8C8),
+                              ),
+                            ),
+                            style: const TextStyle(
+                              fontSize: 18,
+
+                            ),
                           ),
-                        ),
-                        style: const TextStyle(fontSize: 18),
+
+                          const SizedBox(height: 20),
+
+                          if (selectedImage != null)
+                            Stack(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.file(
+                                    selectedImage!,
+                                    width: double.infinity,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+
+                                Positioned(
+                                  top: 10, right: 10,
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        selectedImage = null;
+                                      });
+                                    },
+                                    child: Container(width: 32, height: 32,
+                                      decoration: BoxDecoration(
+                                        color: Colors.grey.shade200,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.close,
+                                        color: Colors.black,
+                                        size: 18,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                        ],
                       ),
                     ),
-                  ),
+                  )
                 ],
               ),
             ),
