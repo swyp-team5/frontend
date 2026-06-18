@@ -4,9 +4,11 @@ import '../../../common/widgets/BottomNavBar.dart';
 import '../../crews/RCrewPage.dart';
 import '../../mypage/RMyPage.dart';
 import '../RHomePage.dart';
+import 'RNotiDetailPage.dart';
 import 'RNotificationProvider.dart';
 import 'RNotiWritingPage.dart';
 import 'RNotificationModel.dart';
+import 'dart:io';
 
 class RNotificationPage extends ConsumerStatefulWidget {
   const RNotificationPage({super.key});
@@ -16,51 +18,18 @@ class RNotificationPage extends ConsumerStatefulWidget {
 }
 
 class _RNotificationPageState extends ConsumerState<RNotificationPage> {
-  void _showEmojiPicker(BuildContext context, int index) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2))),
-              const SizedBox(height: 20),
-              const Text('반응 선택하기',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 30),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: ['❤️', '👍', '✅', '😊'].map((emoji) {
-                  return GestureDetector(
-                    onTap: () {
-                      // Provider를 통해 리액션 추가 및 자동 저장
-                      ref
-                          .read(RNotificationProvider.notifier)
-                          .addReaction(index, emoji);
-                      Navigator.pop(context);
-                    },
-                    child: Text(emoji, style: const TextStyle(fontSize: 36)),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 30),
-            ],
-          ),
-        );
-      },
-    );
+
+  Map<String, int> getReactionCounts(
+      List<String> reactions,
+      ) {
+    final Map<String, int> counts = {};
+
+    for (final emoji in reactions) {
+      counts[emoji] =
+          (counts[emoji] ?? 0) + 1;
+    }
+
+    return counts;
   }
 
   @override
@@ -69,7 +38,7 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
     final notices = ref.watch(RNotificationProvider);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: Colors.white,
 
       /// 공통 BottomNavBar 적용
       bottomNavigationBar: BottomNavBar(
@@ -104,7 +73,7 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
                     ),
                     const Expanded(
                         child: Center(
-                            child: Text('공지',
+                            child: Text('공지 게시판',
                                 style: TextStyle(
                                     fontSize: 22,
                                     fontWeight: FontWeight.bold)))),
@@ -126,93 +95,218 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
                   itemCount: notices.length,
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, index) {
+
                     final notice = notices[index];
-                    return Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
+
+                    final reactionCounts = getReactionCounts(
+                      notice.reactions,
+                    );
+
+                    return InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => RNotificationDetailPage(
+                              notice: notice,
+                              noticeIndex: index,
+                            ),
+                          ),
+                        );
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+
+                            /// 작성자
+                            Row(
+                              children: [
+                                Container(
                                   width: 42,
                                   height: 42,
                                   decoration: BoxDecoration(
-                                      color: Colors.grey.shade300,
-                                      borderRadius: BorderRadius.circular(10))),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Text(notice.writer,
+                                    color: Colors.grey.shade300,
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+
+                                const SizedBox(width: 12),
+
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                    children: [
+
+                                      Row(
+                                        children: [
+                                          Text(
+                                            notice.writer,
                                             style: const TextStyle(
-                                                fontWeight: FontWeight.bold)),
-                                        const SizedBox(width: 4),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 4, vertical: 2),
-                                          decoration: BoxDecoration(
-                                              color: Colors.grey.shade300,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+
+                                          const SizedBox(width: 8),
+
+                                          Container(
+                                            padding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 6,
+                                              vertical: 3,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFE6F3FF),
                                               borderRadius:
-                                              BorderRadius.circular(4)),
-                                          child: const Text('사장님',
-                                              style: TextStyle(fontSize: 10)),
+                                              BorderRadius.circular(4),
+                                            ),
+                                            child: const Text(
+                                              '사장님',
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                color: Colors.blue,
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+
+                                      const SizedBox(height: 4),
+
+                                      Text(
+                                        notice.date,
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                const Icon(
+                                  Icons.more_horiz,
+                                  color: Colors.grey,
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            /// 제목 + 내용 + 이미지
+                            Row(
+                              crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                              children: [
+
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                    children: [
+
+                                      Text(
+                                        notice.title,
+                                        maxLines: 2,
+                                        overflow:
+                                        TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight:
+                                          FontWeight.bold,
+                                        ),
+                                      ),
+
+                                      const SizedBox(height: 10),
+
+                                      Text(
+                                        notice.content,
+                                        maxLines: 4,
+                                        overflow:
+                                        TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 15,
+                                          height: 1.4,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                if (notice.imagePath != null &&
+                                    notice.imagePath!.isNotEmpty)
+                                  Padding(
+                                    padding:
+                                    const EdgeInsets.only(
+                                      left: 16,
+                                    ),
+                                    child: ClipRRect(
+                                      borderRadius:
+                                      BorderRadius.circular(14),
+                                      child: Image.file(
+                                        File(notice.imagePath!),
+                                        width: 110,
+                                        height: 110,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            /// 이모지 집계만 표시
+                            if (reactionCounts.isNotEmpty)
+                              Wrap(
+                                spacing: 10,
+                                runSpacing: 10,
+                                children: reactionCounts.entries
+                                    .map(
+                                      (entry) => Container(
+                                    padding:
+                                    const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      borderRadius:
+                                      BorderRadius.circular(
+                                          20),
+                                      border: Border.all(
+                                        color:
+                                        Colors.grey.shade300,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize:
+                                      MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          entry.key,
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          entry.value.toString(),
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight:
+                                            FontWeight.w500,
+                                          ),
                                         ),
                                       ],
                                     ),
-                                    Text(notice.date,
-                                        style: TextStyle(
-                                            color: Colors.grey.shade600,
-                                            fontSize: 12)),
-                                  ],
-                                ),
-                              ),
-                              const Icon(Icons.more_horiz),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          Text(notice.title,
-                              style: const TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.bold)),
-                          const SizedBox(height: 8),
-                          Text(notice.content,
-                              style: const TextStyle(fontSize: 16)),
-                          const SizedBox(height: 24),
-                          Row(
-                            children: [
-                              if (notice.reactions.isNotEmpty)
-                                ...notice.reactions
-                                    .map((emoji) => Padding(
-                                  padding:
-                                  const EdgeInsets.only(right: 8),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 14, vertical: 8),
-                                    decoration: BoxDecoration(
-                                        color: const Color(0xFFE8E8ED),
-                                        borderRadius:
-                                        BorderRadius.circular(20)),
-                                    child: Text(emoji,
-                                        style: const TextStyle(
-                                            fontSize: 16)),
                                   ),
-                                ))
+                                )
                                     .toList(),
-                              GestureDetector(
-                                onTap: () => _showEmojiPicker(context, index),
-                                child: const CircleAvatar(
-                                  radius: 20,
-                                  backgroundColor: Color(0xFFE8E8ED),
-                                  child: Icon(Icons.add,
-                                      color: Colors.black, size: 20),
-                                ),
                               ),
-                            ],
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     );
                   },

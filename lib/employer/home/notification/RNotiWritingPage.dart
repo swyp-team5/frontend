@@ -24,6 +24,28 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
 
   File? selectedImage;
 
+  Future<void> _registerNotice() async {
+
+    final newNotice = RNotificationModel(
+      title: titleController.text,
+      content: contentController.text,
+      writer: '김다빈',
+      date: DateFormat('M월 d일 HH:mm')
+          .format(DateTime.now()),
+      imagePath: selectedImage?.path,
+      reactions: [],
+    );
+
+    await ref
+        .read(RNotificationProvider.notifier)
+        .addNotice(newNotice);
+
+    if (!mounted) return;
+
+    Navigator.pop(context); // 바텀시트 닫기
+    Navigator.pop(context); // 작성페이지 닫기
+  }
+
   Future<void> _showGalleryBottomSheet() async {
     // 1. 권한 요청 및 확인
     final PermissionState ps = await PhotoManager.requestPermissionExtend();
@@ -253,12 +275,7 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
                   ),
 
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      20,
-                      12,
-                      20,
-                      24,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 24,),
                     child: SizedBox(
                       width: double.infinity,
                       height: 56,
@@ -309,6 +326,103 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
     );;
   }
 
+  Future<void> _showRegisterBottomSheet() async {
+    if (titleController.text.trim().isEmpty ||
+        contentController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('제목과 내용을 모두 입력해주세요.'),
+        ),
+      );
+      return;
+    }
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.fromLTRB(
+            24,
+            16,
+            24,
+            30,
+          ),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(28),
+            ),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+
+              Container(
+                width: 50,
+                height: 5,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+
+              const SizedBox(height: 28),
+
+              const Text(
+                '공지글을 등록하시겠습니까?',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 28),
+
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _registerNotice,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF007AFF),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    '등록하기',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 18),
+
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text(
+                  '취소',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   void dispose() {
     titleController.dispose();
@@ -319,7 +433,7 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: Colors.white,
       resizeToAvoidBottomInset: true,
       bottomNavigationBar: BottomNavBar(
         currentIndex: 0,
@@ -368,31 +482,8 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
                         width: 88,
                         height: 40,
                         child: ElevatedButton(
-                          onPressed: () async {
-                            if (titleController.text.trim().isEmpty ||
-                                contentController.text.trim().isEmpty) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('제목과 내용을 모두 입력해주세요.')));
-                              return;
-                            }
-
-                            final newNotice = RNotificationModel(
-                              title: titleController.text,
-                              content: contentController.text,
-                              writer: '김다빈',
-                              date: DateFormat('M월 d일 HH:mm')
-                                  .format(DateTime.now()),
-                              reactions: [],
-                            );
-
-                            await ref
-                                .read(RNotificationProvider.notifier)
-                                .addNotice(newNotice);
-
-                            if (mounted) {
-                              Navigator.pop(context);
-                            }
+                          onPressed: () {
+                            _showRegisterBottomSheet();
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFE8E8ED),
