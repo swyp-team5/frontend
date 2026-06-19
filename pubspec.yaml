@@ -37,6 +37,8 @@ dev_dependencies:
 
 
 flutter:
+  assets:
+    - assets/images/r_main_card.png
 
 
   uses-material-design: true
