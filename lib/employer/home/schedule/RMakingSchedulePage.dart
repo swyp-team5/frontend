@@ -110,14 +110,12 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                     title: "오픈 시간",
                     value: _format(openTime),
                     onTap: () async {
-                      final result = await TimeInputBottomSheet.show(
-                        context,
-                        initialTime: openTime,
-                      );
+                      final result = await TimeInputBottomSheet.show(context);
 
                       if (result != null) {
                         setState(() {
-                          openTime = result;
+                          openTime = result.openTime;
+                          closeTime = result.closeTime;
                         });
                       }
                     },
@@ -129,14 +127,12 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                     title: "마감 시간",
                     value: _format(closeTime),
                     onTap: () async {
-                      final result = await TimeInputBottomSheet.show(
-                        context,
-                        initialTime: closeTime,
-                      );
+                      final result = await TimeInputBottomSheet.show(context);
 
                       if (result != null) {
                         setState(() {
-                          closeTime = result;
+                          openTime = result.openTime;
+                          closeTime = result.closeTime;
                         });
                       }
                     },

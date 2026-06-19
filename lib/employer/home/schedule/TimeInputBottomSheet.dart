@@ -8,11 +8,12 @@ class TimeInputBottomSheet extends StatefulWidget {
 
   final TimeOfDay? initialTime;
 
-  static Future<TimeOfDay?> show(
+  static Future<StoreTimeRange?> show(
       BuildContext context, {
-        TimeOfDay? initialTime,
+        TimeOfDay? initialOpenTime,
+        TimeOfDay? initialCloseTime,
       }) {
-    return showModalBottomSheet<TimeOfDay>(
+    return showModalBottomSheet<StoreTimeRange>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
@@ -22,7 +23,7 @@ class TimeInputBottomSheet extends StatefulWidget {
         ),
       ),
       builder: (_) => TimeInputBottomSheet(
-        initialTime: initialTime,
+        // 필요하면 initial 값 전달
       ),
     );
   }
@@ -32,56 +33,141 @@ class TimeInputBottomSheet extends StatefulWidget {
       _TimeInputBottomSheetState();
 }
 
-class _TimeInputBottomSheetState
-    extends State<TimeInputBottomSheet> {
+class _TimeInputBottomSheetState extends State<TimeInputBottomSheet> {
   late List<String> digits;
 
-  /// 0=시10자리,1=시1자리,2=분10자리,3=분1자리
+  // 현재 선택 중인 입력 칸
+// 0: 오픈 시, 1: 오픈 분, 2: 마감 시, 3: 마감 분
   int selectedIndex = 0;
+
+  // 현재 선택된 칸에 몇 자리 입력했는지 (0 또는 1)
+  int inputCount = 0;
+
+// 각 칸은 "00" 형태의 문자열로 관리
+  String openHour = "00";
+  String openMinute = "00";
+  String closeHour = "00";
+  String closeMinute = "00";
 
   @override
   void initState() {
     super.initState();
 
-    final hour =
-    (widget.initialTime?.hour ?? 0).toString().padLeft(2, "0");
-    final minute =
-    (widget.initialTime?.minute ?? 0).toString().padLeft(2, "0");
-
-    digits = [
-      hour[0],
-      hour[1],
-      minute[0],
-      minute[1],
-    ];
+    if (widget.initialTime != null) {
+      openHour = widget.initialTime!.hour.toString().padLeft(2, "0");
+      openMinute = widget.initialTime!.minute.toString().padLeft(2, "0");
+    }
   }
 
+  /// 저장 버튼 활성화 여부
   bool get canSave {
-    final h = int.parse("${digits[0]}${digits[1]}");
-    final m = int.parse("${digits[2]}${digits[3]}");
-
-    return !(h == 0 && m == 0);
+    return !(openHour == "00" &&
+        openMinute == "00" &&
+        closeHour == "00" &&
+        closeMinute == "00");
   }
 
-  int get hour =>
-      int.parse("${digits[0]}${digits[1]}");
-
-  int get minute =>
-      int.parse("${digits[2]}${digits[3]}");
-
+  /// 숫자 입력
   void input(String value) {
     setState(() {
-      digits[selectedIndex] = value;
+      switch (selectedIndex) {
+      // 오픈 시간(HH)
+        case 0:
+          if (inputCount == 0) {
+            final n = int.parse(value);
 
-      if (selectedIndex < 3) {
-        selectedIndex++;
+            if (n >= 3) {
+              // 3~9 -> 03~09 확정 후 분으로 이동
+              openHour = "0$value";
+              selectedIndex = 1;
+            } else {
+              // 0~2 -> 오른쪽 자리에 임시 표시 (00, 01, 02)
+              openHour = "0$value";
+              inputCount = 1;
+            }
+          } else {
+            // 두 번째 입력 -> 기존 오른쪽 숫자를 왼쪽으로 이동
+            // 예) 01 + 5 -> 15
+            //     02 + 3 -> 23
+            //     00 + 8 -> 08
+            openHour = "${openHour[1]}$value";
+            selectedIndex = 1;
+            inputCount = 0;
+          }
+          break;
+
+      // 오픈 분(MM)
+        case 1:
+          if (inputCount == 0) {
+            openMinute = "${value}0";
+            inputCount = 1;
+          } else {
+            openMinute = "${openMinute[0]}$value";
+            selectedIndex = 2;
+            inputCount = 0;
+          }
+          break;
+
+      // 마감 시간(HH)
+      // 마감 시간(HH)
+        case 2:
+          if (inputCount == 0) {
+            final n = int.parse(value);
+
+            if (n >= 3) {
+              // 3~9 -> 03~09로 확정 후 다음 칸(마감 분)으로 이동
+              closeHour = "0$value";
+              selectedIndex = 3;
+              inputCount = 0;
+            } else {
+              // 0~2 -> 00, 01, 02 형태로 임시 표시하고 시간 입력 유지
+              closeHour = "0$value";
+              inputCount = 1;
+            }
+          } else {
+            // 두 번째 숫자 입력
+            // 예) 01 + 5 -> 15
+            //     02 + 3 -> 23
+            //     00 + 8 -> 08
+            closeHour = "${closeHour[1]}$value";
+            selectedIndex = 3;
+            inputCount = 0;
+          }
+          break;
+
+      // 마감 분(MM)
+        case 3:
+          if (inputCount == 0) {
+            closeMinute = "${value}0";
+            inputCount = 1;
+          } else {
+            closeMinute = "${closeMinute[0]}$value";
+            inputCount = 0;
+          }
+          break;
       }
     });
   }
 
+  /// 삭제 버튼
   void backspace() {
     setState(() {
-      digits[selectedIndex] = "0";
+      switch (selectedIndex) {
+        case 0:
+          openHour = "00";
+          break;
+        case 1:
+          openMinute = "00";
+          break;
+        case 2:
+          closeHour = "00";
+          break;
+        case 3:
+          closeMinute = "00";
+          break;
+      }
+
+      inputCount = 0;
 
       if (selectedIndex > 0) {
         selectedIndex--;
@@ -89,29 +175,29 @@ class _TimeInputBottomSheetState
     });
   }
 
-  Widget timeBox(int index) {
+  Widget timeBox({
+    required String value,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          selectedIndex = index;
-        });
-      },
+      onTap: onTap,
       child: Container(
-        width: 54,
-        height: 46,
+        width: 56,
+        height: 48,
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: const Color(0xffF2F2F5),
+          color: const Color(0xFFF2F2F5),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: selectedIndex == index
-                ? const Color(0xff1E88FF)
+            color: selected
+                ? const Color(0xFF1E88FF)
                 : Colors.transparent,
             width: 2,
           ),
         ),
         child: Text(
-          digits[index],
+          value,
           style: const TextStyle(
             fontSize: 22,
             fontWeight: FontWeight.bold,
@@ -180,7 +266,19 @@ class _TimeInputBottomSheetState
                   alignment: Alignment.centerRight,
                   child: IconButton(
                     onPressed: () {
-                      Navigator.pop(context);
+                      Navigator.pop(
+                        context,
+                        StoreTimeRange(
+                          openTime: TimeOfDay(
+                            hour: int.parse(openHour.replaceAll("_", "0")),
+                            minute: int.parse(openMinute.replaceAll("_", "0")),
+                          ),
+                          closeTime: TimeOfDay(
+                            hour: int.parse(closeHour.replaceAll("_", "0")),
+                            minute: int.parse(closeMinute.replaceAll("_", "0")),
+                          ),
+                        ),
+                      );
                     },
                     icon: const Icon(Icons.close),
                   ),
@@ -201,26 +299,65 @@ class _TimeInputBottomSheetState
             const SizedBox(height: 24),
 
             Row(
-              mainAxisAlignment:
-              MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                timeBox(0),
-                const SizedBox(width: 6),
-                timeBox(1),
+                timeBox(
+                  value: openHour,
+                  selected: selectedIndex == 0,
+                  onTap: () => setState(() => selectedIndex = 0),
+                ),
+
                 const Padding(
-                  padding:
-                  EdgeInsets.symmetric(horizontal: 8),
+                  padding: EdgeInsets.symmetric(horizontal: 6),
                   child: Text(
                     ":",
                     style: TextStyle(
-                      fontSize: 28,
+                      fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
-                timeBox(2),
-                const SizedBox(width: 6),
-                timeBox(3),
+
+                timeBox(
+                  value: openMinute,
+                  selected: selectedIndex == 1,
+                  onTap: () => setState(() => selectedIndex = 1),
+                ),
+
+                const SizedBox(width: 16),
+
+                const Text(
+                  "-",
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                const SizedBox(width: 16),
+
+                timeBox(
+                  value: closeHour,
+                  selected: selectedIndex == 2,
+                  onTap: () => setState(() => selectedIndex = 2),
+                ),
+
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 6),
+                  child: Text(
+                    ":",
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+
+                timeBox(
+                  value: closeMinute,
+                  selected: selectedIndex == 3,
+                  onTap: () => setState(() => selectedIndex = 3),
+                ),
               ],
             ),
 
@@ -261,9 +398,15 @@ class _TimeInputBottomSheetState
                     ? () {
                   Navigator.pop(
                     context,
-                    TimeOfDay(
-                      hour: hour,
-                      minute: minute,
+                    StoreTimeRange(
+                      openTime: TimeOfDay(
+                        hour: int.parse(openHour.replaceAll("_", "0")),
+                        minute: int.parse(openMinute.replaceAll("_", "0")),
+                      ),
+                      closeTime: TimeOfDay(
+                        hour: int.parse(closeHour.replaceAll("_", "0")),
+                        minute: int.parse(closeMinute.replaceAll("_", "0")),
+                      ),
                     ),
                   );
                 }
@@ -298,4 +441,14 @@ class _TimeInputBottomSheetState
       ),
     );
   }
+}
+
+class StoreTimeRange {
+  final TimeOfDay openTime;
+  final TimeOfDay closeTime;
+
+  const StoreTimeRange({
+    required this.openTime,
+    required this.closeTime,
+  });
 }
