@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 class ShiftInfo {
+  String title;
   String name;
   TimeOfDay startTime;
   TimeOfDay endTime;
@@ -8,6 +9,7 @@ class ShiftInfo {
   int requiredWorkers;
 
   ShiftInfo({
+    this.title = "",
     this.name = "",
     TimeOfDay? startTime,
     TimeOfDay? endTime,
@@ -16,7 +18,16 @@ class ShiftInfo {
   })  : startTime = startTime ?? const TimeOfDay(hour: 0, minute: 0),
         endTime = endTime ?? const TimeOfDay(hour: 0, minute: 0);
 
+  bool get isCompleted {
+    return name.trim().isNotEmpty &&
+        breakTime.isNotEmpty &&
+        requiredWorkers > 0 &&
+        !(startTime.hour == 0 && startTime.minute == 0) &&
+        !(endTime.hour == 0 && endTime.minute == 0);
+  }
+
   ShiftInfo copyWith({
+    String? title,
     String? name,
     TimeOfDay? startTime,
     TimeOfDay? endTime,
@@ -24,6 +35,7 @@ class ShiftInfo {
     int? requiredWorkers,
   }) {
     return ShiftInfo(
+      title: title ?? this.title,
       name: name ?? this.name,
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,

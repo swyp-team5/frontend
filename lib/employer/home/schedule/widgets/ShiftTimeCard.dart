@@ -6,11 +6,13 @@ import 'CounterBox.dart';
 class ShiftTimeCard extends StatefulWidget {
   final int index;
   final ShiftInfo info;
+  final VoidCallback? onChanged;
 
   const ShiftTimeCard({
     super.key,
     required this.index,
     required this.info,
+    this.onChanged,
   });
 
   @override
@@ -30,6 +32,7 @@ class _ShiftTimeCardState extends State<ShiftTimeCard> {
     _nameController.text = widget.info.name;
     _nameController.addListener(() {
       widget.info.name = _nameController.text;
+      widget.onChanged?.call();
     });
   }
 
@@ -91,6 +94,7 @@ class _ShiftTimeCardState extends State<ShiftTimeCard> {
                     setState(() {
                       widget.info.startTime = result.openTime;
                     });
+                    widget.onChanged?.call();
                   }
                 },
               ),
@@ -106,6 +110,7 @@ class _ShiftTimeCardState extends State<ShiftTimeCard> {
                     setState(() {
                       widget.info.endTime = result.closeTime;
                     });
+                    widget.onChanged?.call();
                   }
                 },
               ),
@@ -137,8 +142,9 @@ class _ShiftTimeCardState extends State<ShiftTimeCard> {
               onChanged: (val) {
                 if (val != null) {
                   setState(() {
-                    widget.info.breakTime = val;
+                    widget.info.breakTime = val!;
                   });
+                  widget.onChanged?.call();
                 }
               },
             ),
@@ -151,8 +157,19 @@ class _ShiftTimeCardState extends State<ShiftTimeCard> {
         CounterBox(
           value: widget.info.requiredWorkers,
           minValue: 1,
-          onMinus: () => setState(() => widget.info.requiredWorkers--),
-          onPlus: () => setState(() => widget.info.requiredWorkers++),
+          onMinus: () {
+            setState(() {
+              widget.info.requiredWorkers--;
+            });
+            widget.onChanged?.call();
+          },
+
+          onPlus: () {
+            setState(() {
+              widget.info.requiredWorkers++;
+            });
+            widget.onChanged?.call();
+          },
         ),
       ],
     );

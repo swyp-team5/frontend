@@ -18,7 +18,7 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
   TimeOfDay openTime = const TimeOfDay(hour: 0, minute: 0);
   TimeOfDay closeTime = const TimeOfDay(hour: 0, minute: 0);
 
-  /// 인원당 근무 횟수
+  /// 인원당 근무 횟수 - 1로 초기화
   int minWork = 1;
   int maxWork = 1;
 
@@ -36,6 +36,15 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
     ShiftInfo(name: ""),
     ShiftInfo(name: ""),
   ];
+
+  /// '등록하기' 버튼 클릭 여부
+  bool _isRegistered = false;
+
+  /// 타임별 상세 설정 정보가 모두 입력되었는지 확인
+  bool get canRegister {
+    return shiftInfos.isNotEmpty &&
+        shiftInfos.every((e) => e.isCompleted);
+  }
 
   @override
   void initState() {
@@ -94,9 +103,12 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
             height: 56,
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: _isRegistered ? () {
+                // 스케줄 만들기 처리
+              } : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFA9D0FB),
+                backgroundColor: _isRegistered ? const Color(0xFF007AFF) : const Color(0xFFA9D0FB),
+                disabledBackgroundColor: const Color(0xFFA9D0FB),
                 elevation: 0,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -150,6 +162,7 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                       if (minWork > 1) {
                         setState(() {
                           minWork--;
+                          _isRegistered = false;
                         });
                       }
                     },
@@ -159,6 +172,7 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                         if (minWork > maxWork) {
                           maxWork = minWork;
                         }
+                        _isRegistered = false;
                       });
                     },
                   ),
@@ -172,12 +186,14 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                       if (maxWork > minWork) {
                         setState(() {
                           maxWork--;
+                          _isRegistered = false;
                         });
                       }
                     },
                     onPlus: () {
                       setState(() {
                         maxWork++;
+                        _isRegistered = false;
                       });
                     },
                   ),
@@ -199,6 +215,7 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                       } else {
                         selectedDays.add(day);
                       }
+                      _isRegistered = false;
                     });
                   },
                   child: Container(
@@ -248,6 +265,7 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                         setState(() {
                           shiftCount--;
                           _syncShiftInfos();
+                          _isRegistered = false;
                         });
                       }
                     },
@@ -255,6 +273,7 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                       setState(() {
                         shiftCount++;
                         _syncShiftInfos();
+                        _isRegistered = false;
                       });
                     },
                   ),
@@ -263,7 +282,6 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
             ),
             if (selectedDays.isNotEmpty) ...[
               const SizedBox(height: 24),
-
               const Text(
                 "타임별 상세 설정",
                 style: TextStyle(
@@ -271,9 +289,7 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-
               const SizedBox(height: 16),
-
               Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -289,27 +305,41 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                       return ShiftTimeCard(
                         index: index,
                         info: shiftInfos[index],
+                        onChanged: () {
+                          setState(() {
+                            _isRegistered = false;
+                          });
+                        },
                       );
                     }),
-
                     const SizedBox(height: 8),
-
                     SizedBox(
                       width: double.infinity,
                       height: 48,
                       child: ElevatedButton(
-                        onPressed: () {},
+                        onPressed: canRegister
+                            ? () {
+                                setState(() {
+                                  //_isRegistered = true;
+                                });
+                              }
+                            : null,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFF2F2F5),
+                          backgroundColor: canRegister
+                              ? const Color(0xFF007AFF) // 활성화 시 파란색
+                              : const Color(0xFFF2F2F5), // 기본 회색
+                          disabledBackgroundColor: const Color(0xFFF2F2F5),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
                         ),
-                        child: const Text(
+                        child: Text(
                           "등록하기",
                           style: TextStyle(
-                            color: Color(0xFF6C6E76),
+                            color: canRegister
+                                ? Colors.white
+                                : const Color(0xFF6C6E76),
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -318,7 +348,6 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                   ],
                 ),
               ),
-
               const SizedBox(height: 40),
             ],
           ],
@@ -366,6 +395,7 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
       setState(() {
         openTime = result.openTime;
         closeTime = result.closeTime;
+        _isRegistered = false;
       });
     }
   }
