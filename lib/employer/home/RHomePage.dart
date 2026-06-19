@@ -1,3 +1,4 @@
+import 'package:chack_chack/employer/home/schedule/RMakingSchedulePage.dart';
 import 'package:flutter/material.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
@@ -111,8 +112,12 @@ class _RHomePageState extends State<RHomePage> {
                   height: 54,
                   child: OutlinedButton(
                     onPressed: () {
-                      Navigator.pop(context);
-                      // TODO: 직접 만들기 기능
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const RMakingSchedulePage(),
+                        ),
+                      );
                     },
                     style: OutlinedButton.styleFrom(
                       backgroundColor: Colors.white,
