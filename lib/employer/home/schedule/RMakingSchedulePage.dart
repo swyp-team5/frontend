@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+
 import 'TimeInputBottomSheet.dart';
+import 'widgets/ShiftTimeCard.dart';
+import 'widgets/CounterBox.dart';
+import 'models/ShiftInfo.dart';
 
 class RMakingSchedulePage extends StatefulWidget {
   const RMakingSchedulePage({super.key});
@@ -9,209 +14,187 @@ class RMakingSchedulePage extends StatefulWidget {
 }
 
 class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
+  /// 매장 운영 시간 - 기본값을 00:00으로 설정
   TimeOfDay openTime = const TimeOfDay(hour: 0, minute: 0);
   TimeOfDay closeTime = const TimeOfDay(hour: 0, minute: 0);
 
+  /// 인원당 근무 횟수
   int minWork = 1;
   int maxWork = 1;
 
+  /// 근무 교대 횟수
+  int shiftCount = 1;
+
+  /// 요일 설정
   final List<String> days = ["월", "화", "수", "목", "금", "토", "일"];
+  
+  /// 요일 선택 - 기본적으로 아무것도 선택하지 않음
   final Set<String> selectedDays = {};
 
-  String _format(TimeOfDay time) {
-    return "${time.hour.toString().padLeft(2, "0")}:${time.minute.toString().padLeft(2, "0")}";
+  /// 타임 리스트
+  List<ShiftInfo> shiftInfos = [
+    ShiftInfo(name: ""),
+    ShiftInfo(name: ""),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _syncShiftInfos();
+  }
+
+  void _syncShiftInfos() {
+    // 근무 교대 횟수 N이면 N+1개의 타임이 필요함
+    int targetCount = shiftCount + 1;
+    if (shiftInfos.length < targetCount) {
+      for (int i = shiftInfos.length; i < targetCount; i++) {
+        shiftInfos.add(ShiftInfo(name: ""));
+      }
+    } else if (shiftInfos.length > targetCount) {
+      shiftInfos = shiftInfos.sublist(0, targetCount);
+    }
+  }
+
+  String formatTime(TimeOfDay time) {
+    final hour = time.hour.toString().padLeft(2, '0');
+    final minute = time.minute.toString().padLeft(2, '0');
+    return '$hour:$minute';
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xffF7F7F7),
-
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xffF7F7F7),
+        backgroundColor: Colors.white,
         elevation: 0,
         centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
         title: const Text(
           "스케줄 만들기",
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 18),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black, size: 20),
+          onPressed: () => Navigator.pop(context),
         ),
         actions: [
           TextButton(
-            onPressed: () {
-              // TODO: 불러오기
-            },
+            onPressed: () {},
             child: const Text(
               "불러오기",
-              style: TextStyle(
-                color: Color(0xff2F80FF),
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(color: Color(0xFF2F80FF), fontWeight: FontWeight.bold, fontSize: 16),
             ),
           ),
         ],
       ),
-
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
           child: SizedBox(
             height: 56,
+            width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
-                // TODO: 스케줄 만들기
-              },
+              onPressed: () {},
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff78B6F8),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
-                ),
+                backgroundColor: const Color(0xFFA9D0FB),
                 elevation: 0,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
               child: const Text(
                 "스케줄 만들기",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 17,
-                ),
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ),
           ),
         ),
       ),
-
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 12),
-
-            const Text(
-              "매장 운영 시간",
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
+            const SizedBox(height: 10),
+            const Text("매장 운영 시간", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
-                  child: _timeBox(
-                    title: "오픈 시간",
-                    value: _format(openTime),
-                    onTap: () async {
-                      final result = await TimeInputBottomSheet.show(context);
-
-                      if (result != null) {
-                        setState(() {
-                          openTime = result.openTime;
-                          closeTime = result.closeTime;
-                        });
-                      }
-                    },
+                  child: _buildTimeSelector(
+                    label: "오픈 시간",
+                    time: formatTime(openTime),
+                    onTap: () => _openTimePicker(initialIndex: 0),
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _timeBox(
-                    title: "마감 시간",
-                    value: _format(closeTime),
-                    onTap: () async {
-                      final result = await TimeInputBottomSheet.show(context);
-
-                      if (result != null) {
-                        setState(() {
-                          openTime = result.openTime;
-                          closeTime = result.closeTime;
-                        });
-                      }
-                    },
+                  child: _buildTimeSelector(
+                    label: "마감 시간",
+                    time: formatTime(closeTime),
+                    onTap: () => _openTimePicker(initialIndex: 2),
                   ),
                 ),
               ],
             ),
-
-            const SizedBox(height: 28),
-            const Divider(),
-            const SizedBox(height: 28),
-
-            const Text(
-              "인원당 근무 횟수",
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
+            const SizedBox(height: 24),
+            const Divider(height: 1, thickness: 1, color: Color(0xFFF2F2F5)),
+            const SizedBox(height: 24),
+            const Text("인원당 근무 횟수", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
-                  child: _counterBox(
+                  child: CounterBox(
                     title: "최소",
                     value: minWork,
                     onMinus: () {
-                      if (minWork > 0) {
-                        setState(() => minWork--);
+                      if (minWork > 1) {
+                        setState(() {
+                          minWork--;
+                        });
                       }
                     },
                     onPlus: () {
-                      setState(() => minWork++);
+                      setState(() {
+                        minWork++;
+                        if (minWork > maxWork) {
+                          maxWork = minWork;
+                        }
+                      });
                     },
                   ),
                 ),
-                const SizedBox(width: 20),
+                const SizedBox(width: 16),
                 Expanded(
-                  child: _counterBox(
+                  child: CounterBox(
                     title: "최대",
                     value: maxWork,
                     onMinus: () {
-                      if (maxWork > 0) {
-                        setState(() => maxWork--);
+                      if (maxWork > minWork) {
+                        setState(() {
+                          maxWork--;
+                        });
                       }
                     },
                     onPlus: () {
-                      setState(() => maxWork++);
+                      setState(() {
+                        maxWork++;
+                      });
                     },
                   ),
                 ),
               ],
             ),
-
-            const SizedBox(height: 28),
-            const Divider(),
-            const SizedBox(height: 28),
-
-            const Text(
-              "요일 선택",
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
+            const SizedBox(height: 32),
+            const Text("요일 선택", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: days.map((day) {
-                final selected = selectedDays.contains(day);
-
+                bool isSelected = selectedDays.contains(day);
                 return GestureDetector(
                   onTap: () {
                     setState(() {
-                      if (selected) {
+                      if (isSelected) {
                         selectedDays.remove(day);
                       } else {
                         selectedDays.add(day);
@@ -219,21 +202,18 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                     });
                   },
                   child: Container(
-                    width: 50,
-                    height: 50,
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
-                      color: selected
-                          ? const Color(0xff2F80FF)
-                          : const Color(0xffECECF1),
-                      borderRadius: BorderRadius.circular(14),
+                      color: isSelected ? const Color(0xFF5B96F4) : const Color(0xFFF2F2F5),
+                      borderRadius: BorderRadius.circular(12),
                     ),
                     child: Center(
                       child: Text(
                         day,
                         style: TextStyle(
+                          color: isSelected ? Colors.white : const Color(0xFFAEB0B6),
                           fontWeight: FontWeight.bold,
-                          color:
-                          selected ? Colors.white : Colors.grey.shade700,
                         ),
                       ),
                     ),
@@ -241,42 +221,133 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                 );
               }).toList(),
             ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                const Text("적용 요일", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 15)),
+                const Spacer(),
+                Text(
+                  selectedDays.isEmpty 
+                      ? "없음" 
+                      : days.where((d) => selectedDays.contains(d)).join(", "),
+                  style: const TextStyle(color: Color(0xFF6C6E76), fontSize: 15),
+                ),
+              ],
+            ),
+            const SizedBox(height: 32),
+            Row(
+              children: [
+                const Text("근무 교대 횟수", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const Spacer(),
+                SizedBox(
+                  width: 140,
+                  child: CounterBox(
+                    value: shiftCount,
+                    onMinus: () {
+                      if (shiftCount > 0) {
+                        setState(() {
+                          shiftCount--;
+                          _syncShiftInfos();
+                        });
+                      }
+                    },
+                    onPlus: () {
+                      setState(() {
+                        shiftCount++;
+                        _syncShiftInfos();
+                      });
+                    },
+                  ),
+                ),
+              ],
+            ),
+            if (selectedDays.isNotEmpty) ...[
+              const SizedBox(height: 24),
+
+              const Text(
+                "타임별 상세 설정",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFFE8E9ED),
+                  ),
+                ),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    ...List.generate(shiftInfos.length, (index) {
+                      return ShiftTimeCard(
+                        index: index,
+                        info: shiftInfos[index],
+                      );
+                    }),
+
+                    const SizedBox(height: 8),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: ElevatedButton(
+                        onPressed: () {},
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF2F2F5),
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          "등록하기",
+                          style: TextStyle(
+                            color: Color(0xFF6C6E76),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 40),
+            ],
           ],
         ),
       ),
     );
   }
 
-  Widget _timeBox({
-    required String title,
-    required String value,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildTimeSelector({required String label, required String time, required VoidCallback onTap}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: TextStyle(color: Colors.grey.shade700),
-        ),
+        Text(label, style: const TextStyle(color: Color(0xFF6C6E76), fontSize: 13)),
         const SizedBox(height: 8),
         InkWell(
           onTap: onTap,
           child: Container(
-            height: 58,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            height: 52,
             decoration: BoxDecoration(
-              color: const Color(0xffECECF1),
-              borderRadius: BorderRadius.circular(14),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFF5B96F4)),
             ),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                Text(
-                  value,
-                  style: const TextStyle(fontSize: 16),
-                ),
+                Text(time, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
                 const Spacer(),
-                const Icon(Icons.access_time, color: Colors.grey),
+                const Icon(Icons.access_time, color: Color(0xFFAEB0B6), size: 20),
               ],
             ),
           ),
@@ -285,51 +356,17 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
     );
   }
 
-  Widget _counterBox({
-    required String title,
-    required int value,
-    required VoidCallback onMinus,
-    required VoidCallback onPlus,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title),
-        const SizedBox(height: 8),
-        Container(
-          height: 44,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: IconButton(
-                  onPressed: onMinus,
-                  icon: const Icon(Icons.remove),
-                ),
-              ),
-              Container(width: 1, color: Colors.grey.shade300),
-              Expanded(
-                child: Center(
-                  child: Text(
-                    "$value",
-                    style: const TextStyle(fontSize: 18),
-                  ),
-                ),
-              ),
-              Container(width: 1, color: Colors.grey.shade300),
-              Expanded(
-                child: IconButton(
-                  onPressed: onPlus,
-                  icon: const Icon(Icons.add),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+  void _openTimePicker({int initialIndex = 0}) async {
+    final result = await TimeInputBottomSheet.show(
+      context,
+      initialOpenTime: openTime,
+      initialCloseTime: closeTime,
     );
+    if (result != null) {
+      setState(() {
+        openTime = result.openTime;
+        closeTime = result.closeTime;
+      });
+    }
   }
 }
