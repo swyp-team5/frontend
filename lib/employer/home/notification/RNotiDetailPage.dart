@@ -27,70 +27,53 @@ class RNotificationDetailPage extends ConsumerWidget {
     return counts;
   }
 
-  void _showEmojiPicker(BuildContext context, WidgetRef ref, int index,) {
-    showModalBottomSheet(
+  void _showEmojiMenu(
+      BuildContext context,
+      WidgetRef ref,
+      int index,
+      RelativeRect position,
+      ) async {
+    final selected = await showMenu<String>(
       context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(28),
-            ),
-          ),
-          child: Column(
+      position: position,
+      color: Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      items: [
+        PopupMenuItem(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(width: 40, height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              const Text('반응 선택하기',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-              const SizedBox(height: 30),
-
-              Row(
-                mainAxisAlignment:
-                MainAxisAlignment.spaceEvenly,
-                children: ['❤️', '👍', '✅', '😊',].map((emoji) {
-                  return GestureDetector(
-                    onTap: () {
-                      ref.read(RNotificationProvider.notifier,).addReaction(
-                        index,
-                        emoji,
-                      );
-
-                      Navigator.pop(context);
-                    },
-                    child: Text(
-                      emoji,
-                      style: const TextStyle(
-                        fontSize: 36,
-                      ),
-                    ),
-                  );
-                }).toList(),
-              ),
-
-              const SizedBox(height: 30),
+              _emoji(context, '❤️'),
+              const SizedBox(width: 16),
+              _emoji(context, '👍'),
+              const SizedBox(width: 16),
+              _emoji(context, '✅'),
+              const SizedBox(width: 16),
+              _emoji(context, '😊'),
             ],
           ),
-        );
-      },
+        ),
+      ],
+    );
+
+    if (selected != null) {
+      ref.read(RNotificationProvider.notifier).addReaction(index, selected);
+    }
+  }
+
+  Widget _emoji(BuildContext context, String emoji) {
+    return GestureDetector(
+      onTap: () => Navigator.pop(context, emoji),
+      child: Text(
+        emoji,
+        style: const TextStyle(fontSize: 28),
+      ),
     );
   }
+
 
   void _showMoreMenu(
       BuildContext context,
@@ -466,105 +449,101 @@ class RNotificationDetailPage extends ConsumerWidget {
                     const SizedBox(height: 30),
 
                     /// 이모지 현황
-                    if (reactionCounts.isNotEmpty)
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children:
-                        reactionCounts.entries
-                            .map(
-                              (entry) =>
-                              Container(
-                                padding:
-                                const EdgeInsets
-                                    .symmetric(
-                                  horizontal:
-                                  14,
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+
+                        /// 이모지 추가 버튼
+                        Builder(
+                          builder: (buttonContext) {
+                            return GestureDetector(
+                              onTap: () {
+                                final RenderBox button =
+                                buttonContext.findRenderObject() as RenderBox;
+
+                                final RenderBox overlay =
+                                Overlay.of(context)
+                                    .context
+                                    .findRenderObject() as RenderBox;
+
+                                final position = RelativeRect.fromRect(
+                                  Rect.fromPoints(
+                                    button.localToGlobal(
+                                      Offset.zero,
+                                      ancestor: overlay,
+                                    ),
+                                    button.localToGlobal(
+                                      button.size.bottomRight(
+                                        Offset.zero,
+                                      ),
+                                      ancestor: overlay,
+                                    ),
+                                  ),
+                                  Offset.zero & overlay.size,
+                                );
+
+                                _showEmojiMenu(
+                                  context,
+                                  ref,
+                                  noticeIndex,
+                                  position,
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
                                   vertical: 8,
                                 ),
-                                decoration:
-                                BoxDecoration(
-                                  color:
-                                  const Color(
-                                    0xFFE8E8ED,
-                                  ),
-                                  borderRadius:
-                                  BorderRadius
-                                      .circular(
-                                    20,
-                                  ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE8E8ED),
+                                  borderRadius: BorderRadius.circular(20),
                                 ),
-                                child: Row(
-                                  mainAxisSize:
-                                  MainAxisSize
-                                      .min,
-                                  children: [
-                                    Text(
-                                      entry.key,
-                                      style:
-                                      const TextStyle(
-                                        fontSize:
-                                        16,
-                                      ),
-                                    ),
-                                    const SizedBox(
-                                        width:
-                                        4),
-                                    Text(
-                                      entry.value
-                                          .toString(),
-                                      style:
-                                      const TextStyle(
-                                        fontWeight:
-                                        FontWeight
-                                            .w600,
-                                      ),
-                                    ),
-                                  ],
+                                child: const Icon(
+                                  Icons.add,
+                                  size: 18,
                                 ),
                               ),
-                        )
-                            .toList(),
-                      ),
+                            );
+                          },
+                        ),
+
+                        /// 등록된 이모지
+                        ...reactionCounts.entries.map(
+                              (entry) => Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE8E8ED),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  entry.key,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  entry.value.toString(),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
 
                     const SizedBox(height: 30),
                   ],
-                ),
-              ),
-            ),
-
-            /// 하단 반응 버튼
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  top: BorderSide(
-                    color: Color(0xFFEAEAEA),
-                  ),
-                ),
-              ),
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  _showEmojiPicker(
-                    context,
-                    ref,
-                    noticeIndex,
-                  );
-                },
-                icon: const Icon(
-                  Icons.add_reaction_outlined,
-                ),
-                label: const Text(
-                  '반응 남기기',
-                ),
-                style:
-                ElevatedButton.styleFrom(
-                  minimumSize:
-                  const Size.fromHeight(
-                    52,
-                  ),
                 ),
               ),
             ),
