@@ -46,6 +46,8 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
         shiftInfos.every((e) => e.isCompleted);
   }
 
+  bool _isScheduleExpanded = true;
+
   @override
   void initState() {
     super.initState();
@@ -201,6 +203,137 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
               ],
             ),
             const SizedBox(height: 32),
+            if (_isRegistered) ...[
+              const SizedBox(height: 32),
+
+              const Text(
+                "등록된 스케줄",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: const Color(0xFFE8E9ED),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    /// 선택한 요일
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            days.where((e) => selectedDays.contains(e)).join(", "),
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _isScheduleExpanded = !_isScheduleExpanded;
+                            });
+                          },
+                          child: Icon(
+                            _isScheduleExpanded
+                                ? Icons.keyboard_arrow_up
+                                : Icons.keyboard_arrow_down,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    if (_isScheduleExpanded) ...[
+                      const SizedBox(height: 16),
+                      const Divider(),
+                      const SizedBox(height: 8),
+
+                      ...shiftInfos.map((shift) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 24),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEAF3FF),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  shift.name,
+                                  style: const TextStyle(
+                                    color: Color(0xFF007AFF),
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 12),
+
+                              _scheduleRow(
+                                "타임 운영 시간",
+                                "${formatTime(shift.startTime)} - ${formatTime(shift.endTime)}",
+                              ),
+
+                              const SizedBox(height: 10),
+
+                              _scheduleRow(
+                                "필요 근무자 수",
+                                "${shift.requiredWorkers}명",
+                              ),
+
+                              const SizedBox(height: 10),
+
+                              _scheduleRow(
+                                "휴게 시간",
+                                shift.breakTime,
+                              ),
+                            ],
+                          ),
+                        );
+                      }),
+
+                      Center(
+                        child: TextButton(
+                          onPressed: () {
+                            setState(() {
+                              _isRegistered = false;
+                            });
+                          },
+                          child: const Text(
+                            "해당 타임 삭제하기 ✕",
+                            style: TextStyle(
+                              color: Color(0xFFAEB0B6),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 32),
+            ],
             const Text("요일 선택", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 16),
             Row(
@@ -320,7 +453,7 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                         onPressed: canRegister
                             ? () {
                                 setState(() {
-                                  //_isRegistered = true;
+                                  _isRegistered = true;
                                 });
                               }
                             : null,
@@ -379,6 +512,28 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                 const Icon(Icons.access_time, color: Color(0xFFAEB0B6), size: 20),
               ],
             ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _scheduleRow(String title, String value) {
+    return Row(
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            color: Color(0xFF8E8E93),
+            fontSize: 14,
+          ),
+        ),
+        const Spacer(),
+        Text(
+          value,
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 15,
           ),
         ),
       ],
