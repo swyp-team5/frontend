@@ -94,13 +94,14 @@ class RNotificationDetailPage extends ConsumerWidget {
           value: 'edit',
           child: Row(
             children: [
+              SizedBox(width: 10),
               Icon(
                 Icons.edit_outlined,
                 size: 20,
                 color: Colors.black,
               ),
               SizedBox(width: 10),
-              Text('수정'),
+              Text('수정', style: TextStyle(fontSize: 15),),
             ],
           ),
         ),
@@ -108,6 +109,7 @@ class RNotificationDetailPage extends ConsumerWidget {
           value: 'delete',
           child: Row(
             children: [
+              SizedBox(width: 10),
               Icon(
                 Icons.delete_outline,
                 size: 20,
@@ -117,6 +119,7 @@ class RNotificationDetailPage extends ConsumerWidget {
               Text(
                 '삭제',
                 style: TextStyle(
+                  fontSize: 15,
                   color: Colors.red,
                 ),
               ),
@@ -314,7 +317,7 @@ class RNotificationDetailPage extends ConsumerWidget {
                           height: 42,
                           decoration: BoxDecoration(
                             color: Colors.grey.shade300,
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(16),
                           ),
                         ),
 
@@ -329,6 +332,7 @@ class RNotificationDetailPage extends ConsumerWidget {
                                   Text(
                                     currentNotice.writer,
                                     style: const TextStyle(
+                                      fontSize: 15,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   ),
@@ -348,6 +352,7 @@ class RNotificationDetailPage extends ConsumerWidget {
                                       '사장님',
                                       style: TextStyle(
                                         fontSize: 11,
+                                        color: Color(0xFF0063BF)
                                       ),
                                     ),
                                   ),

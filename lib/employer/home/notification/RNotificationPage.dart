@@ -75,7 +75,7 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
                         child: Center(
                             child: Text('공지 게시판',
                                 style: TextStyle(
-                                    fontSize: 22,
+                                    fontSize: 18,
                                     fontWeight: FontWeight.bold)))),
                     const SizedBox(width: 22),
                   ],
@@ -85,8 +85,8 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
                 const Padding(
                   padding: EdgeInsets.only(top: 100),
                   child: Center(
-                      child: Text('등록된 공지사항이 없습니다.',
-                          style: TextStyle(fontSize: 16, color: Colors.grey))),
+                      child: Text('작성된 글이\n없어요',
+                          style: TextStyle(fontSize: 18, color: Color(0xFF999999)))),
                 )
               else
                 ListView.separated(
@@ -145,6 +145,7 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
                                           Text(
                                             notice.writer,
                                             style: const TextStyle(
+                                              fontSize: 14,
                                               fontWeight: FontWeight.bold,
                                             ),
                                           ),
@@ -165,7 +166,7 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
                                             child: const Text(
                                               '사장님',
                                               style: TextStyle(
-                                                fontSize: 10,
+                                                fontSize: 11,
                                                 color: Color(0xFF0063BF),
                                               ),
                                             ),
@@ -178,7 +179,7 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
                                       Text(
                                         notice.date,
                                         style: TextStyle(
-                                          color: Colors.grey.shade600,
+                                          color: Color(0xFF767676),
                                           fontSize: 12,
                                         ),
                                       ),
@@ -213,7 +214,7 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
                                         overflow:
                                         TextOverflow.ellipsis,
                                         style: const TextStyle(
-                                          fontSize: 18,
+                                          fontSize: 16,
                                           fontWeight:
                                           FontWeight.bold,
                                         ),
@@ -227,7 +228,7 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
                                         overflow:
                                         TextOverflow.ellipsis,
                                         style: const TextStyle(
-                                          fontSize: 15,
+                                          fontSize: 14,
                                           height: 1.4,
                                         ),
                                       ),

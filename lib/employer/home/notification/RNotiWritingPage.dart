@@ -136,7 +136,7 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
                             child: Text(
                               '최근 항목',
                               style: TextStyle(
-                                fontSize: 20,
+                                fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -149,8 +149,8 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
                                 Navigator.pop(context);
                               },
                               child: Container(
-                                width: 36,
-                                height: 36,
+                                width: 30,
+                                height: 30,
                                 decoration: const BoxDecoration(
                                   color: Color(0xFFF2F2F7),
                                   shape: BoxShape.circle,
@@ -158,7 +158,7 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
                                 child: const Icon(
                                   Icons.close,
                                   color: Colors.grey,
-                                  size: 22,
+                                  size: 20,
                                 ),
                               ),
                             ),
@@ -373,7 +373,7 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
               const Text(
                 '공지글을 등록하시겠습니까?',
                 style: TextStyle(
-                  fontSize: 24,
+                  fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -386,15 +386,15 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
                 child: ElevatedButton(
                   onPressed: _registerNotice,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF007AFF),
+                    backgroundColor: const Color(0xFF0084FF),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
                   child: const Text(
                     '등록하기',
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 16,
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
                     ),
@@ -411,7 +411,7 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
                 child: const Text(
                   '취소',
                   style: TextStyle(
-                    fontSize: 18,
+                    fontSize: 16,
                     color: Colors.black,
                   ),
                 ),
@@ -474,7 +474,7 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
                         },
                         icon: const Icon(
                           Icons.image_outlined,
-                          size: 34,
+                          size: 28,
                         ),
                       ),
                       const SizedBox(width: 8),
@@ -520,17 +520,15 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
                         TextField(
                           controller: titleController,
                           decoration: const InputDecoration(
-                            hintText: '제목을 입력해주세요.',
+                            hintText: '제목을 입력해주세요',
                             border: InputBorder.none,
                             hintStyle: TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFC8C8C8),
+                              fontSize: 20,
+                              color: Color(0xFF999999),
                             ),
                           ),
                           style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 20,
                           ),
                         ),
                       ],
@@ -554,15 +552,15 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
                             controller: contentController,
                             maxLines: null,
                             decoration: const InputDecoration(
-                              hintText: '공지내용을 입력해 주세요.',
+                              hintText: '공지내용을 입력해 주세요',
                               border: InputBorder.none,
                               hintStyle: TextStyle(
-                                fontSize: 18,
-                                color: Color(0xFFC8C8C8),
+                                fontSize: 16,
+                                color: Color(0xFF999999),
                               ),
                             ),
                             style: const TextStyle(
-                              fontSize: 18,
+                              fontSize: 16,
 
                             ),
                           ),

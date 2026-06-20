@@ -485,7 +485,7 @@ class _RNotiEditPageState
                         _showGalleryBottomSheet,
                         icon: const Icon(
                           Icons.image_outlined,
-                          size: 34,
+                          size: 28,
                         ),
                       ),
 
@@ -524,71 +524,59 @@ class _RNotiEditPageState
                 children: [
                   Padding(
                     padding:
-                    const EdgeInsets.symmetric(
-                        horizontal: 20),
+                    const EdgeInsets.symmetric(horizontal: 20),
                     child: TextField(
-                      controller:
-                      titleController,
+                      controller: titleController,
                       decoration:
                       const InputDecoration(
-                        border:
-                        InputBorder.none,
+                        border: InputBorder.none,
                         hintText:
                         '제목을 입력해주세요.',
                       ),
                       style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight:
-                        FontWeight.bold,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
 
+                  SizedBox(height: 10,),
                   Divider(
-                    color: Colors.grey.shade300,
+                    color: Color(0xFFE5E5E5),
                   ),
 
                   Expanded(
                     child:
                     SingleChildScrollView(
                       padding:
-                      const EdgeInsets.all(
-                          20),
+                      const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
                       child: Column(
-                        crossAxisAlignment:
-                        CrossAxisAlignment
-                            .start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           TextField(
-                            controller:
-                            contentController,
+                            controller: contentController,
                             maxLines: null,
-                            decoration:
-                            const InputDecoration(
-                              border:
-                              InputBorder
-                                  .none,
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
                               hintText:
                               '공지내용을 입력해 주세요.',
                             ),
+                            style: const TextStyle(
+                              fontSize: 16,
+                            ),
                           ),
 
-                          const SizedBox(
-                              height: 20),
+                          const SizedBox(height: 20),
 
-                          if (selectedImage !=
-                              null)
+                          if (selectedImage != null)
                             Stack(
                               children: [
                                 ClipRRect(
-                                  borderRadius:
-                                  BorderRadius
-                                      .circular(
-                                      12),
-                                  child:
-                                  Image.file(
-                                    selectedImage!,
-                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.file(selectedImage!,),
                                 ),
 
                                 Positioned(
@@ -616,10 +604,8 @@ class _RNotiEditPageState
                                             .circle,
                                       ),
                                       child:
-                                      const Icon(
-                                        Icons
-                                            .close,
-                                      ),
+                                      const Icon(Icons.close,
+                                        size: 20,),
                                     ),
                                   ),
                                 ),
