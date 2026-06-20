@@ -89,12 +89,24 @@ class _ShiftTimeCardState extends State<ShiftTimeCard> {
                 label: "시작 시간",
                 time: _formatTime(widget.info.startTime),
                 onTap: () async {
-                  final result = await TimeInputBottomSheet.show(context);
+                  final bool startIsDefault =
+                      widget.info.startTime.hour == 0 && widget.info.startTime.minute == 0;
+
+                  final bool endIsDefault =
+                      widget.info.endTime.hour == 0 && widget.info.endTime.minute == 0;
+
+                  final result = await TimeInputBottomSheet.show(
+                    context,
+                    initialOpenTime:
+                    startIsDefault ? widget.info.endTime : widget.info.startTime,
+                    initialCloseTime:
+                    endIsDefault ? widget.info.startTime : widget.info.endTime,
+                  );
                   if (result != null) {
                     setState(() {
                       widget.info.startTime = result.openTime;
+                      widget.info.endTime = result.closeTime;
                     });
-                    widget.onChanged?.call();
                   }
                 },
               ),
@@ -105,12 +117,24 @@ class _ShiftTimeCardState extends State<ShiftTimeCard> {
                 label: "종료 시간",
                 time: _formatTime(widget.info.endTime),
                 onTap: () async {
-                  final result = await TimeInputBottomSheet.show(context);
+                  final bool startIsDefault =
+                      widget.info.startTime.hour == 0 && widget.info.startTime.minute == 0;
+
+                  final bool endIsDefault =
+                      widget.info.endTime.hour == 0 && widget.info.endTime.minute == 0;
+
+                  final result = await TimeInputBottomSheet.show(
+                    context,
+                    initialOpenTime:
+                    startIsDefault ? widget.info.endTime : widget.info.startTime,
+                    initialCloseTime:
+                    endIsDefault ? widget.info.startTime : widget.info.endTime,
+                  );
                   if (result != null) {
                     setState(() {
+                      widget.info.startTime = result.openTime;
                       widget.info.endTime = result.closeTime;
                     });
-                    widget.onChanged?.call();
                   }
                 },
               ),
