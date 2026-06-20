@@ -19,28 +19,28 @@ class RCrewPage extends StatefulWidget {
 
 class _RCrewPageState extends State<RCrewPage> {
 
-  final List<CrewModel> crews = [
-    CrewModel(
+  final List<RCrewModel> crews = [
+    RCrewModel(
       role: "근무자",
       name: "박지연",
       tags: ["주방", "100만 볼트"],
     ),
-    CrewModel(
+    RCrewModel(
       role: "근무자",
       name: "파이리",
       tags: ["주방", "불뽑기"],
     ),
-    CrewModel(
+    RCrewModel(
       role: "근무자",
       name: "꼬부기",
       tags: ["카운터", "물대포"],
     ),
-    CrewModel(
+    RCrewModel(
       role: "근무자",
       name: "버터플",
       tags: ["카운터", "주방"],
     ),
-    CrewModel(
+    RCrewModel(
       role: "근무자",
       name: "꼬부기",
       tags: ["야도란", "주방"],
@@ -224,7 +224,7 @@ class _RCrewPageState extends State<RCrewPage> {
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1687F8),
+                      backgroundColor: const Color(0xFF0084FF),
                       elevation: 0,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(14),
@@ -233,7 +233,7 @@ class _RCrewPageState extends State<RCrewPage> {
                     child: const Text(
                       "링크 및 코드 복사",
                       style: TextStyle(
-                        fontSize: 17,
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
@@ -314,14 +314,14 @@ class _RCrewPageState extends State<RCrewPage> {
 
               const SizedBox(height: 14),
 
-              _crewTile(
+              _RCrewTile(
                 role: "사장님",
                 name: "손흥민",
                 tags: const [],
                 showArrow: false,
               ),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 20),
 
               /// 근무자 수
               Row(
@@ -371,7 +371,7 @@ class _RCrewPageState extends State<RCrewPage> {
   }
 }
 
-Widget _crewTile({
+Widget _RCrewTile({
   required String role,
   required String name,
   required List<String> tags,

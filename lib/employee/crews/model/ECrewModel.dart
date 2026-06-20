@@ -1,11 +1,13 @@
-class EmployeeCrewModel {
-  final String name;
+class ECrewModel {
   final String role;
+  final String name;
+  final List<String> tags;
   final bool isMe;
 
-  EmployeeCrewModel({
-    required this.name,
+  ECrewModel({
     required this.role,
+    required this.name,
+    this.tags = const [],
     this.isMe = false,
   });
 }

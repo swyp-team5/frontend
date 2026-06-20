@@ -1,14 +1,19 @@
 import 'package:flutter/material.dart';
 
 import '../model/ECrewModel.dart';
+import 'ETagChip.dart';
 
-class EmployeeCrewCard extends StatelessWidget {
+class ECrewCard extends StatelessWidget {
 
-  final EmployeeCrewModel crew;
+  final ECrewModel crew;
+  final VoidCallback? onTap;
+  final bool showArrow;
 
-  const EmployeeCrewCard({
+  const ECrewCard({
     super.key,
     required this.crew,
+    this.onTap,
+    this.showArrow = true,
   });
 
   @override
@@ -19,47 +24,66 @@ class EmployeeCrewCard extends StatelessWidget {
 
       child: Row(
         children: [
-
+          /// 프로필
           Container(
-            width: 76,
-            height: 76,
-
+            width: 60,
+            height: 60,
             decoration: BoxDecoration(
-              color: Colors.grey.shade300,
+              color: const Color(0xFFD4DCE3),
               borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Icon(
+              Icons.person,
+              size: 38,
+              color: Color(0xFF7A8795),
             ),
           ),
 
-          const SizedBox(width: 18),
+          const SizedBox(width: 14),
 
-          Column(
-            crossAxisAlignment:
-            CrossAxisAlignment.start,
-
-            children: [
-
-              Text(
-                crew.role,
-                style: TextStyle(
-                  color: Colors.grey.shade500,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
+          /// 정보
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  crew.role,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Color(0xFF8E8E93),
+                  ),
                 ),
-              ),
-
-              const SizedBox(height: 2),
-
-              Text(
-                crew.isMe
-                    ? '${crew.name} (나)'
-                    : crew.name,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+                const SizedBox(height: 2),
+                Text(
+                  crew.name,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
-              ),
-            ],
+
+                /// 태그
+                if (crew.tags.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: crew.tags
+                        .map((tag) => ETagChip(text: tag))
+                        .toList(),
+                  ),
+                ],
+              ],
+            ),
           ),
+
+          /// 화살표 (필요할 때만)
+          if (showArrow)
+            const Icon(
+              Icons.chevron_right,
+              color: Color(0xFFB8B8BE),
+              size: 28,
+            ),
         ],
       ),
     );

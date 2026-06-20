@@ -1,68 +1,71 @@
-import 'package:chack_chack/employee/crews/widgets/ECrewCard.dart';
 import 'package:flutter/material.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
-
 import '../home/EHomePage.dart';
 import '../mypage/EMyPage.dart';
 import 'model/ECrewModel.dart';
+import 'widgets/ECrewCard.dart';
 
 class ECrewPage extends StatelessWidget {
-
   const ECrewPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-
-    final myInfo = EmployeeCrewModel(
-      role: '근무자',
-      name: '모수연',
+    final myInfo = ECrewModel(
+      role: "근무자",
+      name: "손흥민",
       isMe: true,
     );
 
     final crews = [
-      EmployeeCrewModel(
-        role: '사장님',
-        name: '김나나',
+      ECrewModel(
+        role: "사장님",
+        name: "라이츄",
+        tags: ["주방", "100만 볼트"],
       ),
-
-      EmployeeCrewModel(
-        role: '근무자',
-        name: '메로나',
+      ECrewModel(
+        role: "근무자",
+        name: "파이리",
+        tags: ["주방", "불뽑기"],
       ),
-
-      EmployeeCrewModel(
-        role: '근무자',
-        name: '윤서준',
+      ECrewModel(
+        role: "근무자",
+        name: "꼬부기",
+        tags: ["카운터", "물대포"],
       ),
-
-      EmployeeCrewModel(
-        role: '근무자',
-        name: '김예송',
+      ECrewModel(
+        role: "근무자",
+        name: "피존투",
+        tags: ["카운터", "피존추"],
       ),
-
-      EmployeeCrewModel(
-        role: '근무자',
-        name: '김상우',
+      ECrewModel(
+        role: "근무자",
+        name: "버터플",
+        tags: ["카운터", "주방"],
       ),
     ];
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
 
-      /// 공통 BottomNavBar 적용
       bottomNavigationBar: BottomNavBar(
         currentIndex: 1,
         onTap: (index) {
           if (index == 0) {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const EHomePage()));
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const EHomePage()),
+            );
           } else if (index == 1) {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const ECrewPage()));
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ECrewPage()),
+            );
           } else if (index == 4) {
             Navigator.push(
-                context, MaterialPageRoute(builder: (_) => const EMyPage()));
+              context,
+              MaterialPageRoute(builder: (_) => const EMyPage()),
+            );
           }
         },
       ),
@@ -70,86 +73,127 @@ class ECrewPage extends StatelessWidget {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(
-            horizontal: 25,
-            vertical: 35,
+            horizontal: 24,
+            vertical: 28,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
-              const Text('동료', style: TextStyle(
-                fontSize: 25,
-                fontWeight: FontWeight.w700,
+              /// 제목
+              const Text(
+                "근무자",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 22),
 
-              /// 교대 근무 신청
-              GestureDetector(
+              /// 교대 근무 신청 카드
+              InkWell(
                 onTap: () {},
-
+                borderRadius: BorderRadius.circular(18),
                 child: Container(
-                  width: double.infinity,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 25,
-                    vertical: 35,
+                    horizontal: 20,
+                    vertical: 18,
                   ),
-
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(24),
+                    color: const Color(0xFFEEEBFF),
+                    borderRadius: BorderRadius.circular(18),
                   ),
-
                   child: Row(
                     children: [
-
+                      const Icon(
+                        Icons.calendar_today_outlined,
+                        color: Color(0xFF7D67FD),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
                       const Expanded(
-                        child: Text('교대 근무 신청하기',
+                        child: Text(
+                          "교대 근무 신청하기",
                           style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF7D67FD),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
-
                       Icon(
                         Icons.chevron_right,
-                        color: Colors.grey.shade600,
-                        size: 28,
+                        color: Colors.grey.shade500,
                       ),
                     ],
                   ),
                 ),
               ),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 24),
 
-              /// 내 정보
-              EmployeeCrewCard(
-                crew: myInfo,
-              ),
-
-              const SizedBox(height: 36),
-
-              Text('내 동료',
+              /// 나
+              Text(
+                "나",
                 style: TextStyle(
-                  color: Colors.grey.shade500,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
+                  color: Colors.grey.shade600,
+                  fontSize: 14,
                 ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 14),
 
+              ECrewCard(
+                crew: myInfo,
+                showArrow: false,
+              ),
+
+              const SizedBox(height: 20),
+
+              /// 근무자 수
+              Row(
+                children: [
+                  const Text(
+                    "근무자 ",
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    "${crews.length}",
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
+              /// 근무자 목록
               Column(
                 children: crews.map((crew) {
-                  return EmployeeCrewCard(crew: crew,);
+                  return ECrewCard(
+                    crew: crew,
+                    onTap: () {
+                      // Navigator.push(
+                      //   context,
+                      //   MaterialPageRoute(
+                      //     builder: (_) => const ECrewDetailPage(),
+                      //   ),
+                      // );
+                    },
+                  );
                 }).toList(),
               ),
             ],
           ),
-        )
+        ),
       ),
     );
   }

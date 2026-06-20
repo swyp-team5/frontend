@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-class RTagChip extends StatelessWidget {
+class ETagChip extends StatelessWidget {
   final String text;
 
-  const RTagChip({
+  const ETagChip({
     super.key,
     required this.text,
   });

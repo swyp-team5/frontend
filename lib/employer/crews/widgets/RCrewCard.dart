@@ -5,7 +5,7 @@ import '../model/RCrewModel.dart';
 import 'RTagChip.dart';
 
 class RCrewCard extends StatelessWidget {
-  final CrewModel crew;
+  final RCrewModel crew;
   final VoidCallback? onTap;
   final bool showArrow;
 
@@ -62,7 +62,18 @@ class RCrewCard extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  // 태그 표시...
+
+                  /// 태그
+                  if (crew.tags.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 6,
+                      children: crew.tags
+                          .map((tag) => RTagChip(text: tag))
+                          .toList(),
+                    ),
+                  ],
                 ],
               ),
             ),
