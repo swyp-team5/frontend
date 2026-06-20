@@ -170,7 +170,7 @@ class _RHomePageState extends State<RHomePage> {
 
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -183,7 +183,7 @@ class _RHomePageState extends State<RHomePage> {
                       Text(
                         "매장명",
                         style: TextStyle(
-                          fontSize: 23,
+                          fontSize: 18,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -216,8 +216,9 @@ class _RHomePageState extends State<RHomePage> {
                 ),
                 child: Row(
                   children: const [
+                    SizedBox(width: 10),
                     Text(
-                      "공지 📌",
+                      "공지 \t 📌",
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
@@ -227,6 +228,9 @@ class _RHomePageState extends State<RHomePage> {
                     Expanded(
                       child: Text(
                         "마감 때 쓰레기 비우는거 잊지 마세요",
+                        style: TextStyle(
+                          fontSize: 14,
+                        ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
@@ -365,7 +369,11 @@ class _RHomePageState extends State<RHomePage> {
                       employee: "손흥민, 이수봉",
                     ),
 
-                    const Divider(height: 24),
+                    const Divider(
+                      height: 40,              // 위아래 포함 전체 높이(간격)
+                      thickness: 1,            // 선 두께
+                      color: Color(0xFFF2F2F5), // 연한 회색
+                    ),
 
                     _workRow(
                       label: "미들",
@@ -376,7 +384,11 @@ class _RHomePageState extends State<RHomePage> {
                       employee: "모수연, 김다봉",
                     ),
 
-                    const Divider(height: 24),
+                    const Divider(
+                      height: 40,              // 위아래 포함 전체 높이(간격)
+                      thickness: 1,            // 선 두께
+                      color: Color(0xFFF2F2F5), // 연한 회색
+                    ),
 
                     _workRow(
                       label: "마감",

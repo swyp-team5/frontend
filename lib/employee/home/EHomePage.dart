@@ -20,12 +20,15 @@ class _EHomePageState extends State<EHomePage> {
   DateTime focusedDay = DateTime.now();
   DateTime? selectedDay;
 
+  final DateTime deadline = DateTime(2026, 6, 5);
+  late final int daysLeft =
+  deadline.difference(DateTime.now()).inDays.clamp(0, 999);
+
   @override
   Widget build(BuildContext context) {
 
     return Scaffold(
-      backgroundColor:
-      const Color(0xFFF5F5F5),
+      backgroundColor: const Color(0xFFF5F5F7),
 
       /// 공통 BottomNavBar 적용
       bottomNavigationBar: BottomNavBar(
@@ -47,7 +50,7 @@ class _EHomePageState extends State<EHomePage> {
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(
-            horizontal: 25, vertical: 35,),
+            horizontal: 20, vertical: 30,),
 
           child: Column(
             children: [
@@ -63,7 +66,7 @@ class _EHomePageState extends State<EHomePage> {
 
                       const Text('매장명',
                         style: TextStyle(
-                        fontSize: 25,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                       ),
@@ -77,13 +80,37 @@ class _EHomePageState extends State<EHomePage> {
                     ],
                   ),
 
-                  IconButton(
-                    onPressed: () {},
-
-                    icon: const Icon(
-                      Icons.notifications_none,
-                      size: 35,
-                    ),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                        child: const Row(
+                          children: [
+                            CircleAvatar(
+                              radius: 3,
+                              backgroundColor: Color(0xFF9E9E9E),
+                            ),
+                            SizedBox(width: 6),
+                            Text(
+                              "출근전",
+                              style: TextStyle(
+                                color: Color(0xFF8A8A8A),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      const Icon(Icons.notifications_none, size: 28),
+                    ],
                   ),
                 ],
               ),
@@ -93,38 +120,30 @@ class _EHomePageState extends State<EHomePage> {
               /// 공지 배너
               Container(
                 width: double.infinity,
-
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 14, vertical: 12,),
-
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8E8ED,),
-                  borderRadius: BorderRadius.circular(10,),
+                  horizontal: 16,
+                  vertical: 14,
                 ),
-
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                ),
                 child: Row(
-                  children: [
-
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4,),
-
-                      child: const Text('공지',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  children: const [
+                    SizedBox(width: 10),
+                    Text(
+                      "공지 \t 📌",
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
                       ),
                     ),
-
-                    const SizedBox(width: 10),
-
-                    const Expanded(
-                      child: Text('마감 때 쓰레기 비우는거 잊지 마세요',
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        "마감 때 쓰레기 비우는거 잊지 마세요",
                         style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -133,10 +152,90 @@ class _EHomePageState extends State<EHomePage> {
                 ),
               ),
 
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
 
               /// 스케줄 제출 카드
-              _buildScheduleCard(),
+              SizedBox(
+                width: double.infinity,
+                child: AspectRatio(
+                  aspectRatio: 1059 / 414, // 업로드한 이미지 비율
+                  child: Stack(
+                    children: [
+                      /// 배경 이미지
+                      Positioned.fill(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: Image.asset(
+                            "assets/images/e_main_card.png",
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+
+                      /// 하단 버튼
+                      Positioned(
+                        left: 20,
+                        bottom: 18,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // 마감까지 n일 칩
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFBFE1FF),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Text(
+                                "마감까지 ${daysLeft}일",
+                                style: const TextStyle(
+                                  color: Color(0xFF0084FF),
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 18),
+
+                            // 자세히 보기
+                            Padding(
+                              padding: const EdgeInsets.only(left: 5), // 칩 텍스트 시작 위치와 맞춤
+                              child: InkWell(
+                                onTap: () {
+                                  // TODO: 자세히 보기 페이지 이동
+                                },
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      "자세히 보기",
+                                      style: TextStyle(
+                                        color: Color(0xFF004A8F),
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                    SizedBox(width: 2),
+                                    Icon(
+                                      Icons.chevron_right,
+                                      size: 18,
+                                      color: Color(0xFF004A8F),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
 
               const SizedBox(height: 14),
 
@@ -150,7 +249,7 @@ class _EHomePageState extends State<EHomePage> {
                 padding: const EdgeInsets.all(16),
 
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE8E8ED,),
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(18),
                 ),
 
@@ -213,94 +312,6 @@ class _EHomePageState extends State<EHomePage> {
                   ),
                 ),
               ),
-
-              const SizedBox(height: 14),
-
-              /// 공지
-              GestureDetector(
-                onTap: () {
-                  Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const ENotificationPage(),
-                    ),
-                  );
-                },
-                child: _buildMenuSection(
-                  title: '공지',
-                ),
-              ),
-
-              const SizedBox(height: 14),
-
-              /// 이번달 근무
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8E8ED,),
-                  borderRadius: BorderRadius.circular(18),
-                ),
-
-                child: Column(
-                  children: [
-
-                    Row(
-                      children: [
-
-                        const Text('이번달 근무',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-
-                        const Spacer(),
-
-                        Icon(Icons.chevron_right,),
-                      ],
-                    ),
-
-                    const SizedBox(height: 50),
-
-                    Text('이번달 근무 현황이 없어요.',
-                      style: TextStyle(
-                        color: Colors.grey.shade500,
-                        fontSize: 18,
-                      ),
-                    ),
-
-                    const SizedBox(height: 40),
-
-                    const Row(
-                      mainAxisAlignment:
-                      MainAxisAlignment.center,
-
-                      children: [
-
-                        Text('자세히보기',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-
-                        SizedBox(width: 4),
-
-                        Icon(Icons.chevron_right,),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 14),
-
-              /// 교대 근무 신청
-              _buildMenuSection(
-                title: '교대 근무 신청',
-              ),
-
-              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -308,142 +319,54 @@ class _EHomePageState extends State<EHomePage> {
     );
   }
 
-  Widget _buildScheduleCard() {
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8E8ED,),
-        borderRadius: BorderRadius.circular(18),
-      ),
-
-      child: Column(
-        children: [
-
-          const Icon(
-            Icons.calendar_month_outlined,
-            size: 56,
-          ),
-
-          const SizedBox(height: 20),
-
-          const Text('사장님의 매장 크루에 참여하고 근무 시간을 입력해\n자동스케줄을 만들어보세요!',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-
-            child: ElevatedButton(
-              onPressed: () {},
-
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black,
-
-                shape:
-                RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30,),
-                ),
-              ),
-
-              child: const Text('스케줄 제출하기',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildCheckInCard() {
-
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(24),
-
+      padding: const EdgeInsets.symmetric(
+        horizontal: 20,
+        vertical: 16,
+      ),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8E8ED,),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(18),
       ),
-
-      child: Column(
-        children: [
-
-          const Text('출근 후 출근하기를 누르면 자동으로\n출근에 반영이 돼요!',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-
-          const SizedBox(height: 20),
-
-          SizedBox(
-            width: double.infinity,
-            height: 52,
-
-            child: ElevatedButton(
-              onPressed: () {},
-
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10,),
-                ),
-              ),
-
-              child: const Text('출근하기',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMenuSection({required String title,}) {
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20,),
-
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8E8ED,),
-        borderRadius: BorderRadius.circular(18),
-      ),
-
       child: Row(
         children: [
-
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+          const Expanded(
+            child: Text(
+              '출퇴근 기록',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
             ),
           ),
 
-          const Spacer(),
-
-          const Icon(Icons.chevron_right,),
+          SizedBox(
+            width: 170,
+            height: 45,
+            child: ElevatedButton(
+              onPressed: () {
+                // TODO: 출근하기 동작
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFEEEBFF),
+                foregroundColor: const Color(0xFF7D67FD),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                '출근하기',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
