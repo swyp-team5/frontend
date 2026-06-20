@@ -16,6 +16,13 @@ class RMyPage extends StatefulWidget {
 
 class _RMyPageState extends State<RMyPage> {
 
+  /// 현재는 더미 사용자 ID
+  /// API 연결 시: response.user.id 사용
+  final String userId = "owner_1";
+
+  /// 사용자별 저장 키
+  String get RstorePreferenceKey => "R_selected_store_$userId";
+
   /// 현재는 더미 데이터
   /// API 연결 시:
   // final List<StoreModel> stores = response.data;
@@ -23,16 +30,16 @@ class _RMyPageState extends State<RMyPage> {
     "매장명1", "매장명2"
   ];
 
-  String selectedStore = "매장명1";
-  String tempSelectedStore = "매장명1";
+  String RselectedStore = "매장명1";
+  String RtempSelectedStore = "매장명1";
 
   /// API 연결 시:
   // selectedStore = response.currentStore.name;
   // tempSelectedStore = selectedStore;
 
 
-  void _showStoreBottomSheet(BuildContext context) {
-    tempSelectedStore = selectedStore;
+  void _RshowStoreBottomSheet(BuildContext context) {
+    RtempSelectedStore = RselectedStore;
 
     showModalBottomSheet(
       context: context,
@@ -111,7 +118,7 @@ class _RMyPageState extends State<RMyPage> {
 
                     /// 매장 목록
                     ...stores.map((store) {
-                      final selected = store == tempSelectedStore;
+                      final selected = store == RtempSelectedStore;
 
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
@@ -119,7 +126,7 @@ class _RMyPageState extends State<RMyPage> {
                           borderRadius: BorderRadius.circular(18),
                           onTap: () {
                             setModalState(() {
-                              tempSelectedStore = store;
+                              RtempSelectedStore = store;
                             });
                           },
                           child: Container(
@@ -185,12 +192,12 @@ class _RMyPageState extends State<RMyPage> {
 
                           // 선택한 매장 저장
                           await prefs.setString(
-                            "selected_store",
-                            tempSelectedStore,
+                            RstorePreferenceKey,
+                            RtempSelectedStore,
                           );
 
                           setState(() {
-                            selectedStore = tempSelectedStore;
+                            RselectedStore = RtempSelectedStore;
                           });
 
                           Navigator.pop(context);
@@ -230,12 +237,12 @@ class _RMyPageState extends State<RMyPage> {
   Future<void> _loadSelectedStore() async {
     final prefs = await SharedPreferences.getInstance();
 
-    final savedStore = prefs.getString("selected_store");
+    final savedStore = prefs.getString(RstorePreferenceKey);
 
     if (savedStore != null && stores.contains(savedStore)) {
       setState(() {
-        selectedStore = savedStore;
-        tempSelectedStore = savedStore;
+        RselectedStore = savedStore;
+        RtempSelectedStore = savedStore;
       });
     }
   }
@@ -310,12 +317,12 @@ class _RMyPageState extends State<RMyPage> {
 
                   GestureDetector(
                     onTap: () {
-                      _showStoreBottomSheet(context);
+                      _RshowStoreBottomSheet(context);
                     },
                     child: Row(
                       children: [
                         Text(
-                          selectedStore,
+                          RselectedStore,
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
