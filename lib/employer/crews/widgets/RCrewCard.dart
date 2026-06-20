@@ -4,201 +4,77 @@ import '../RCrewDetailPage.dart';
 import '../model/RCrewModel.dart';
 import 'RTagChip.dart';
 
-class CrewCard extends StatelessWidget {
-
+class RCrewCard extends StatelessWidget {
   final CrewModel crew;
+  final VoidCallback? onTap;
+  final bool showArrow;
 
-  const CrewCard({
+  const RCrewCard({
     super.key,
     required this.crew,
+    this.onTap,
+    this.showArrow = true,
   });
 
   @override
   Widget build(BuildContext context) {
-
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 6,),
-
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-
-        children: [
-
-          /// 프로필 이미지
-          Container(width: 68, height: 68,
-
-            decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(14),
-            ),
-          ),
-
-          const SizedBox(width: 14),
-
-          /// 정보 영역
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-
-              children: [
-
-                Text(crew.role,
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-
-
-                Text(crew.name,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                const SizedBox(height: 5),
-
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-
-                  child: Row(
-                    children: crew.tags.map((tag) {
-
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 6,),
-
-                        child: TagChip(text: tag,),
-                      );
-
-                    }).toList(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
-          /// 버튼 영역
-          SizedBox(
-            width: 90,
-            child: _buildButtons(context),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildButtons(BuildContext context,) {
-
-    switch (crew.status) {
-
-    /// 초대 예정
-      case 'invite':
-
-        return _singleButton(
-          context: context,
-          text: '초대하기',
-          backgroundColor:
-          Colors.grey.shade200,
-          textColor: Colors.black,
-        );
-
-    /// 초대 수락 대기중
-      case 'waiting':
-
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 20),
+        child: Row(
           children: [
-
-            _singleButton(
-              context: context,
-              text: '초대 취소',
-              backgroundColor:
-              Colors.grey.shade600,
-              textColor: Colors.white,
-            ),
-
-            const SizedBox(height: 8),
-
-            _singleButton(
-              context: context,
-              text: '다시 초대',
-              backgroundColor:
-              Colors.grey.shade200,
-              textColor: Colors.black,
-            ),
-          ],
-        );
-
-    /// 초대 완료
-      case 'completed':
-
-        return _singleButton(
-          context: context,
-          text: '상세 보기',
-          backgroundColor:
-          Colors.grey.shade200,
-          textColor: Colors.black,
-
-          onTap: () {
-
-            Navigator.push(context,
-              MaterialPageRoute(
-                builder: (_) => const RCrewDetailPage(),
+            /// 프로필
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                color: const Color(0xFFD4DCE3),
+                borderRadius: BorderRadius.circular(14),
               ),
-            );
-          },
-        );
+              child: const Icon(
+                Icons.person,
+                size: 38,
+                color: Color(0xFF7A8795),
+              ),
+            ),
 
-      default:
-        return const SizedBox();
-    }
-  }
+            const SizedBox(width: 14),
 
-  Widget _singleButton({
-    required BuildContext context,
-    required String text,
-    required Color backgroundColor,
-    required Color textColor,
-    VoidCallback? onTap,
-  }) {
+            /// 정보
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    crew.role,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF8E8E93),
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    crew.name,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  // 태그 표시...
+                ],
+              ),
+            ),
 
-    return SizedBox(
-      width: double.infinity,
-      height: 40,
-
-      child: ElevatedButton(
-        onPressed: onTap ?? () {},
-
-        style: ElevatedButton.styleFrom(
-          backgroundColor: backgroundColor,
-
-          elevation: 0,
-
-          padding: EdgeInsets.zero,
-
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-
-        child: Text(text,
-
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: textColor,
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-          ),
+            /// 화살표 (필요할 때만)
+            if (showArrow)
+              const Icon(
+                Icons.chevron_right,
+                color: Color(0xFFB8B8BE),
+                size: 28,
+              ),
+          ],
         ),
       ),
     );

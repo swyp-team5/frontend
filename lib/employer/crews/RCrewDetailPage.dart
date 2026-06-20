@@ -166,9 +166,9 @@ class _RCrewDetailPageState
 
                   children: const [
 
-                    TagChip(text: '매점'),
-                    TagChip(text: '매표'),
-                    TagChip(text: '마감 불가'),
+                    RTagChip(text: '매점'),
+                    RTagChip(text: '매표'),
+                    RTagChip(text: '마감 불가'),
                   ],
                 ),
 

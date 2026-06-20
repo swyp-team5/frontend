@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 import '../../../common/widgets/BottomNavBar.dart';
 
 import '../home/RHomePage.dart';
+import 'RCrewDetailPage.dart';
 import 'model/RCrewModel.dart';
 
 import 'widgets/RCrewCard.dart';
-import 'widgets/RSectionTitle.dart';
 
 class RCrewPage extends StatefulWidget {
   const RCrewPage({super.key});
@@ -18,40 +18,31 @@ class RCrewPage extends StatefulWidget {
 
 class _RCrewPageState extends State<RCrewPage> {
 
-  final List<CrewModel> inviteCrews = [
-
+  final List<CrewModel> crews = [
     CrewModel(
-      name: '모수연',
-      role: '동료',
-      tags: ['웰컴'],
-      status: 'invite',
+      role: "근무자",
+      name: "박지연",
+      tags: ["주방", "100만 볼트"],
     ),
-
     CrewModel(
-      name: '윤서준',
-      role: '동료',
-      tags: ['매점', '오픈 불가'],
-      status: 'invite',
+      role: "근무자",
+      name: "파이리",
+      tags: ["주방", "불뽑기"],
     ),
-  ];
-
-  final List<CrewModel> waitingCrews = [
-
     CrewModel(
-      name: '김상우',
-      role: '동료',
-      tags: ['웰컴', '매점'],
-      status: 'waiting',
+      role: "근무자",
+      name: "꼬부기",
+      tags: ["카운터", "물대포"],
     ),
-  ];
-
-  final List<CrewModel> completedCrews = [
-
     CrewModel(
-      name: '박지연',
-      role: '동료',
-      tags: ['매점', '마감 불가'],
-      status: 'completed',
+      role: "근무자",
+      name: "버터플",
+      tags: ["카운터", "주방"],
+    ),
+    CrewModel(
+      role: "근무자",
+      name: "꼬부기",
+      tags: ["야도란", "주방"],
     ),
   ];
 
@@ -64,7 +55,7 @@ class _RCrewPageState extends State<RCrewPage> {
 
       /// 공통 BottomNavBar 적용
       bottomNavigationBar: BottomNavBar(
-        currentIndex: 0,
+        currentIndex: 1,
         onTap: (index) {
           if (index == 0) {
             Navigator.push(context,
@@ -81,144 +72,188 @@ class _RCrewPageState extends State<RCrewPage> {
 
       body: SafeArea(
         child: SingleChildScrollView(
-
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 25,
-              vertical: 35,
-            ),
-
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-
-              children: [
-
-                /// 헤더
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-
-                  children: [
-
-                    const Text('동료',
-                      style: TextStyle(
-                        fontSize: 25,
-                        fontWeight: FontWeight.w700,
-                      ),
+          padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              /// 헤더
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "근무자",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
                     ),
-
-                    IconButton(
-                      onPressed: () {},
-
-                      icon: const Icon(
-                        Icons.person_add_alt_1_outlined,
-                        size: 35,
-                      ),
+                  ),
+                  IconButton(
+                    onPressed: () {},
+                    icon: const Icon(
+                      Icons.person_add_alt_1,
+                      size: 30,
                     ),
-                  ],
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              /// 본인이 사장님일 경우
+              Text(
+                "나",
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 14,
                 ),
+              ),
 
-                const SizedBox(height: 20),
+              const SizedBox(height: 14),
 
-                /// 내 카드
-                Row(
-                  children: [
+              _crewTile(
+                role: "사장님",
+                name: "손흥민",
+                tags: const [],
+                showArrow: false,
+              ),
 
-                    Container(width: 68, height: 68,
+              const SizedBox(height: 30),
 
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(14,),
-                      ),
+              /// 근무자 수
+              Row(
+                children: [
+                  const Text(
+                    "근무자 ",
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.grey,
                     ),
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    "${crews.length}",
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
 
-                    const SizedBox(width: 14),
+              const SizedBox(height: 16),
 
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-
-                      children: [
-
-                        Text(
-                          '사장님',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                          ),
+              Column(
+                children: crews.map((crew) {
+                  return RCrewCard(
+                    crew: crew,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const RCrewDetailPage(),
                         ),
-
-                        const SizedBox(height: 4,),
-
-                        const Text('김다빈 (나)',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 30),
-
-                /// 초대 예정
-                SectionTitle(
-                  title: '초대 예정 ${inviteCrews.length}',
-                ),
-
-                const SizedBox(height: 16),
-
-                ...inviteCrews.map((crew) {
-
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 16,),
-
-                      child: CrewCard(crew: crew,),
-                    );
-                  },
-                ),
-
-                const SizedBox(height: 20),
-
-                /// 초대 수락 대기중
-                SectionTitle(
-                  title: '초대 수락 대기 중 ${waitingCrews.length}',
-                ),
-
-                const SizedBox(height: 16),
-
-                ...waitingCrews.map((crew) {
-
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 16,),
-
-                      child: CrewCard(crew: crew,),
-                    );
-                  },
-                ),
-
-                /// 초대 완료
-                SectionTitle(
-                  title: '초대 완료 ${waitingCrews.length}',
-                ),
-
-                const SizedBox(height: 16),
-
-                ...completedCrews.map((crew) {
-
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 16,),
-
-                      child: CrewCard(crew: crew,),
-                    );
-                  },
-                ),
-              ],
-            ),
+                      );
+                    },
+                  );
+                }).toList(),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
+}
+
+Widget _crewTile({
+  required String role,
+  required String name,
+  required List<String> tags,
+  bool showArrow = true,
+}) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 20),
+    child: Row(
+      children: [
+        /// 프로필
+        Container(
+          width: 60,
+          height: 60,
+          decoration: BoxDecoration(
+            color: const Color(0xFFD4DCE3),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: const Icon(
+            Icons.person,
+            color: Color(0xFF7A8795),
+            size: 38,
+          ),
+        ),
+
+        const SizedBox(width: 14),
+
+        /// 정보
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                role,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Color(0xFF8E8E93),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                name,
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              if (tags.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  children: tags
+                      .map(
+                        (tag) => Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD8EBFF),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        tag,
+                        style: const TextStyle(
+                          color: Color(0xFF0B6FD8),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  )
+                      .toList(),
+                ),
+              ],
+            ],
+          ),
+        ),
+
+        /// 화살표
+        if (showArrow)
+          const Icon(
+            Icons.chevron_right,
+            color: Color(0xFFB8B8BE),
+            size: 28,
+          ),
+      ],
+    ),
+  );
 }

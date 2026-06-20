@@ -1,32 +1,29 @@
 import 'package:flutter/material.dart';
 
-class TagChip extends StatelessWidget {
-
+class RTagChip extends StatelessWidget {
   final String text;
 
-  const TagChip({
+  const RTagChip({
     super.key,
     required this.text,
   });
 
   @override
   Widget build(BuildContext context) {
-
     return Container(
       padding: const EdgeInsets.symmetric(
         horizontal: 10,
-        vertical: 2,
+        vertical: 3,
       ),
-
       decoration: BoxDecoration(
-        color: Colors.grey.shade400,
+        color: const Color(0xFFD8EBFF),
         borderRadius: BorderRadius.circular(20),
       ),
-
-      child: Text(text,
+      child: Text(
+        text,
         style: const TextStyle(
-          color: Colors.white,
-          fontSize: 11,
+          color: Color(0xFF0B6FD8),
+          fontSize: 12,
           fontWeight: FontWeight.w600,
         ),
       ),

@@ -1,14 +1,13 @@
 class CrewModel {
-
-  final String name;
   final String role;
+  final String name;
   final List<String> tags;
-  final String status;
+  final bool showArrow;
 
   CrewModel({
-    required this.name,
     required this.role,
+    required this.name,
     required this.tags,
-    required this.status,
+    this.showArrow = true,
   });
 }
