@@ -46,7 +46,11 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
         shiftInfos.every((e) => e.isCompleted);
   }
 
+  /// 등록된 스케줄 펼쳐보이기
   bool _isScheduleExpanded = true;
+
+  /// 등록된 스케줄 목록
+  List<RegisteredSchedule> registeredSchedules = [];
 
   @override
   void initState() {
@@ -164,7 +168,6 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                       if (minWork > 1) {
                         setState(() {
                           minWork--;
-                          _isRegistered = false;
                         });
                       }
                     },
@@ -174,7 +177,6 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                         if (minWork > maxWork) {
                           maxWork = minWork;
                         }
-                        _isRegistered = false;
                       });
                     },
                   ),
@@ -188,14 +190,12 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                       if (maxWork > minWork) {
                         setState(() {
                           maxWork--;
-                          _isRegistered = false;
                         });
                       }
                     },
                     onPlus: () {
                       setState(() {
                         maxWork++;
-                        _isRegistered = false;
                       });
                     },
                   ),
@@ -203,7 +203,7 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
               ],
             ),
             const SizedBox(height: 32),
-            if (_isRegistered) ...[
+            if (registeredSchedules.isNotEmpty) ...[
               const SizedBox(height: 32),
 
               const Text(
@@ -216,121 +216,126 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
 
               const SizedBox(height: 16),
 
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: const Color(0xFFE8E9ED),
+              ...List.generate(registeredSchedules.length, (index) {
+                final schedule = registeredSchedules[index];
+
+                return Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: const Color(0xFFE8E9ED),
+                    ),
                   ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    /// 선택한 요일
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            days.where((e) => selectedDays.contains(e)).join(", "),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      /// 헤더
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              days
+                                  .where((d) => schedule.days.contains(d))
+                                  .join(", "),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
                             ),
                           ),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _isScheduleExpanded = !_isScheduleExpanded;
-                            });
-                          },
-                          child: Icon(
-                            _isScheduleExpanded
-                                ? Icons.keyboard_arrow_up
-                                : Icons.keyboard_arrow_down,
-                            color: Colors.grey,
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                schedule.isExpanded = !schedule.isExpanded;
+                              });
+                            },
+                            child: Icon(
+                              schedule.isExpanded
+                                  ? Icons.keyboard_arrow_up
+                                  : Icons.keyboard_arrow_down,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      if (schedule.isExpanded) ...[
+                        const SizedBox(height: 16),
+                        const Divider(),
+
+                        ...schedule.shifts.map((shift) {
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 24),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFEAF3FF),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    shift.name,
+                                    style: const TextStyle(
+                                      color: Color(0xFF007AFF),
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+
+                                const SizedBox(height: 12),
+
+                                _scheduleRow(
+                                  "타임 운영 시간",
+                                  "${formatTime(shift.startTime)} - ${formatTime(shift.endTime)}",
+                                ),
+
+                                const SizedBox(height: 10),
+
+                                _scheduleRow(
+                                  "필요 근무자 수",
+                                  "${shift.requiredWorkers}명",
+                                ),
+
+                                const SizedBox(height: 10),
+
+                                _scheduleRow(
+                                  "휴게 시간",
+                                  shift.breakTime,
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+
+                        Center(
+                          child: TextButton(
+                            onPressed: () {
+                              setState(() {
+                                registeredSchedules.removeAt(index);
+                              });
+                            },
+                            child: const Text(
+                              "해당 타임 삭제하기 ✕",
+                              style: TextStyle(
+                                color: Color(0xFFAEB0B6),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                           ),
                         ),
                       ],
-                    ),
-
-                    if (_isScheduleExpanded) ...[
-                      const SizedBox(height: 16),
-                      const Divider(),
-                      const SizedBox(height: 8),
-
-                      ...shiftInfos.map((shift) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 24),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFEAF3FF),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: Text(
-                                  shift.name,
-                                  style: const TextStyle(
-                                    color: Color(0xFF007AFF),
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-
-                              const SizedBox(height: 12),
-
-                              _scheduleRow(
-                                "타임 운영 시간",
-                                "${formatTime(shift.startTime)} - ${formatTime(shift.endTime)}",
-                              ),
-
-                              const SizedBox(height: 10),
-
-                              _scheduleRow(
-                                "필요 근무자 수",
-                                "${shift.requiredWorkers}명",
-                              ),
-
-                              const SizedBox(height: 10),
-
-                              _scheduleRow(
-                                "휴게 시간",
-                                shift.breakTime,
-                              ),
-                            ],
-                          ),
-                        );
-                      }),
-
-                      Center(
-                        child: TextButton(
-                          onPressed: () {
-                            setState(() {
-                              _isRegistered = false;
-                            });
-                          },
-                          child: const Text(
-                            "해당 타임 삭제하기 ✕",
-                            style: TextStyle(
-                              color: Color(0xFFAEB0B6),
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
                     ],
-                  ],
-                ),
-              ),
+                  ),
+                );
+              }),
 
               const SizedBox(height: 32),
             ],
@@ -348,7 +353,6 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                       } else {
                         selectedDays.add(day);
                       }
-                      _isRegistered = false;
                     });
                   },
                   child: Container(
@@ -398,7 +402,6 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                         setState(() {
                           shiftCount--;
                           _syncShiftInfos();
-                          _isRegistered = false;
                         });
                       }
                     },
@@ -406,7 +409,6 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                       setState(() {
                         shiftCount++;
                         _syncShiftInfos();
-                        _isRegistered = false;
                       });
                     },
                   ),
@@ -440,7 +442,6 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                         info: shiftInfos[index],
                         onChanged: () {
                           setState(() {
-                            _isRegistered = false;
                           });
                         },
                       );
@@ -452,10 +453,41 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                       child: ElevatedButton(
                         onPressed: canRegister
                             ? () {
-                                setState(() {
-                                  _isRegistered = true;
-                                });
-                              }
+                          setState(() {
+                            // 등록 상태
+                            _isRegistered = true;
+
+                            // 현재 입력값 저장
+                            registeredSchedules.add(
+                              RegisteredSchedule(
+                                days: Set.from(selectedDays),
+                                shifts: shiftInfos
+                                    .map(
+                                      (e) => e.copyWith(
+                                    title: e.title,
+                                    name: e.name,
+                                    startTime: e.startTime,
+                                    endTime: e.endTime,
+                                    breakTime: e.breakTime,
+                                    requiredWorkers: e.requiredWorkers,
+                                  ),
+                                )
+                                    .toList(),
+                              ),
+                            );
+
+                            // 입력 폼 초기화
+                            selectedDays.clear();
+
+                            shiftCount = 1;
+                            shiftInfos = [
+                              ShiftInfo(),
+                              ShiftInfo(),
+                            ];
+
+                            _syncShiftInfos();
+                          });
+                        }
                             : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: canRegister
@@ -550,8 +582,20 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
       setState(() {
         openTime = result.openTime;
         closeTime = result.closeTime;
-        _isRegistered = false;
       });
     }
   }
+}
+
+class RegisteredSchedule {
+  final Set<String> days;
+  final List<ShiftInfo> shifts;
+
+  bool isExpanded;
+
+  RegisteredSchedule({
+    required this.days,
+    required this.shifts,
+    this.isExpanded = true,
+  });
 }
