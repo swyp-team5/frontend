@@ -37,6 +37,9 @@ dev_dependencies:
 
 
 flutter:
+
+  generate: true
+
   assets:
     - assets/images/r_main_card.png
 
