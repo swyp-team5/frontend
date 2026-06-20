@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 class TimeInputBottomSheet extends StatefulWidget {
   const TimeInputBottomSheet({
     super.key,
-    this.initialTime,
+    this.initialOpenTime,
+    this.initialCloseTime,
   });
 
-  final TimeOfDay? initialTime;
+  final TimeOfDay? initialOpenTime;
+  final TimeOfDay? initialCloseTime;
 
   static Future<StoreTimeRange?> show(
       BuildContext context, {
@@ -23,7 +25,9 @@ class TimeInputBottomSheet extends StatefulWidget {
         ),
       ),
       builder: (_) => TimeInputBottomSheet(
-        // 필요하면 initial 값 전달
+        // initial 값 전달
+        initialOpenTime: initialOpenTime,
+        initialCloseTime: initialCloseTime,
       ),
     );
   }
@@ -53,9 +57,18 @@ class _TimeInputBottomSheetState extends State<TimeInputBottomSheet> {
   void initState() {
     super.initState();
 
-    if (widget.initialTime != null) {
-      openHour = widget.initialTime!.hour.toString().padLeft(2, "0");
-      openMinute = widget.initialTime!.minute.toString().padLeft(2, "0");
+    if (widget.initialOpenTime != null) {
+      openHour =
+          widget.initialOpenTime!.hour.toString().padLeft(2, "0");
+      openMinute =
+          widget.initialOpenTime!.minute.toString().padLeft(2, "0");
+    }
+
+    if (widget.initialCloseTime != null) {
+      closeHour =
+          widget.initialCloseTime!.hour.toString().padLeft(2, "0");
+      closeMinute =
+          widget.initialCloseTime!.minute.toString().padLeft(2, "0");
     }
   }
 

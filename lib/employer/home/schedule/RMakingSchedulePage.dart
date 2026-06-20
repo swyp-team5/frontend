@@ -573,11 +573,20 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
   }
 
   void _openTimePicker({int initialIndex = 0}) async {
+    final bool openIsDefault =
+        openTime.hour == 0 && openTime.minute == 0;
+
+    final bool closeIsDefault =
+        closeTime.hour == 0 && closeTime.minute == 0;
+
     final result = await TimeInputBottomSheet.show(
       context,
-      initialOpenTime: openTime,
-      initialCloseTime: closeTime,
+      initialOpenTime:
+      openIsDefault ? closeTime : openTime,
+      initialCloseTime:
+      closeIsDefault ? openTime : closeTime,
     );
+
     if (result != null) {
       setState(() {
         openTime = result.openTime;
