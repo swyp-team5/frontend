@@ -20,10 +20,7 @@ class ShiftInfo {
 
   bool get isCompleted {
     return name.trim().isNotEmpty &&
-        breakTime.isNotEmpty &&
-        requiredWorkers > 0 &&
-        !(startTime.hour == 0 && startTime.minute == 0) &&
-        !(endTime.hour == 0 && endTime.minute == 0);
+        requiredWorkers > 0;
   }
 
   ShiftInfo copyWith({
