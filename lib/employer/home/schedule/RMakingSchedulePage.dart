@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import 'RRecentSchedulePage.dart';
 import 'TimeInputBottomSheet.dart';
 import 'widgets/ShiftTimeCard.dart';
 import 'widgets/CounterBox.dart';
@@ -94,6 +97,7 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
   void _onRegisterPressed() {
     setState(() {
       _isRegistered = true;
+
       _registeredSchedules.add(
         RegisteredSchedule(
           days: Set.from(_selectedDays),
@@ -106,6 +110,36 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
       _shiftInfos = [ShiftInfo(), ShiftInfo()];
       _syncShiftInfos();
     });
+  }
+
+  Future<void> _saveRecentSchedule() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final data = {
+      "openTime": _formatTime(_openTime),
+      "closeTime": _formatTime(_closeTime),
+      "minWork": _minWork,
+      "maxWork": _maxWork,
+      "registeredSchedules": _registeredSchedules.map((schedule) {
+        return {
+          "days": schedule.days.toList(),
+          "shifts": schedule.shifts.map((shift) {
+            return {
+              "name": shift.name,
+              "startTime": _formatTime(shift.startTime),
+              "endTime": _formatTime(shift.endTime),
+              "breakTime": shift.breakTime,
+              "requiredWorkers": shift.requiredWorkers,
+            };
+          }).toList(),
+        };
+      }).toList(),
+    };
+
+    await prefs.setString(
+      "recent_schedule",
+      jsonEncode(data),
+    );
   }
 
   // --- 3. Main Build Method ---
@@ -144,7 +178,12 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                     ),
                     GestureDetector(
                       onTap: () {
-                        // TODO : 불러오기 기능
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const RRecentSchedulePage(),
+                          ),
+                        );
                       },
                       child: const Text(
                         "불러오기",
@@ -576,10 +615,16 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
           width: double.infinity,
           child: ElevatedButton(
             onPressed: _isRegistered
-                ? () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const RStoreClosePage()),
-                    )
+                ? () async {
+              await _saveRecentSchedule();
+
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const RStoreClosePage(),
+                ),
+              );
+            }
                 : null,
             style: ElevatedButton.styleFrom(
               backgroundColor:

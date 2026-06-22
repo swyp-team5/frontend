@@ -1,4 +1,5 @@
 import 'package:chack_chack/employer/home/schedule/RMakingSchedulePage.dart';
+import 'package:chack_chack/employer/home/schedule/RRecentSchedulePage.dart';
 import 'package:flutter/material.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
@@ -82,7 +83,7 @@ class _RHomePageState extends State<RHomePage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const RCrewPage(),
+                          builder: (_) => const RRecentSchedulePage(),
                         ),
                       );
                     },

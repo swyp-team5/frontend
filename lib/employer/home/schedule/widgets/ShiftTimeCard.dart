@@ -142,35 +142,244 @@ class _ShiftTimeCardState extends State<ShiftTimeCard> {
           ],
         ),
         const SizedBox(height: 20),
-        
-        const Text("휴게 시간", style: TextStyle(color: Color(0xFF6C6E76), fontSize: 13)),
-        const SizedBox(height: 8),
-        Container(
-          height: 52,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF7F8FA),
-            borderRadius: BorderRadius.circular(10),
+
+        const Text(
+          "휴게 시간",
+          style: TextStyle(
+            color: Color(0xFF6C6E76),
+            fontSize: 13,
           ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: widget.info.breakTime,
-              isExpanded: true,
-              icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFFAEB0B6)),
-              items: ["없음", "30분", "1시간"].map((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value, style: const TextStyle(fontSize: 15)),
+        ),
+        const SizedBox(height: 8),
+
+        InkWell(
+          onTap: () async {
+            final result = await showModalBottomSheet<String>(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent,
+              builder: (context) {
+                String? selectedValue = widget.info.breakTime;
+
+                return StatefulBuilder(
+                  builder: (context, setModalState) {
+                    const options = [
+                      "없음",
+                      "30분",
+                      "1시간",
+                      "1시간 30분",
+                    ];
+
+                    return Container(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(24),
+                        ),
+                      ),
+                      child: SafeArea(
+                        top: false,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // 상단 핸들
+                            Container(
+                              width: 56,
+                              height: 5,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFD9D9D9),
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                            ),
+
+                            const SizedBox(height: 20),
+
+                            // 제목 + 닫기 버튼
+                            Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                const Center(
+                                  child: Text(
+                                    "휴게시간 선택",
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  right: 0,
+                                  child: GestureDetector(
+                                    onTap: () => Navigator.pop(context),
+                                    child: Container(
+                                      width: 36,
+                                      height: 36,
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFFF2F2F5),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.close,
+                                        color: Color(0xFFAEB0B6),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+
+                            const SizedBox(height: 8),
+
+                            const Text(
+                              "휴게시간은 4시간마다 30분씩 법적으로 정해져 있어요",
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFF767676),
+                              ),
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            const Divider(
+                              height: 1,
+                              thickness: 1,
+                              color: Color(0xFFF1F1F5),
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            GridView.builder(
+                              shrinkWrap: true,
+                              physics: const NeverScrollableScrollPhysics(),
+                              itemCount: options.length,
+                              gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                crossAxisSpacing: 12,
+                                mainAxisSpacing: 12,
+                                childAspectRatio: 2.1,
+                              ),
+                              itemBuilder: (context, index) {
+                                final item = options[index];
+                                final isSelected = selectedValue == item;
+
+                                return GestureDetector(
+                                  onTap: () {
+                                    setModalState(() {
+                                      selectedValue = item;
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 18),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? const Color(0xFFE6F3FF)
+                                          : const Color(0xFFF1F1F5),
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? const Color(0xFF0084FF)
+                                            : Colors.transparent,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            item,
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight:
+                                              isSelected ? FontWeight.w700 : FontWeight.w500,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                        ),
+                                        if (isSelected)
+                                          Container(
+                                            width: 22,
+                                            height: 22,
+                                            decoration: const BoxDecoration(
+                                              color: Color(0xFF0084FF),
+                                              shape: BoxShape.circle,
+                                            ),
+                                            child: const Icon(
+                                              Icons.check,
+                                              size: 18,
+                                              color: Colors.white,
+                                            ),
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+
+                            const SizedBox(height: 28),
+
+                            SizedBox(
+                              width: double.infinity,
+                              height: 60,
+                              child: ElevatedButton(
+                                onPressed: () {
+                                  Navigator.pop(context, selectedValue);
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF1784F4),
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: const Text(
+                                  "저장",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 );
-              }).toList(),
-              onChanged: (val) {
-                if (val != null) {
-                  setState(() {
-                    widget.info.breakTime = val!;
-                  });
-                  widget.onChanged?.call();
-                }
               },
+            );
+
+            if (result != null) {
+              setState(() {
+                widget.info.breakTime = result;
+              });
+              widget.onChanged?.call();
+            }
+          },
+          child: Container(
+            height: 52,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF7F8FA),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                Text(
+                  widget.info.breakTime,
+                  style: const TextStyle(
+                    fontSize: 15,
+                  ),
+                ),
+                const Spacer(),
+                const Icon(
+                  Icons.keyboard_arrow_down,
+                  color: Color(0xFFAEB0B6),
+                ),
+              ],
             ),
           ),
         ),

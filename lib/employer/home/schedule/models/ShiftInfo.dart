@@ -5,7 +5,7 @@ class ShiftInfo {
   String name;
   TimeOfDay startTime;
   TimeOfDay endTime;
-  String breakTime; // "없음", "30분", "1시간" 등
+  String breakTime; // "없음", "30분", "1시간", "1시간 30분"
   int requiredWorkers;
 
   ShiftInfo({
