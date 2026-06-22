@@ -493,60 +493,6 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
       backgroundColor:
       const Color(0xFFF5F5F5),
 
-      /// 공통 BottomNavBar 적용
-      bottomNavigationBar:
-      BottomNavBar(
-        currentIndex: 4,
-
-        onTap: (index) {
-
-          /// 홈
-          if (index == 0) {
-
-            Navigator.push(
-              context,
-
-              MaterialPageRoute(
-                builder: (_) =>
-                const RHomePage(),
-              ),
-            );
-          }
-
-          /// 동료
-          else if (index == 1) {
-
-            Navigator.push(
-              context,
-
-              MaterialPageRoute(
-                builder: (_) =>
-                const RCrewPage(),
-              ),
-            );
-          }
-
-          /// 스케줄
-          else if (index == 2) {}
-
-          /// 급여
-          else if (index == 3) {}
-
-          /// 마이페이지
-          else if (index == 4) {
-
-            Navigator.push(
-              context,
-
-              MaterialPageRoute(
-                builder: (_) =>
-                const RMyPage(),
-              ),
-            );
-          }
-        },
-      ),
-
       body: SafeArea(
         child: SingleChildScrollView(
 

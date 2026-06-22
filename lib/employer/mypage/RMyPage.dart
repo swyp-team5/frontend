@@ -1,10 +1,12 @@
 import 'package:chack_chack/employer/home/RHomePage.dart';
 import 'package:chack_chack/employer/mypage/RProfileEditPage.dart';
+import 'package:chack_chack/employer/mypage/RTodayWorkingPage.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
 import '../crews/RCrewPage.dart';
+import '../schedule/RMainSchedulePage.dart';
 
 class RMyPage extends StatefulWidget {
 
@@ -255,42 +257,22 @@ class _RMyPageState extends State<RMyPage> {
       const Color(0xFFF5F5F5),
 
       /// 공통 BottomNavBar 적용
-      bottomNavigationBar:
-      BottomNavBar(
-        currentIndex: 4,
-
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: 0,
         onTap: (index) {
-
-          /// 홈
           if (index == 0) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const RHomePage()));
+          } else if (index == 1) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const RCrewPage()));
+          } else if (index == 2) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const RMainSchedulePage()));
+          } else if (index == 4) {
             Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) =>
-                const RHomePage(),
-              ),
-            );
+                context, MaterialPageRoute(builder: (_) => const RMyPage()));
           }
-
-          /// 동료
-          else if (index == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) =>
-                const RCrewPage(),
-              ),
-            );
-          }
-
-          /// 스케줄
-          else if (index == 2) {}
-
-          /// 급여
-          else if (index == 3) {}
-
-          /// 마이페이지
-          else if (index == 4) {}
         },
       ),
 
@@ -370,6 +352,14 @@ class _RMyPageState extends State<RMyPage> {
                   _buildMenuRow(
                     icon: Icons.calendar_today_outlined,
                     title: "오늘 근무",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const RTodayWorkingPage(),
+                        ),
+                      );
+                    },
                   ),
                   const Divider(height: 1, color: Color(0xFFF2F2F2)),
                   _buildMenuRow(
