@@ -3,6 +3,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import 'dart:typed_data';
+import 'package:photo_manager/photo_manager.dart';
+
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../../common/widgets/BottomNavBar.dart';
 import '../crews/RCrewPage.dart';
 import '../home/RHomePage.dart';
@@ -13,34 +18,472 @@ class RProfileEditPage extends StatefulWidget {
   const RProfileEditPage({super.key});
 
   @override
-  State<RProfileEditPage> createState() =>
-      _RProfileEditPageState();
+  State<RProfileEditPage> createState() => _RProfileEditPageState();
 }
 
-class _RProfileEditPageState
-    extends State<RProfileEditPage> {
+class _RProfileEditPageState extends State<RProfileEditPage> {
 
   File? profileImage;
 
-  final ImagePicker picker =
-  ImagePicker();
+  final ImagePicker picker = ImagePicker();
+
+  final TextEditingController nameController =
+  TextEditingController();
+
+  final TextEditingController phoneController =
+  TextEditingController();
+
+  final TextEditingController storePhoneController =
+  TextEditingController();
 
   /// 프로필 이미지 선택
-  Future<void> pickProfileImage() async {
+  Future<void> _showGalleryBottomSheet() async {
+    final PermissionState ps =
+    await PhotoManager.requestPermissionExtend();
 
-    final XFile? image =
-    await picker.pickImage(
-      source: ImageSource.gallery,
+    if (!ps.isAuth && ps != PermissionState.limited) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("갤러리 접근 권한이 필요합니다."),
+          ),
+        );
+      }
+      return;
+    }
+
+    final List<AssetPathEntity> albums =
+    await PhotoManager.getAssetPathList(
+      type: RequestType.image,
+      onlyAll: true,
     );
 
-    if (image != null) {
+    if (albums.isEmpty) return;
 
-      setState(() {
+    final AssetPathEntity album = albums.first;
 
-        profileImage =
-            File(image.path);
-      });
+    final List<AssetEntity> images =
+    await album.getAssetListPaged(
+      page: 0,
+      size: 100,
+    );
+
+    images.sort(
+          (a, b) => b.createDateTime.compareTo(a.createDateTime),
+    );
+
+    if (!mounted) return;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(28),
+        ),
+      ),
+      builder: (_) {
+        AssetEntity? selectedAsset;
+
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return SizedBox(
+              height: MediaQuery.of(context).size.height * 0.7,
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+
+                  Container(
+                    width: 48,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  const Text(
+                    "최근 항목",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  Expanded(
+                    child: GridView.builder(
+                      padding: EdgeInsets.zero,
+                      itemCount: images.length,
+                      gridDelegate:
+                      const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 3,
+                        crossAxisSpacing: 2,
+                        mainAxisSpacing: 2,
+                      ),
+                      itemBuilder: (context, index) {
+                        final asset = images[index];
+
+                        final isSelected =
+                            selectedAsset?.id == asset.id;
+
+                        return FutureBuilder<Uint8List?>(
+                          future: asset.thumbnailDataWithSize(
+                            const ThumbnailSize(300, 300),
+                          ),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData) {
+                              return Container(
+                                color: Colors.grey.shade200,
+                              );
+                            }
+
+                            return GestureDetector(
+                              onTap: () {
+                                setModalState(() {
+                                  selectedAsset = asset;
+                                });
+                              },
+                              child: Stack(
+                                children: [
+                                  Positioned.fill(
+                                    child: Image.memory(
+                                      snapshot.data!,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+
+                                  if (isSelected)
+                                    Positioned.fill(
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          border: Border.all(
+                                            color: Colors.blue,
+                                            width: 3,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+
+                                  Positioned(
+                                    top: 8,
+                                    right: 8,
+                                    child: Container(
+                                      width: 24,
+                                      height: 24,
+                                      decoration: BoxDecoration(
+                                        color: isSelected
+                                            ? Colors.blue
+                                            : Colors.white,
+                                        borderRadius:
+                                        BorderRadius.circular(6),
+                                      ),
+                                      child: isSelected
+                                          ? const Icon(
+                                        Icons.check,
+                                        size: 16,
+                                        color: Colors.white,
+                                      )
+                                          : null,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ),
+
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      20,
+                      12,
+                      20,
+                      24,
+                    ),
+                    child: SizedBox(
+                      width: double.infinity,
+                      height: 54,
+                      child: ElevatedButton(
+                        onPressed: selectedAsset == null
+                            ? null
+                            : () async {
+                          final file =
+                          await selectedAsset!.originFile;
+
+                          if (file != null) {
+                            setState(() {
+                              profileImage = file;
+                            });
+
+                            if (mounted) {
+                              Navigator.pop(context);
+                            }
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                          const Color(0xff007AFF),
+                          disabledBackgroundColor:
+                          const Color(0xffE5E5EA),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                            BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: const Text(
+                          "사진 선택",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  void dispose() {
+    nameController.dispose();
+    phoneController.dispose();
+    storePhoneController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final imagePath = prefs.getString("profileImage");
+
+    if (imagePath != null && File(imagePath).existsSync()) {
+      profileImage = File(imagePath);
     }
+
+    nameController.text =
+        prefs.getString("name") ?? "김세희";
+
+    phoneController.text =
+        prefs.getString("phone") ?? "010-1234-5678";
+
+    storePhoneController.text =
+        prefs.getString("storePhone") ?? "02-1234-5678";
+
+    setState(() {});
+  }
+
+  Future<void> _saveProfile() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    if (profileImage != null) {
+      await prefs.setString(
+        "profileImage",
+        profileImage!.path,
+      );
+    }
+
+    await prefs.setString(
+      "name",
+      nameController.text,
+    );
+
+    await prefs.setString(
+      "phone",
+      phoneController.text,
+    );
+
+    await prefs.setString(
+      "storePhone",
+      storePhoneController.text,
+    );
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("저장되었습니다."),
+      ),
+    );
+  }
+
+  Future<void> _showEditBottomSheet({
+    required String title,
+    required TextEditingController controller,
+  }) async {
+    final TextEditingController tempController =
+    TextEditingController(text: controller.text);
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(24),
+        ),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          child: StatefulBuilder(
+            builder: (context, setState) {
+              return SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 10, 20, 24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      /// 드래그 바
+                      Container(
+                        width: 48,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD9D9D9),
+                          borderRadius: BorderRadius.circular(100),
+                        ),
+                      ),
+
+                      const SizedBox(height: 22),
+
+                      /// 제목 + 닫기 버튼
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Center(
+                            child: Text(
+                              "$title 변경",
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+
+                          Positioned(
+                            right: 0,
+                            child: GestureDetector(
+                              onTap: () => Navigator.pop(context),
+                              child: Container(
+                                width: 32,
+                                height: 32,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFF2F2F7),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.close,
+                                  size: 20,
+                                  color: Color(0xFF9A9AA2),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      /// 입력창
+                      TextField(
+                        controller: tempController,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding:
+                          const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 16,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius:
+                            BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE5E5EA),
+                            ),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius:
+                            BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Color(0xFFE5E5EA),
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius:
+                            BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: Color(0xFF0084FF),
+                            ),
+                          ),
+                        ),
+                        style: const TextStyle(
+                          fontSize: 16,
+                        ),
+                      ),
+
+                      const SizedBox(height: 28),
+
+                      /// 저장 버튼
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            controller.text = tempController.text;
+                            Navigator.pop(context);
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                            const Color(0xFF007AFF),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius:
+                              BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: const Text(
+                            "저장",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+
+    setState(() {});
   }
 
   @override
@@ -114,274 +557,138 @@ class _RProfileEditPageState
 
               /// 상단 헤더
               Padding(
-                padding:
-                const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 30,
-                ),
-
+                padding: const EdgeInsets.fromLTRB(30, 30, 0, 0),
                 child: Row(
                   children: [
-
-                    GestureDetector(
-                      onTap: () {
-
-                        Navigator.pop(
-                          context,
-                        );
-                      },
-
-                      child: const Icon(
-                        Icons.arrow_back_ios_new,
-                        size: 22,
-                      ),
+                    InkWell(
+                      onTap: () => Navigator.pop(context),
+                      child: const Icon(Icons.arrow_back_ios_new, size: 22),
                     ),
-
                     const Expanded(
                       child: Center(
                         child: Text(
-                          '프로필 변경',
-
+                          "프로필 변경",
                           style: TextStyle(
-                            fontSize: 22,
-                            fontWeight:
-                            FontWeight.bold,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
                     ),
-
-                    const SizedBox(width: 22),
+                    TextButton(
+                      onPressed: () async {
+                        await _saveProfile();
+                      },
+                      child: const Text("저장",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFF767676),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
-
-              const SizedBox(height: 24),
 
               /// 프로필 영역
               Center(
                 child: Column(
                   children: [
+                    const SizedBox(height: 32),
 
                     Stack(
-                      alignment:
-                      Alignment.bottomRight,
-
+                      clipBehavior: Clip.none,
                       children: [
-
-                        /// 프로필 이미지
                         Container(
-                          width: 92,
-                          height: 92,
-
-                          decoration:
-                          BoxDecoration(
-                            shape:
-                            BoxShape.circle,
-
-                            color:
-                            Colors
-                                .grey
-                                .shade300,
-
-                            image:
-                            profileImage !=
-                                null
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFA5A5AF),
+                            borderRadius: BorderRadius.circular(24),
+                            image: profileImage != null
                                 ? DecorationImage(
-                              image:
-                              FileImage(
-                                profileImage!,
-                              ),
-
-                              fit:
-                              BoxFit.cover,
+                              image: FileImage(profileImage!),
+                              fit: BoxFit.cover,
                             )
                                 : null,
                           ),
                         ),
 
-                        /// 추가 버튼
-                        GestureDetector(
-                          onTap: () async {
-
-                            await pickProfileImage();
-                          },
-
-                          child: Container(
-                            width: 30,
-                            height: 30,
-
-                            decoration:
-                            BoxDecoration(
-                              color:
-                              Colors
-                                  .grey
-                                  .shade500,
-
-                              shape:
-                              BoxShape
-                                  .circle,
-                            ),
-
-                            child: const Icon(
-                              Icons.add,
-                              color:
-                              Colors.white,
-                              size: 20,
+                        Positioned(
+                          right: -2,
+                          bottom: -2,
+                          child: InkWell(
+                            onTap: _showGalleryBottomSheet,
+                            child: Container(
+                              width: 34,
+                              height: 34,
+                              decoration: BoxDecoration(
+                                color: Color(0xFFF1F1F5),
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.white,
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.photo_camera,
+                                size: 18,
+                                color: Colors.white,
+                              ),
                             ),
                           ),
                         ),
                       ],
                     ),
 
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 14),
 
                     const Text(
-                      '집게사장',
-
+                      "사장님",
                       style: TextStyle(
-                        fontSize: 25,
-                        fontWeight:
-                        FontWeight.bold,
+                        fontSize: 15,
+                        color: Color(0xFF505050),
                       ),
                     ),
 
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 6),
 
                     Text(
-                      '010-XXXX-XXXX',
-
-                      style: TextStyle(
-                        color:
-                        Colors.grey
-                            .shade600,
-
-                        fontSize: 15,
-                        fontWeight:
-                        FontWeight.w500,
-                      ),
-                    ),
-
-                    const SizedBox(height: 22),
-
-                    TextButton(
-                      onPressed: () {
-
-                        /// 상태 메시지 수정
-                      },
-
-                      style:
-                      TextButton.styleFrom(
-                        padding:
-                        EdgeInsets.zero,
-
-                        minimumSize:
-                        Size.zero,
-
-                        tapTargetSize:
-                        MaterialTapTargetSize
-                            .shrinkWrap,
-                      ),
-
-                      child: Row(
-                        mainAxisSize:
-                        MainAxisSize.min,
-
-                        children: [
-
-                          const Text(
-                            '상태 메시지 입력',
-
-                            style: TextStyle(
-                              color:
-                              Colors.black,
-
-                              fontSize: 15,
-
-                              fontWeight:
-                              FontWeight.w500,
-                            ),
-                          ),
-
-                          const SizedBox(width: 8),
-
-                          Icon(
-                            Icons.edit_outlined,
-                            size: 20,
-                            color:
-                            Colors.grey
-                                .shade600,
-                          ),
-                        ],
+                      nameController.text,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
                 ),
               ),
 
-              const SizedBox(height: 40),
-
-              Container(
-                height: 15,
-                color: const Color(0xFFE8E8ED),
-              ),
-
               /// 개인 정보
+              const SizedBox(height: 28),
+
               _buildSection(
-                context: context,
-
-                title: '개인 정보',
-
+                title: "개인 정보",
                 items: [
-
                   _ProfileItem(
-                    title: '이름',
-                    value: '집게사장',
-                    isArrow: false,
+                    title: "이름",
+                    value: "박지연",
                   ),
-
                   _ProfileItem(
-                    title: '생년월일',
-                    value: '설정하기',
-                  ),
-
-                  _ProfileItem(
-                    title: '이메일',
-                    value: '설정하기',
+                    title: "휴대폰 번호",
+                    value: "010-1234-5678",
                   ),
                 ],
               ),
 
-              Container(
-                height: 15,
-                color: const Color(0xFFE8E8ED),
-              ),
-
-              /// 매장 정보
               _buildSection(
-                context: context,
-
-                title: '매장 정보',
-
+                title: "매장 정보",
                 items: [
-
                   _ProfileItem(
-                    title: '매장 로고',
-                    value: '설정하기',
-                  ),
-
-                  _ProfileItem(
-                    title: '매장 이름',
-                    value: '집게리아',
-                  ),
-
-                  _ProfileItem(
-                    title: '매장 전화번호',
-                    value: '설정하기',
+                    title: "매장 전화번호",
+                    value: "02-1234-5678",
                   ),
                 ],
               ),
-
               const SizedBox(height: 30),
             ],
           ),
@@ -392,132 +699,134 @@ class _RProfileEditPageState
 
   /// 섹션
   Widget _buildSection({
-    required BuildContext context,
     required String title,
     required List<_ProfileItem> items,
   }) {
-
-    return Padding(
-      padding:
-      const EdgeInsets.fromLTRB(
-        30,
-        20,
-        30,
-        0,
+    return Container(
+      margin: const EdgeInsets.symmetric(
+        horizontal: 22,
+        vertical: 10,
       ),
-
+      padding: const EdgeInsets.symmetric(
+        horizontal: 20,
+        vertical: 20,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Column(
-        crossAxisAlignment:
-        CrossAxisAlignment.start,
-
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
-          /// 섹션 타이틀
           Text(
             title,
-
             style: const TextStyle(
-              fontSize: 22,
-              fontWeight:
-              FontWeight.bold,
+              fontSize: 16,
+              color: Color(0xFF999999),
+              fontWeight: FontWeight.w700,
             ),
           ),
+          const SizedBox(height: 36),
 
-          const SizedBox(height: 25),
-
-          ...items.map(
-                (item) => Padding(
-              padding:
-              const EdgeInsets.only(
-                bottom: 25,
-              ),
-
-              child: Row(
-                children: [
-
-                  /// 섹션 디테일
-                  Text(
-                    item.title,
-
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight:
-                      FontWeight.w500,
-                    ),
+          for (int i = 0; i < items.length; i++) ...[
+            Row(
+              children: [
+                Text(
+                  items[i].title,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
                   ),
+                ),
+                const Spacer(),
+                GestureDetector(
+                  onTap: () {
+                    final controller =
+                    items[i].title == "이름"
+                        ? nameController
+                        : items[i].title == "휴대폰 번호"
+                        ? phoneController
+                        : storePhoneController;
 
-                  const Spacer(),
-
-                  /// 버튼화
-                  TextButton(
-                    onPressed: () {
-
-                      /// 네비게이션 가능
-                    },
-
-                    style:
-                    TextButton.styleFrom(
-                      padding:
-                      EdgeInsets.zero,
-
-                      minimumSize:
-                      Size.zero,
-
-                      tapTargetSize:
-                      MaterialTapTargetSize
-                          .shrinkWrap,
-                    ),
-
-                    child: Row(
-                      children: [
-
-                        Text(
-                          item.value,
-
-                          style: TextStyle(
-                            color:
-                            item.value ==
-                                '설정하기'
-                                ? Colors.grey.shade500
-                                : Colors.black,
-
-                            fontSize: 20,
-                            fontWeight:
-                            FontWeight.w500,
+                    _showEditBottomSheet(
+                      title: items[i].title,
+                      controller: controller,
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      Text(
+                        items[i].title == "이름"
+                            ? nameController.text
+                            : items[i].title == "휴대폰 번호"
+                            ? phoneController.text
+                            : storePhoneController.text,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFF999999),
+                        ),
+                      ),
+                      if (items[i].isArrow)
+                        const Padding(
+                          padding: EdgeInsets.only(left: 4),
+                          child: Icon(
+                            Icons.chevron_right,
+                            color: Color(0xFF999999),
                           ),
                         ),
-
-                        Padding(
-                          padding:
-                          const EdgeInsets.only(
-                            left: 0,
-                          ),
-
-                          child:
-                          item.isArrow
-                              ? Icon(
-                            Icons
-                                .chevron_right,
-
-                            size: 24,
-
-                            color:
-                            Colors.grey
-                                .shade500,
-                          )
-                              : const SizedBox(
-                            width: 24,
-                          ),
-                        ),
-                      ],
-                    ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ),
+            if (i != items.length - 1) ...[
+              const SizedBox(height: 18),
+              const Divider(height: 1, color: Color(0xFFF1F1F5),),
+              const SizedBox(height: 18),
+            ],
+          ],
         ],
       ),
+    );
+  }
+
+  Widget buildItem({
+    required String title,
+    required String value,
+    bool divider = true,
+  }) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 18,
+                color: Color(0xff9B9B9B),
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Icon(
+              Icons.chevron_right,
+              color: Color(0xffB5B5BC),
+            ),
+          ],
+        ),
+        if (divider)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 18),
+            child: Divider(height: 1),
+          ),
+      ],
     );
   }
 }
