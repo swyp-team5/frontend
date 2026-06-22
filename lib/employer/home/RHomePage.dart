@@ -1,5 +1,6 @@
 import 'package:chack_chack/employer/home/schedule/RMakingSchedulePage.dart';
 import 'package:chack_chack/employer/home/schedule/RRecentSchedulePage.dart';
+import 'package:chack_chack/employer/schedule/RWeekSchedulePage.dart';
 import 'package:flutter/material.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
@@ -162,6 +163,9 @@ class _RHomePageState extends State<RHomePage> {
           } else if (index == 1) {
             Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const RCrewPage()));
+          } else if (index == 2) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const RWeekSchedulePage()));
           } else if (index == 4) {
             Navigator.push(
                 context, MaterialPageRoute(builder: (_) => const RMyPage()));
