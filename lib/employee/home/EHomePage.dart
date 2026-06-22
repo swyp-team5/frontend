@@ -1,10 +1,10 @@
 import 'package:chack_chack/common/notification/NotificationPage.dart';
 import 'package:chack_chack/employee/mypage/EMyPage.dart';
+import 'package:chack_chack/employee/schedule/EMainSchedulePage.dart';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../../common/widgets/BottomNavBar.dart';
-import '../../employer/crews/RCrewPage.dart';
 import '../crews/ECrewPage.dart';
 import 'notification/ENotificationPage.dart';
 
@@ -40,6 +40,9 @@ class _EHomePageState extends State<EHomePage> {
           } else if (index == 1) {
             Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const ECrewPage()));
+          } else if (index == 2) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const EMainSchedulePage()));
           } else if (index == 4) {
             Navigator.push(
                 context, MaterialPageRoute(builder: (_) => const EMyPage()));
