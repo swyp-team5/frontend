@@ -7,11 +7,11 @@ import 'RNotiEditPage.dart';
 import 'RNotificationModel.dart';
 import 'RNotificationProvider.dart';
 
-class RNotificationDetailPage extends ConsumerWidget {
+class RNotiDetailPage extends ConsumerWidget {
   final RNotificationModel notice;
   final int noticeIndex;
 
-  const RNotificationDetailPage({
+  const RNotiDetailPage({
     super.key,
     required this.notice,
     required this.noticeIndex,

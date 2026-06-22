@@ -1,3 +1,4 @@
+import 'package:chack_chack/employee/home/notification/ENotiDetailPage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,7 +9,7 @@ import '../../crews/ECrewPage.dart';
 import '../../home/EHomePage.dart';
 import '../../mypage/EMyPage.dart';
 
-import '../../../employer/home/notification/RNotificationProvider.dart';
+import 'ENotificationProvider.dart';
 
 class ENotificationPage extends ConsumerStatefulWidget {
   const ENotificationPage({super.key});
@@ -36,7 +37,7 @@ class _ENotificationPageState extends ConsumerState<ENotificationPage> {
   @override
   Widget build(BuildContext context) {
 
-    final notices = ref.watch(RNotificationProvider);
+    final notices = ref.watch(ENotificationProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
@@ -76,7 +77,7 @@ class _ENotificationPageState extends ConsumerState<ENotificationPage> {
                         child: Center(
                             child: Text('공지 게시판',
                                 style: TextStyle(
-                                    fontSize: 22,
+                                    fontSize: 18,
                                     fontWeight: FontWeight.bold)))),
                     const SizedBox(width: 22),
                   ],
@@ -86,8 +87,8 @@ class _ENotificationPageState extends ConsumerState<ENotificationPage> {
                 const Padding(
                   padding: EdgeInsets.only(top: 100),
                   child: Center(
-                      child: Text('등록된 공지사항이 없습니다.',
-                          style: TextStyle(fontSize: 16, color: Colors.grey))),
+                      child: Text('작성된 글이\n없어요',
+                          style: TextStyle(fontSize: 18, color: Color(0xFF999999)))),
                 )
               else
                 ListView.separated(
@@ -105,15 +106,15 @@ class _ENotificationPageState extends ConsumerState<ENotificationPage> {
 
                     return InkWell(
                       onTap: () {
-                        // Navigator.push(
-                        //   context,
-                        //   MaterialPageRoute(
-                        //     builder: (_) => ENotiDetailPage(
-                        //       notice: notice,
-                        //       noticeIndex: index,
-                        //     ),
-                        //   ),
-                        // );
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ENotiDetailPage(
+                              notice: notice,
+                              noticeIndex: index,
+                            ),
+                          ),
+                        );
                       },
                       child: Padding(
                         padding: const EdgeInsets.all(20),
@@ -125,11 +126,11 @@ class _ENotificationPageState extends ConsumerState<ENotificationPage> {
                             Row(
                               children: [
                                 Container(
-                                  width: 42,
-                                  height: 42,
+                                  width: 40,
+                                  height: 40,
                                   decoration: BoxDecoration(
                                     color: Colors.grey.shade300,
-                                    borderRadius: BorderRadius.circular(10),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
 
@@ -166,7 +167,7 @@ class _ENotificationPageState extends ConsumerState<ENotificationPage> {
                                             child: const Text(
                                               '사장님',
                                               style: TextStyle(
-                                                fontSize: 10,
+                                                fontSize: 11,
                                                 color: Color(0xFF0063BF),
                                               ),
                                             ),
@@ -179,7 +180,7 @@ class _ENotificationPageState extends ConsumerState<ENotificationPage> {
                                       Text(
                                         notice.date,
                                         style: TextStyle(
-                                          color: Colors.grey.shade600,
+                                          color: Color(0xFF767676),
                                           fontSize: 12,
                                         ),
                                       ),
@@ -214,7 +215,7 @@ class _ENotificationPageState extends ConsumerState<ENotificationPage> {
                                         overflow:
                                         TextOverflow.ellipsis,
                                         style: const TextStyle(
-                                          fontSize: 18,
+                                          fontSize: 16,
                                           fontWeight:
                                           FontWeight.bold,
                                         ),
@@ -228,7 +229,7 @@ class _ENotificationPageState extends ConsumerState<ENotificationPage> {
                                         overflow:
                                         TextOverflow.ellipsis,
                                         style: const TextStyle(
-                                          fontSize: 15,
+                                          fontSize: 14,
                                           height: 1.4,
                                         ),
                                       ),

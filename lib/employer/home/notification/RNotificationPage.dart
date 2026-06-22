@@ -107,7 +107,7 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => RNotificationDetailPage(
+                            builder: (_) => RNotiDetailPage(
                               notice: notice,
                               noticeIndex: index,
                             ),
@@ -124,11 +124,11 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
                             Row(
                               children: [
                                 Container(
-                                  width: 42,
-                                  height: 42,
+                                  width: 40,
+                                  height: 40,
                                   decoration: BoxDecoration(
                                     color: Colors.grey.shade300,
-                                    borderRadius: BorderRadius.circular(10),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
                                 ),
 

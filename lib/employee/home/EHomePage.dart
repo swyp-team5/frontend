@@ -122,31 +122,38 @@ class _EHomePageState extends State<EHomePage> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 14,
+                  vertical: 4,
                 ),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Row(
-                  children: const [
-                    SizedBox(width: 10),
-                    Text(
+                  children: [
+                    const SizedBox(width: 10),
+                    const Text(
                       "공지 \t 📌",
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 14,
                       ),
                     ),
-                    SizedBox(width: 10),
+                    const SizedBox(width: 10),
                     Expanded(
-                      child: Text(
-                        "마감 때 쓰레기 비우는거 잊지 마세요",
-                        style: TextStyle(
-                          fontSize: 14,
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.push(context,
+                              MaterialPageRoute(builder: (_) => const ENotificationPage()));
+                        },
+                        child: const Text(
+                          "마감 때 쓰레기 비우는거 잊지 마세요",
+                          style: TextStyle(
+                            fontSize: 14,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        overflow: TextOverflow.ellipsis,
                       ),
+
                     ),
                   ],
                 ),
