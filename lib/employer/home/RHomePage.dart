@@ -1,11 +1,11 @@
 import 'package:chack_chack/employer/home/schedule/RMakingSchedulePage.dart';
 import 'package:chack_chack/employer/home/schedule/RRecentSchedulePage.dart';
-import 'package:chack_chack/employer/schedule/RWeekSchedulePage.dart';
 import 'package:flutter/material.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
 import '../crews/RCrewPage.dart';
 import '../mypage/RMyPage.dart';
+import '../schedule/RMainSchedulePage.dart';
 import 'notification/RNotificationPage.dart';
 
 class RHomePage extends StatefulWidget {
@@ -165,7 +165,7 @@ class _RHomePageState extends State<RHomePage> {
                 MaterialPageRoute(builder: (_) => const RCrewPage()));
           } else if (index == 2) {
             Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const RWeekSchedulePage()));
+                MaterialPageRoute(builder: (_) => const RMainSchedulePage()));
           } else if (index == 4) {
             Navigator.push(
                 context, MaterialPageRoute(builder: (_) => const RMyPage()));

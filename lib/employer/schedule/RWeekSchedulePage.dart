@@ -6,15 +6,20 @@ import '../home/RHomePage.dart';
 import '../mypage/RMyPage.dart';
 
 class RWeekSchedulePage extends StatefulWidget {
-  const RWeekSchedulePage({super.key});
+  final DateTime selectedDate;
+  final ValueChanged<DateTime> onDateChanged;
+
+  const RWeekSchedulePage({
+    super.key,
+    required this.selectedDate,
+    required this.onDateChanged,
+  });
 
   @override
   State<RWeekSchedulePage> createState() => _RWeekSchedulePageState();
 }
 
 class _RWeekSchedulePageState extends State<RWeekSchedulePage> {
-  /// 현재 보고 있는 주
-  DateTime selectedDate = DateTime.now();
 
   final List<String> monthNames = List.generate(
     12,
@@ -130,329 +135,216 @@ class _RWeekSchedulePageState extends State<RWeekSchedulePage> {
 
   @override
   Widget build(BuildContext context) {
-    final weekDates = getWeekDates(selectedDate);
+    final weekDates = getWeekDates(widget.selectedDate);
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-
-      /// 공통 BottomNavBar 적용
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: 2,
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const RHomePage()));
-          } else if (index == 1) {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const RCrewPage()));
-          } else if (index == 2) {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const RWeekSchedulePage()));
-          } else if (index == 4) {
-            Navigator.push(
-                context, MaterialPageRoute(builder: (_) => const RMyPage()));
-          }
-        },
-      ),
-
-      body: SafeArea(
-        child: Stack(
+    return Stack(
+      children: [
+        Column(
           children: [
-            Column(
-              children: [
-                // ================= 상단 =================
+            // ================= 요일 =================
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Row(
+                children: List.generate(7, (index) {
+                  const weeks = ["월", "화", "수", "목", "금", "토", "일"];
 
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 30,
-                  ),
-                  child: Row(
-                    children: [
-                      PopupMenuButton<int>(
-                        onSelected: (month) {
-                          setState(() {
-                            // 선택한 달의 1일로 이동
-                            selectedDate = DateTime(
-                              selectedDate.year,
-                              month,
-                              1,
-                            );
-                          });
-                        },
-                        itemBuilder: (context) {
-                          return List.generate(
-                            12,
-                                (index) => PopupMenuItem(
-                              value: index + 1,
-                              child: Text("${index + 1}월"),
-                            ),
-                          );
-                        },
-                        child: Row(
-                          children: [
-                            Text(
-                              "${selectedDate.month}월",
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const Icon(Icons.keyboard_arrow_down),
-                          ],
+                  return Expanded(
+                    child: Center(
+                      child: Text(
+                        weeks[index],
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
+                    ),
+                  );
+                }),
+              ),
+            ),
 
-                      const Spacer(),
+            const SizedBox(height: 4),
 
-                      const Icon(Icons.tune),
-                      const SizedBox(width: 18),
-                      const Icon(Icons.edit_outlined),
-                    ],
-                  ),
-                ),
+            // ================= 날짜 =================
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Row(
+                children: List.generate(7, (index) {
+                  final day = weekDates[index];
 
-                // ================= 요일 =================
+                  final isSelected =
+                      day.year == widget.selectedDate.year &&
+                          day.month == widget.selectedDate.month &&
+                          day.day == widget.selectedDate.day;
 
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Row(
-                    children: List.generate(7, (index) {
-                      const weeks = [
-                        "월",
-                        "화",
-                        "수",
-                        "목",
-                        "금",
-                        "토",
-                        "일",
-                      ];
-
-                      return Expanded(
-                        child: Center(
-                          child: Text(
-                            weeks[index],
-                            style: const TextStyle(
-                              color: Colors.grey,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                            ),
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () => widget.onDateChanged(day),
+                      child: Center(
+                        child: Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? const Color(0xff1976FF)
+                                : Colors.transparent,
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                        ),
-                      );
-                    }),
-                  ),
-                ),
-
-                const SizedBox(height: 4),
-
-                // ================= 날짜 =================
-
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Row(
-                    children: List.generate(7, (index) {
-                      final day = weekDates[index];
-
-                      final isSelected =
-                          day.year == selectedDate.year &&
-                              day.month == selectedDate.month &&
-                              day.day == selectedDate.day;
-
-                      return Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              selectedDate = day;
-                            });
-                          },
                           child: Center(
-                            child: Container(
-                              width: 34,
-                              height: 34,
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? const Color(0xff1976FF)
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  "${day.day}",
-                                  style: TextStyle(
-                                    color: isSelected
-                                        ? Colors.white
-                                        : Colors.black,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
+                            child: Text(
+                              "${day.day}",
+                              style: TextStyle(
+                                color:
+                                isSelected ? Colors.white : Colors.black,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            // ================= 주차 =================
+            Container(
+              height: 42,
+              color: const Color(0xffF7F7F7),
+              child: Row(
+                children: [
+                  IconButton(
+                    onPressed: () {
+                      widget.onDateChanged(
+                        widget.selectedDate.subtract(
+                          const Duration(days: 7),
                         ),
                       );
-                    }),
+                    },
+                    icon: const Icon(Icons.chevron_left),
                   ),
-                ),
-
-                const SizedBox(height: 12),
-
-                // ================= 주차 =================
-
-                Container(
-                  height: 42,
-                  color: const Color(0xffF7F7F7),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        onPressed: () {
-                          setState(() {
-                            selectedDate = selectedDate.subtract(
-                              const Duration(days: 7),
-                            );
-                          });
-                        },
-                        icon: const Icon(Icons.chevron_left),
-                      ),
-
-                      Expanded(
-                        child: Center(
-                          child: Text(
-                            getWeekTitle(selectedDate),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
+                  Expanded(
+                    child: Center(
+                      child: Text(
+                        getWeekTitle(widget.selectedDate),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
-                      ),
-
-                      IconButton(
-                        onPressed: () {
-                          setState(() {
-                            selectedDate = selectedDate.add(
-                              const Duration(days: 7),
-                            );
-                          });
-                        },
-                        icon: const Icon(Icons.chevron_right),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // ================= 스케줄 표 =================
-
-                Expanded(
-                  child: SingleChildScrollView(
-                    child: SizedBox(
-                      height: 24 * 80,
-                      child: Row(
-                        children: [
-                          // 시간
-                          SizedBox(
-                            width: 26,
-                            child: Column(
-                              children: List.generate(
-                                24,
-                                    (index) => SizedBox(
-                                  height: 80,
-                                  child: Align(
-                                    alignment: Alignment.topCenter,
-                                    child: Text(
-                                      "$index",
-                                      style: const TextStyle(
-                                        fontSize: 10,
-                                        color: Colors.grey,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          // 월~일
-                          Expanded(
-                            child: Row(
-                              children: List.generate(
-                                7,
-                                    (dayIndex) {
-                                  Color bg = Colors.white;
-
-                                  if (dayIndex == 0 || dayIndex == 2) {
-                                    bg = const Color(0xffDDECFB);
-                                  }
-
-                                  if (dayIndex == 1 || dayIndex == 3) {
-                                    bg = const Color(0xffDDEFD9);
-                                  }
-
-                                  if (dayIndex == 5 || dayIndex == 6) {
-                                    bg = const Color(0xffE8E3F8);
-                                  }
-
-                                  return Expanded(
-                                    child: Container(
-                                      color: bg,
-                                      child: Column(
-                                        children: List.generate(
-                                          24,
-                                              (hour) => Container(
-                                            height: 80,
-                                            decoration: BoxDecoration(
-                                              border: Border(
-                                                top: BorderSide(
-                                                  color: Colors.grey.shade300,
-                                                  width: 0.5,
-                                                ),
-                                                right: BorderSide(
-                                                  color: Colors.grey.shade300,
-                                                  width: 0.5,
-                                                ),
-                                              ),
-                                            ),
-                                            child: hour == 3
-                                                ? const Center(
-                                              child: Text(
-                                                "김민지\n최재현",
-                                                textAlign: TextAlign.center,
-                                                style: TextStyle(
-                                                  fontSize: 9,
-                                                  color: Color(0xff1976FF),
-                                                  fontWeight:
-                                                  FontWeight.w600,
-                                                ),
-                                              ),
-                                            )
-                                                : null,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ),
-                        ],
                       ),
                     ),
                   ),
-                ),
-              ],
+                  IconButton(
+                    onPressed: () {
+                      widget.onDateChanged(
+                        widget.selectedDate.add(
+                          const Duration(days: 7),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.chevron_right),
+                  ),
+                ],
+              ),
             ),
-            Positioned(
-              bottom: 16,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: _buildWeekMonthToggle(),
+
+            // ================= 스케줄 표 =================
+            Expanded(
+              child: SingleChildScrollView(
+                child: SizedBox(
+                  height: 24 * 80,
+                  child: Row(
+                    children: [
+                      // 시간
+                      SizedBox(
+                        width: 26,
+                        child: Column(
+                          children: List.generate(
+                            24,
+                                (index) => SizedBox(
+                              height: 80,
+                              child: Align(
+                                alignment: Alignment.topCenter,
+                                child: Text(
+                                  "$index",
+                                  style: const TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      // 요일별 스케줄
+                      Expanded(
+                        child: Row(
+                          children: List.generate(7, (dayIndex) {
+                            Color bg = Colors.white;
+
+                            if (dayIndex == 0 || dayIndex == 2) {
+                              bg = const Color(0xffDDECFB);
+                            } else if (dayIndex == 1 || dayIndex == 3) {
+                              bg = const Color(0xffDDEFD9);
+                            } else if (dayIndex == 5 || dayIndex == 6) {
+                              bg = const Color(0xffE8E3F8);
+                            }
+
+                            return Expanded(
+                              child: Container(
+                                color: bg,
+                                child: Column(
+                                  children: List.generate(
+                                    24,
+                                        (hour) => Container(
+                                      height: 80,
+                                      decoration: BoxDecoration(
+                                        border: Border(
+                                          top: BorderSide(
+                                            color: Colors.grey.shade300,
+                                            width: 0.5,
+                                          ),
+                                          right: BorderSide(
+                                            color: Colors.grey.shade300,
+                                            width: 0.5,
+                                          ),
+                                        ),
+                                      ),
+                                      child: hour == 3
+                                          ? const Center(
+                                        child: Text(
+                                          "김민지\n최재현",
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            color: Color(0xff1976FF),
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      )
+                                          : null,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ],
-        )
-      ),
+        ),
+      ],
     );
   }
 }
