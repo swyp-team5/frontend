@@ -290,6 +290,8 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
         content: Text("저장되었습니다."),
       ),
     );
+
+    Navigator.pop(context, true);
   }
 
   Future<void> _showEditBottomSheet({

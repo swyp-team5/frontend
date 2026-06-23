@@ -18,6 +18,8 @@ class RMyPage extends StatefulWidget {
 
 class _RMyPageState extends State<RMyPage> {
 
+  String profileName = "김사장";
+
   /// 현재는 더미 사용자 ID
   /// API 연결 시: response.user.id 사용
   final String userId = "owner_1";
@@ -234,6 +236,7 @@ class _RMyPageState extends State<RMyPage> {
   void initState() {
     super.initState();
     _loadSelectedStore();
+    _loadProfileName();
   }
 
   Future<void> _loadSelectedStore() async {
@@ -247,6 +250,15 @@ class _RMyPageState extends State<RMyPage> {
         RtempSelectedStore = savedStore;
       });
     }
+  }
+
+  Future<void> _loadProfileName() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      profileName =
+          prefs.getString("EMPLOYER_name") ?? "김사장";
+    });
   }
 
   @override
@@ -328,14 +340,17 @@ class _RMyPageState extends State<RMyPage> {
                 children: [
                   _buildMenuRow(
                     icon: Icons.account_circle_outlined,
-                    title: "김사장",
-                    onTap: () {
-                      Navigator.push(
+                    title: profileName,
+                    onTap: () async {
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => const RProfileEditPage(),
                         ),
                       );
+
+                      // 프로필 수정 후 이름 다시 로드
+                      _loadProfileName();
                     },
                   ),
                 ],
