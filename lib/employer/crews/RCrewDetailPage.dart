@@ -2,10 +2,17 @@ import 'package:chack_chack/employer/crews/widgets/RInfoSectionCard.dart';
 import 'package:chack_chack/employer/crews/widgets/RTagChip.dart';
 import 'package:flutter/material.dart';
 
+import 'model/RCrewModel.dart';
+
 
 class RCrewDetailPage extends StatefulWidget {
 
-  const RCrewDetailPage({super.key});
+  final RCrewModel crew;
+
+  const RCrewDetailPage({
+    super.key,
+    required this.crew,
+  });
 
   @override
   State<RCrewDetailPage> createState() => _RCrewDetailPageState();
@@ -15,13 +22,23 @@ class _RCrewDetailPageState extends State<RCrewDetailPage> {
 
   bool isEditMode = false;
 
-  /// API 연동 시 서버에서 받아올 더미 태그 목록
-  List<String> crewTags = ["매점", "매표", "마감 불가",];
+  /// API 연동 시 서버에서 받아올 태그 목록
+  /// 전달받은 근무자의 태그를 저장할 리스트
+  List<String> crewTags = [];
 
   final TextEditingController tagController = TextEditingController();
 
   // 나중에 API 응답으로 교체
   // crewTags = response.tags;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // RCrewPage에서 전달받은 태그를 복사
+    crewTags = List<String>.from(widget.crew.tags);
+  }
+
 
   Future<void> _showTagBottomSheet() async {
     List<String> tempTags = List.from(crewTags);
@@ -394,7 +411,7 @@ class _RCrewDetailPageState extends State<RCrewDetailPage> {
                 const SizedBox(height: 18),
 
                 /// 역할
-                Text('근무자',
+                Text(widget.crew.role,
                   style: TextStyle(
                     color: Color(0xFF505050),
                     fontSize: 15,
@@ -407,9 +424,9 @@ class _RCrewDetailPageState extends State<RCrewDetailPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      "박지연",
-                      style: TextStyle(
+                    Text(
+                      widget.crew.name,
+                      style: const TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
@@ -464,7 +481,7 @@ class _RCrewDetailPageState extends State<RCrewDetailPage> {
                   isEditMode: isEditMode,
                   arrowIndexes: const [],
                   items: [
-                    ['이름', '박지연'],
+                    ['이름', widget.crew.name],
                     ['휴대폰 번호', '010-1234-5678'],
                   ],
                 ),

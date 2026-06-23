@@ -356,7 +356,7 @@ class _RCrewPageState extends State<RCrewPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const RCrewDetailPage(),
+                          builder: (_) => RCrewDetailPage(crew: crew,),
                         ),
                       );
                     },
