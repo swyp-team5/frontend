@@ -167,7 +167,7 @@ class _RCrewDetailPageState extends State<RCrewDetailPage> {
                 const SizedBox(height: 26),
 
                 /// 개인 정보
-                InfoSectionCard(
+                RInfoSectionCard(
                   title: '개인 정보',
                   isEditMode: isEditMode,
                   items: [
@@ -179,7 +179,7 @@ class _RCrewDetailPageState extends State<RCrewDetailPage> {
                 const SizedBox(height: 16),
 
                 /// 소속 정보
-                InfoSectionCard(
+                RInfoSectionCard(
                   title: "소속 정보",
                   isEditMode: isEditMode,
                   items: [
@@ -192,7 +192,7 @@ class _RCrewDetailPageState extends State<RCrewDetailPage> {
                 const SizedBox(height: 16),
 
                 /// 근무 정보
-                InfoSectionCard(
+                RInfoSectionCard(
                   title: '근무 정보',
                   isEditMode: isEditMode,
                   items: [
@@ -204,7 +204,7 @@ class _RCrewDetailPageState extends State<RCrewDetailPage> {
                 const SizedBox(height: 16),
 
                 /// 소속 정보
-                InfoSectionCard(
+                RInfoSectionCard(
                   title: '소속 정보',
                   isEditMode: isEditMode,
                   items: [

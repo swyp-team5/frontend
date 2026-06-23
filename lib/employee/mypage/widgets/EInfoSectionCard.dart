@@ -1,18 +1,20 @@
 import 'package:flutter/material.dart';
 
-import 'RInfoRow.dart';
+import 'EInfoRow.dart';
 
-class RInfoSectionCard extends StatelessWidget {
+class EInfoSectionCard extends StatelessWidget {
 
   final String title;
   final List<List<String>> items;
   final bool isEditMode;
+  final void Function(int index)? onItemTap;
 
-  const RInfoSectionCard({
+  const EInfoSectionCard({
     super.key,
     required this.title,
     required this.items,
     this.isEditMode = false,
+    this.onItemTap,
   });
 
   @override
@@ -44,10 +46,13 @@ class RInfoSectionCard extends StatelessWidget {
           const SizedBox(height: 30),
 
           for (int i = 0; i < items.length; i++) ...[
-            RInfoRow(
+            EInfoRow(
               label: items[i][0],
               value: items[i][1],
               isEditMode: isEditMode,
+              onTap: onItemTap == null
+                  ? null
+                  : () => onItemTap!(i),
             ),
 
             if (i != items.length - 1) ...[

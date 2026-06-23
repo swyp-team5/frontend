@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../common/widgets/BottomNavBar.dart';
 import '../crews/ECrewPage.dart';
 import '../home/EHomePage.dart';
+import '../schedule/EMainSchedulePage.dart';
+import 'EProfileEditPage.dart';
 
 class EMyPage extends StatefulWidget {
 
@@ -256,42 +258,22 @@ class _EMyPageState extends State<EMyPage> {
       const Color(0xFFF5F5F5),
 
       /// 공통 BottomNavBar 적용
-      bottomNavigationBar:
-      BottomNavBar(
-        currentIndex: 4,
-
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: 0,
         onTap: (index) {
-
-          /// 홈
           if (index == 0) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const EHomePage()));
+          } else if (index == 1) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const ECrewPage()));
+          } else if (index == 2) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const EMainSchedulePage()));
+          } else if (index == 4) {
             Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) =>
-                const EHomePage(),
-              ),
-            );
+                context, MaterialPageRoute(builder: (_) => const EMyPage()));
           }
-
-          /// 동료
-          else if (index == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) =>
-                const ECrewPage(),
-              ),
-            );
-          }
-
-          /// 스케줄
-          else if (index == 2) {}
-
-          /// 급여
-          else if (index == 3) {}
-
-          /// 마이페이지
-          else if (index == 4) {}
         },
       ),
 
@@ -352,7 +334,7 @@ class _EMyPageState extends State<EMyPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const RProfileEditPage(),
+                          builder: (_) => const EProfileEditPage(),
                         ),
                       );
                     },

@@ -8,11 +8,6 @@ import 'package:photo_manager/photo_manager.dart';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../common/widgets/BottomNavBar.dart';
-import '../crews/RCrewPage.dart';
-import '../home/RHomePage.dart';
-import 'RMyPage.dart';
-
 class RProfileEditPage extends StatefulWidget {
 
   const RProfileEditPage({super.key});
@@ -23,18 +18,21 @@ class RProfileEditPage extends StatefulWidget {
 
 class _RProfileEditPageState extends State<RProfileEditPage> {
 
+  // 키 값을 'EMPLOYER_'로 명확히 구분
+  static const String RkeyProfileImage = "EMPLOYER_profileImage";
+  static const String RkeyName = "EMPLOYER_name";
+  static const String RkeyPhone = "EMPLOYER_phone";
+  static const String RkeyStorePhone = "EMPLOYER_storePhone";
+
   File? profileImage;
 
   final ImagePicker picker = ImagePicker();
 
-  final TextEditingController nameController =
-  TextEditingController();
+  final TextEditingController nameController = TextEditingController();
 
-  final TextEditingController phoneController =
-  TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
 
-  final TextEditingController storePhoneController =
-  TextEditingController();
+  final TextEditingController storePhoneController = TextEditingController();
 
   /// 프로필 이미지 선택
   Future<void> _showGalleryBottomSheet() async {
@@ -95,8 +93,7 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
                   const SizedBox(height: 12),
 
                   Container(
-                    width: 48,
-                    height: 5,
+                    width: 48, height: 5,
                     decoration: BoxDecoration(
                       color: Colors.grey.shade300,
                       borderRadius: BorderRadius.circular(10),
@@ -201,12 +198,7 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
                   ),
 
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(
-                      20,
-                      12,
-                      20,
-                      24,
-                    ),
+                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 24,),
                     child: SizedBox(
                       width: double.infinity,
                       height: 54,
@@ -263,6 +255,7 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
     _loadProfile();
   }
 
+  @override
   void dispose() {
     nameController.dispose();
     phoneController.dispose();
@@ -272,49 +265,23 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
 
   Future<void> _loadProfile() async {
     final prefs = await SharedPreferences.getInstance();
-
-    final imagePath = prefs.getString("profileImage");
-
+    final imagePath = prefs.getString(RkeyProfileImage);
     if (imagePath != null && File(imagePath).existsSync()) {
       profileImage = File(imagePath);
     }
-
-    nameController.text =
-        prefs.getString("name") ?? "김세희";
-
-    phoneController.text =
-        prefs.getString("phone") ?? "010-1234-5678";
-
-    storePhoneController.text =
-        prefs.getString("storePhone") ?? "02-1234-5678";
-
+    // 기본값도 사장님에 맞게 설정 가능
+    nameController.text = prefs.getString(RkeyName) ?? "집게사장";
+    phoneController.text = prefs.getString(RkeyPhone) ?? "010-XXXX-XXXX";
+    storePhoneController.text = prefs.getString(RkeyStorePhone) ?? "02-XXXX-XXXX";
     setState(() {});
   }
 
   Future<void> _saveProfile() async {
     final prefs = await SharedPreferences.getInstance();
-
-    if (profileImage != null) {
-      await prefs.setString(
-        "profileImage",
-        profileImage!.path,
-      );
-    }
-
-    await prefs.setString(
-      "name",
-      nameController.text,
-    );
-
-    await prefs.setString(
-      "phone",
-      phoneController.text,
-    );
-
-    await prefs.setString(
-      "storePhone",
-      storePhoneController.text,
-    );
+    if (profileImage != null) await prefs.setString(RkeyProfileImage, profileImage!.path);
+    await prefs.setString(RkeyName, nameController.text);
+    await prefs.setString(RkeyPhone, phoneController.text);
+    await prefs.setString(RkeyStorePhone, storePhoneController.text);
 
     if (!mounted) return;
 
@@ -639,11 +606,11 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
                 items: [
                   _ProfileItem(
                     title: "이름",
-                    value: "박지연",
+                    value: nameController.text,
                   ),
                   _ProfileItem(
                     title: "휴대폰 번호",
-                    value: "010-1234-5678",
+                    value: phoneController.text,
                   ),
                 ],
               ),
@@ -653,7 +620,7 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
                 items: [
                   _ProfileItem(
                     title: "매장 전화번호",
-                    value: "02-1234-5678",
+                    value: storePhoneController.text,
                   ),
                 ],
               ),
