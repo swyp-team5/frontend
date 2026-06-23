@@ -503,15 +503,14 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
 
               /// 상단 헤더
               Padding(
-                padding: const EdgeInsets.fromLTRB(30, 30, 0, 0),
-                child: Row(
-                  children: [
-                    InkWell(
-                      onTap: () => Navigator.pop(context),
-                      child: const Icon(Icons.arrow_back_ios_new, size: 22),
-                    ),
-                    const Expanded(
-                      child: Center(
+                padding: const EdgeInsets.fromLTRB(30, 30, 20, 0),
+                child: SizedBox(
+                  height: 30,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      /// 가운데 제목
+                      const Center(
                         child: Text(
                           "프로필 변경",
                           style: TextStyle(
@@ -520,19 +519,42 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
                           ),
                         ),
                       ),
-                    ),
-                    TextButton(
-                      onPressed: () async {
-                        await _saveProfile();
-                      },
-                      child: const Text("저장",
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFF767676),
+
+                      /// 왼쪽 뒤로가기
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: InkWell(
+                          onTap: () => Navigator.pop(context),
+                          child: const Icon(
+                            Icons.arrow_back_ios_new,
+                            size: 22,
+                          ),
                         ),
                       ),
-                    ),
-                  ],
+
+                      /// 오른쪽 저장 버튼
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton(
+                          onPressed: () async {
+                            await _saveProfile();
+                          },
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                          child: const Text(
+                            "저장",
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Color(0xFF767676),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
 

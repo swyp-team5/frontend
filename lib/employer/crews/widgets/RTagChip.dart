@@ -12,19 +12,18 @@ class RTagChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(
-        horizontal: 10,
-        vertical: 3,
+        horizontal: 6,
+        vertical: 4,
       ),
       decoration: BoxDecoration(
         color: const Color(0xFFE6F3FF),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(100),
       ),
       child: Text(
         text,
         style: const TextStyle(
           color: Color(0xFF004A8F),
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
+          fontSize: 13,
         ),
       ),
     );

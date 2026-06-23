@@ -2,120 +2,109 @@ import 'package:chack_chack/employer/crews/widgets/RInfoSectionCard.dart';
 import 'package:chack_chack/employer/crews/widgets/RTagChip.dart';
 import 'package:flutter/material.dart';
 
-import '../../../common/widgets/BottomNavBar.dart';
-import '../home/RHomePage.dart';
-import '../mypage/RMyPage.dart';
-import 'RCrewPage.dart';
-
 
 class RCrewDetailPage extends StatefulWidget {
 
   const RCrewDetailPage({super.key});
 
   @override
-  State<RCrewDetailPage> createState() =>
-      _RCrewDetailPageState();
+  State<RCrewDetailPage> createState() => _RCrewDetailPageState();
 }
 
-class _RCrewDetailPageState
-    extends State<RCrewDetailPage> {
+class _RCrewDetailPageState extends State<RCrewDetailPage> {
+
+  bool isEditMode = false;
+
 
   @override
   Widget build(BuildContext context) {
 
     return Scaffold(
-      backgroundColor:
-      const Color(0xFFF5F5F5),
-
-      /// 공통 BottomNavBar 적용
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: 0,
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const RHomePage()));
-          } else if (index == 1) {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const RCrewPage()));
-          } else if (index == 4) {
-            Navigator.push(
-                context, MaterialPageRoute(builder: (_) => const RMyPage()));
-          }
-        },
-      ),
+      backgroundColor: const Color(0xFFF5F5F5),
 
       body: SafeArea(
         child: SingleChildScrollView(
-
           child: Padding(
             padding: const EdgeInsets.symmetric(
-              horizontal: 25,
-              vertical: 35,
+              horizontal: 20, vertical: 30,
             ),
 
             child: Column(
               children: [
-
                 /// 상단 헤더
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.pop(context,);
-                      },
-
-                      child: const Icon(
-                        Icons.arrow_back_ios_new,
-                        size: 22,
+                SizedBox(
+                  height: 40,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // 가운데 제목
+                      const Center(
+                        child: Text(
+                          "상세 정보",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                       ),
-                    ),
 
-                    const Text('상세 정보',
-                      style: TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
+                      // 왼쪽 뒤로가기
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: const Icon(
+                            Icons.arrow_back_ios_new,
+                            size: 22,
+                          ),
+                        ),
                       ),
-                    ),
 
-                    GestureDetector(
-                      onTap: () {
-                        // Navigator.push(context,
-                        //
-                        //   MaterialPageRoute(
-                        //     builder: (_) =>const MyPage(),
-                        //   ),
-                        // );
-                      },
-
-                      child: const Icon(
-                        Icons.edit_outlined,
-                        size: 24,
+                      // 오른쪽 저장/편집
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              isEditMode = !isEditMode;
+                            });
+                          },
+                          child: isEditMode
+                              ? const Text(
+                            "저장",
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Color(0xFF767676),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          )
+                              : const Icon(
+                            Icons.edit_outlined,
+                            size: 24,
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
 
                 const SizedBox(height: 30),
 
                 /// 프로필 이미지
-                Container(width: 92, height: 92,
-
+                Container(width: 80, height: 80,
                   decoration: BoxDecoration(
-                    color: Colors.grey.shade300,
-                    borderRadius: BorderRadius.circular(16),
+                    color: Color(0xFFA5A5AF),
+                    borderRadius: BorderRadius.circular(24),
                   ),
                 ),
 
                 const SizedBox(height: 18),
 
                 /// 역할
-                Text('동료',
+                Text('근무자',
                   style: TextStyle(
-                    color: Colors.grey.shade600,
+                    color: Color(0xFF505050),
                     fontSize: 15,
-                    fontWeight: FontWeight.w600,
                   ),
                 ),
 
@@ -125,50 +114,53 @@ class _RCrewDetailPageState
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-
-                    const Text('박지연',
+                    const Text(
+                      "박지연",
                       style: TextStyle(
-                        fontSize: 30,
+                        fontSize: 20,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
 
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
 
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
+                        horizontal: 8,
+                        vertical: 4,
                       ),
-
                       decoration: BoxDecoration(
-                        color: Colors.grey.shade800,
-
-                        borderRadius: BorderRadius.circular(10,),
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(8),
                       ),
-
-                      child: const Text('재직중',
+                      child: const Text(
+                        "재직 중",
                         style: TextStyle(
-                          color: Colors.white,
+                          color: Color(0xFF00315F),
                           fontSize: 12,
-                          fontWeight: FontWeight.w700,
                         ),
                       ),
                     ),
                   ],
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
 
                 /// 태그
                 Wrap(
                   spacing: 8,
-
-                  children: const [
-
-                    RTagChip(text: '매점'),
-                    RTagChip(text: '매표'),
-                    RTagChip(text: '마감 불가'),
+                  children: [
+                    const RTagChip(text: '매점'),
+                    const RTagChip(text: '매표'),
+                    const RTagChip(text: '마감 불가'),
+                    if (isEditMode) ...const [
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.edit_outlined,
+                        size: 18,
+                        color: Color(0xFF767676),
+                      ),
+                    ],
                   ],
                 ),
 
@@ -177,11 +169,10 @@ class _RCrewDetailPageState
                 /// 개인 정보
                 InfoSectionCard(
                   title: '개인 정보',
-
+                  isEditMode: isEditMode,
                   items: [
                     ['이름', '박지연'],
-                    ['생년월일', '2000.00.00'],
-                    ['휴대폰 번호', '010-1234-2050'],
+                    ['휴대폰 번호', '010-1234-5678'],
                   ],
                 ),
 
@@ -189,12 +180,12 @@ class _RCrewDetailPageState
 
                 /// 소속 정보
                 InfoSectionCard(
-                  title: '소속 정보',
-
+                  title: "소속 정보",
+                  isEditMode: isEditMode,
                   items: [
-                    ['직급', '동료'],
-                    ['입사일', '2026년 4월 1일'],
-                    ['재직 상태', '재직중'],
+                    ["직급", "근무자"],
+                    ["입사일", "2026년 4월 1일"],
+                    ["재직 상태", "재직중"],
                   ],
                 ),
 
@@ -203,19 +194,19 @@ class _RCrewDetailPageState
                 /// 근무 정보
                 InfoSectionCard(
                   title: '근무 정보',
-
+                  isEditMode: isEditMode,
                   items: [
-                    ['근무 시간', '오전 07:00 - 11:00'],
-                    ['근무 요일', '월,수,금'],
+                    ['근무 시간', '오전 09:00 - 오후 14:00'],
+                    ['근무 요일', '월, 수, 금'],
                   ],
                 ),
 
                 const SizedBox(height: 16),
 
-                /// 지난 달 근무 정보
+                /// 소속 정보
                 InfoSectionCard(
-                  title: '지난 달 근무 정보',
-
+                  title: '소속 정보',
+                  isEditMode: isEditMode,
                   items: [
                     ['총 근무 일수', '16일'],
                     ['총 근무 시간', '80시간'],
@@ -229,41 +220,63 @@ class _RCrewDetailPageState
                   onTap: () {},
 
                   child: Container(
-                    width: double.infinity,
-
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 18,
-                      vertical: 22,
+                      horizontal: 18, vertical: 20,
                     ),
-
                     decoration: BoxDecoration(
-                      color: Colors.grey.shade200,
-                      borderRadius: BorderRadius.circular(24),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
                     ),
-
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-
                       children: [
-
-                        const Text('지난 달 급여 정보',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+                        Expanded(
+                          child: Text(
+                            "지난달 급여 정보",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: isEditMode
+                                  ? Colors.black
+                                  : const Color(0xFF767676),
+                            ),
                           ),
                         ),
-
                         Icon(
                           Icons.chevron_right,
-                          size: 28,
-                          color: Colors.grey.shade600,
+                          color: Colors.black,
                         ),
                       ],
                     ),
-                  ),
+                  )
                 ),
 
-                const SizedBox(height: 30),
+                if (!isEditMode) ...[
+                  const SizedBox(height: 24),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 54,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        // 삭제 기능 구현
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0084FF),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: const Text(
+                        "근무자 삭제",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

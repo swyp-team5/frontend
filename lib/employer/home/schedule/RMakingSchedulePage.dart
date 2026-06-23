@@ -160,41 +160,57 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                   horizontal: 20,
                   vertical: 30,
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: const Icon(
-                        Icons.arrow_back_ios_new,
-                      ),
-                    ),
-                    const Text("스케줄 만들기",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight:
-                        FontWeight.w700,
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const RRecentSchedulePage(),
+                child: SizedBox(
+                  height: 30,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      /// 가운데 제목
+                      const Center(
+                        child: Text(
+                          "스케줄 만들기",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
                           ),
-                        );
-                      },
-                      child: const Text(
-                        "불러오기",
-                        style: TextStyle(
-                          color: Color(0xFF40A3FF),
-                          fontSize: 15,
-                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                    ),
-                  ],
+
+                      /// 왼쪽 뒤로가기
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: const Icon(
+                            Icons.arrow_back_ios_new,
+                          ),
+                        ),
+                      ),
+
+                      /// 오른쪽 불러오기
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const RRecentSchedulePage(),
+                              ),
+                            );
+                          },
+                          child: const Text(
+                            "불러오기",
+                            style: TextStyle(
+                              color: Color(0xFF40A3FF),
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
