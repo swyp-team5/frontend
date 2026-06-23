@@ -4,12 +4,14 @@ class RInfoRow extends StatelessWidget {
   final String label;
   final String value;
   final bool isEditMode;
+  final bool showArrow;
 
   const RInfoRow({
     super.key,
     required this.label,
     required this.value,
     this.isEditMode = false,
+    this.showArrow = false,
   });
 
   @override
@@ -43,6 +45,12 @@ class RInfoRow extends StatelessWidget {
                   : Colors.black,
             ),
           ),
+
+          if (showArrow)
+            const Icon(
+              Icons.chevron_right,
+              color: Color(0xFF999999),
+            ),
         ],
       ),
     );
