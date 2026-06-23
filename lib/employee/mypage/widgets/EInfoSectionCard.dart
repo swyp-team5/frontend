@@ -7,7 +7,7 @@ class EInfoSectionCard extends StatelessWidget {
   final String title;
   final List<List<String>> items;
   final bool isEditMode;
-  final void Function(int index)? onItemTap;
+  final Function(int)? onItemTap; // 추가
 
   const EInfoSectionCard({
     super.key,
@@ -36,7 +36,7 @@ class EInfoSectionCard extends StatelessWidget {
             title,
             style: TextStyle(
               fontSize: 16,
-              fontWeight: FontWeight.bold,
+              fontWeight: FontWeight.w600,
               color: isEditMode
                   ? const Color(0xFF999999)
                   : const Color(0xFF505050),

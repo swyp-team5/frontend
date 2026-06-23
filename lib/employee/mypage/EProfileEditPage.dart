@@ -301,8 +301,9 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
     required String title,
     required TextEditingController controller,
   }) async {
-    final TextEditingController tempController =
-    TextEditingController(text: controller.text);
+    final TextEditingController tempController = TextEditingController(text: controller.text);
+
+    bool isChanged = false;
 
     await showModalBottomSheet(
       context: context,
@@ -380,38 +381,33 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
                       /// 입력창
                       TextField(
                         controller: tempController,
+                        onChanged: (value) {
+                          setState(() {
+                            isChanged =
+                                value.trim().isNotEmpty &&
+                                    value.trim() != controller.text;
+                          });
+                        },
                         decoration: InputDecoration(
                           filled: true,
-                          fillColor: Colors.white,
-                          contentPadding:
-                          const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 16,
-                          ),
+                          fillColor: isChanged
+                              ? Colors.white
+                              : const Color(0xFFF2F2F7),
+                          hintText: "변경할 $title을 입력해주세요",
                           border: OutlineInputBorder(
-                            borderRadius:
-                            BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: Color(0xFFE5E5EA),
-                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
                           ),
                           enabledBorder: OutlineInputBorder(
-                            borderRadius:
-                            BorderRadius.circular(12),
-                            borderSide: const BorderSide(
-                              color: Color(0xFFE5E5EA),
-                            ),
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderRadius:
-                            BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(12),
                             borderSide: const BorderSide(
-                              color: Color(0xFF0084FF),
+                              color: Color(0xFF007AFF),
                             ),
                           ),
-                        ),
-                        style: const TextStyle(
-                          fontSize: 16,
                         ),
                       ),
 
@@ -422,17 +418,23 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
                         width: double.infinity,
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: () {
-                            controller.text = tempController.text;
+                          onPressed: isChanged
+                              ? () {
+                            controller.text = tempController.text.trim();
                             Navigator.pop(context);
-                          },
+
+                            this.setState(() {}); // 부모 화면 갱신
+                          }
+                              : null,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                            const Color(0xFF007AFF),
                             elevation: 0,
+                            backgroundColor: isChanged
+                                ? const Color(0xFF007AFF)
+                                : const Color(0xFFB7D8F8),
+                            disabledBackgroundColor:
+                            const Color(0xFFB7D8F8),
                             shape: RoundedRectangleBorder(
-                              borderRadius:
-                              BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(12),
                             ),
                           ),
                           child: const Text(
@@ -644,13 +646,25 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
                     ["이름", nameController.text],
                     ["휴대폰 번호", phoneController.text],
                   ],
+                  onItemTap: (index) {
+                    if (index == 0) {
+                      _showEditBottomSheet(
+                        title: "이름",
+                        controller: nameController,
+                      );
+                    } else if (index == 1) {
+                      _showEditBottomSheet(
+                        title: "휴대폰 번호",
+                        controller: phoneController,
+                      );
+                    }
+                  },
                 ),
 
                 const SizedBox(height: 16),
 
                 EInfoSectionCard(
                   title: "소속 정보",
-                  isEditMode: isEditMode,
                   items: const [
                     ["직급", "근무자"],
                     ["입사일", "2026년 4월 1일"],
@@ -662,7 +676,6 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
 
                 EInfoSectionCard(
                   title: "근무 정보",
-                  isEditMode: isEditMode,
                   items: const [
                     ["근무 시간", "오전 09:00 - 오후 14:00"],
                     ["근무 요일", "월, 수, 금"],
@@ -673,7 +686,6 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
 
                 EInfoSectionCard(
                   title: "소속 정보",
-                  isEditMode: isEditMode,
                   items: const [
                     ["총 근무 일수", "16일"],
                     ["총 근무 시간", "80시간"],
