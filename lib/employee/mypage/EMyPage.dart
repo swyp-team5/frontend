@@ -19,6 +19,8 @@ class EMyPage extends StatefulWidget {
 
 class _EMyPageState extends State<EMyPage> {
 
+  String profileName = "김알바";
+
   /// 현재는 더미 사용자 ID
   /// API 연결 시: response.user.id 사용
   final String userId = "owner_1";
@@ -235,6 +237,7 @@ class _EMyPageState extends State<EMyPage> {
   void initState() {
     super.initState();
     _loadSelectedStore();
+    _loadProfileName();
   }
 
   Future<void> _loadSelectedStore() async {
@@ -248,6 +251,15 @@ class _EMyPageState extends State<EMyPage> {
         EtempSelectedStore = savedStore;
       });
     }
+  }
+
+  Future<void> _loadProfileName() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      profileName =
+          prefs.getString(EProfileEditPage.EkeyName) ?? "김알바";
+    });
   }
 
   @override
@@ -329,14 +341,16 @@ class _EMyPageState extends State<EMyPage> {
                 children: [
                   _buildMenuRow(
                     icon: Icons.account_circle_outlined,
-                    title: "김알바",
-                    onTap: () {
-                      Navigator.push(
+                    title: profileName,
+                    onTap: () async {
+                      await Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => const EProfileEditPage(),
                         ),
                       );
+
+                      _loadProfileName();
                     },
                   ),
                 ],

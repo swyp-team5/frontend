@@ -15,6 +15,12 @@ class EProfileEditPage extends StatefulWidget {
 
   const EProfileEditPage({super.key});
 
+  // 키 값을 'EMPLOYEE_'로 명확히 구분
+  static const String EkeyProfileImage = "EMPLOYEE_profileImage";
+  static const String EkeyName = "EMPLOYEE_name";
+  static const String EkeyPhone = "EMPLOYEE_phone";
+  static const String EkeyStorePhone = "EMPLOYEE_storePhone";
+
   @override
   State<EProfileEditPage> createState() => _EProfileEditPageState();
 }
@@ -22,12 +28,6 @@ class EProfileEditPage extends StatefulWidget {
 class _EProfileEditPageState extends State<EProfileEditPage> {
 
   bool isEditMode = false;
-
-  // 키 값을 'EMPLOYEE_'로 명확히 구분
-  static const String EkeyProfileImage = "EMPLOYEE_profileImage";
-  static const String EkeyName = "EMPLOYEE_name";
-  static const String EkeyPhone = "EMPLOYEE_phone";
-  static const String EkeyStorePhone = "EMPLOYEE_storePhone";
 
   File? profileImage;
 
@@ -270,23 +270,32 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
 
   Future<void> _loadProfile() async {
     final prefs = await SharedPreferences.getInstance();
-    final imagePath = prefs.getString(EkeyProfileImage);
+    final imagePath = prefs.getString(EProfileEditPage.EkeyProfileImage);
     if (imagePath != null && File(imagePath).existsSync()) {
       profileImage = File(imagePath);
     }
     // 근무자 기본값 설정
-    nameController.text = prefs.getString(EkeyName) ?? "김세희";
-    phoneController.text = prefs.getString(EkeyPhone) ?? "010-1234-5678";
-    storePhoneController.text = prefs.getString(EkeyStorePhone) ?? "02-1234-5678";
+    nameController.text =
+        prefs.getString(EProfileEditPage.EkeyName) ?? "김세희";
+
+    phoneController.text =
+        prefs.getString(EProfileEditPage.EkeyPhone) ?? "010-1234-5678";
+
+    storePhoneController.text =
+        prefs.getString(EProfileEditPage.EkeyStorePhone) ?? "02-1234-5678";
     setState(() {});
   }
 
   Future<void> _saveProfile() async {
     final prefs = await SharedPreferences.getInstance();
-    if (profileImage != null) await prefs.setString(EkeyProfileImage, profileImage!.path);
-    await prefs.setString(EkeyName, nameController.text);
-    await prefs.setString(EkeyPhone, phoneController.text);
-    await prefs.setString(EkeyStorePhone, storePhoneController.text);
+    if (profileImage != null) {
+      await prefs.setString(
+        EProfileEditPage.EkeyProfileImage, profileImage!.path,
+      );
+    }
+    await prefs.setString(EProfileEditPage.EkeyName, nameController.text);
+    await prefs.setString(EProfileEditPage.EkeyPhone, phoneController.text);
+    await prefs.setString(EProfileEditPage.EkeyStorePhone, storePhoneController.text);
 
     if (!mounted) return;
 
@@ -295,6 +304,8 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
         content: Text("저장되었습니다."),
       ),
     );
+
+    Navigator.pop(context, true);
   }
 
   Future<void> _showEditBottomSheet({
