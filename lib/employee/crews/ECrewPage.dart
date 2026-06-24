@@ -1,49 +1,74 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
 import '../home/EHomePage.dart';
 import '../mypage/EMyPage.dart';
+import '../mypage/EProfileEditPage.dart';
+import 'ECrewDetailPage.dart';
 import 'model/ECrewModel.dart';
 import 'widgets/ECrewCard.dart';
 
-class ECrewPage extends StatelessWidget {
+class ECrewPage extends StatefulWidget {
   const ECrewPage({super.key});
+
+  @override
+  State<ECrewPage> createState() => _ECrewPageState();
+}
+
+class _ECrewPageState extends State<ECrewPage> {
+  String myName = "손흥민";
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMyName();
+  }
+
+  Future<void> _loadMyName() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    setState(() {
+      myName =
+          prefs.getString(EProfileEditPage.EkeyName) ?? "손흥민";
+    });
+  }
+
+  final List<ECrewModel> crews = [
+    ECrewModel(
+      role: "사장님",
+      name: "라이츄",
+      tags: [],
+    ),
+    ECrewModel(
+      role: "근무자",
+      name: "파이리",
+      tags: ["주방", "불뽑기"],
+    ),
+    ECrewModel(
+      role: "근무자",
+      name: "꼬부기",
+      tags: ["카운터", "물대포"],
+    ),
+    ECrewModel(
+      role: "근무자",
+      name: "피존투",
+      tags: ["카운터", "피존추"],
+    ),
+    ECrewModel(
+      role: "근무자",
+      name: "버터플",
+      tags: ["카운터", "주방"],
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
     final myInfo = ECrewModel(
       role: "근무자",
-      name: "손흥민",
+      name: myName,
       isMe: true,
     );
-
-    final crews = [
-      ECrewModel(
-        role: "사장님",
-        name: "라이츄",
-        tags: ["주방", "100만 볼트"],
-      ),
-      ECrewModel(
-        role: "근무자",
-        name: "파이리",
-        tags: ["주방", "불뽑기"],
-      ),
-      ECrewModel(
-        role: "근무자",
-        name: "꼬부기",
-        tags: ["카운터", "물대포"],
-      ),
-      ECrewModel(
-        role: "근무자",
-        name: "피존투",
-        tags: ["카운터", "피존추"],
-      ),
-      ECrewModel(
-        role: "근무자",
-        name: "버터플",
-        tags: ["카운터", "주방"],
-      ),
-    ];
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
@@ -54,17 +79,23 @@ class ECrewPage extends StatelessWidget {
           if (index == 0) {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const EHomePage()),
+              MaterialPageRoute(
+                builder: (_) => const EHomePage(),
+              ),
             );
           } else if (index == 1) {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const ECrewPage()),
+              MaterialPageRoute(
+                builder: (_) => const ECrewPage(),
+              ),
             );
           } else if (index == 4) {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const EMyPage()),
+              MaterialPageRoute(
+                builder: (_) => const EMyPage(),
+              ),
             );
           }
         },
@@ -100,7 +131,7 @@ class ECrewPage extends StatelessWidget {
                     vertical: 18,
                   ),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEEEBFF),
+                    color: Color(0xFFEEEBFF),
                     borderRadius: BorderRadius.circular(18),
                   ),
                   child: Row(
@@ -143,9 +174,22 @@ class ECrewPage extends StatelessWidget {
 
               const SizedBox(height: 14),
 
-              ECrewCard(
-                crew: myInfo,
-                showArrow: false,
+              GestureDetector(
+                onTap: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const EProfileEditPage(),
+                    ),
+                  );
+
+                  // 프로필 수정 후 이름 다시 불러오기
+                  _loadMyName();
+                },
+                child: ECrewCard(
+                  crew: myInfo,
+                  showArrow: false,
+                ),
               ),
 
               const SizedBox(height: 20),
@@ -181,12 +225,14 @@ class ECrewPage extends StatelessWidget {
                   return ECrewCard(
                     crew: crew,
                     onTap: () {
-                      // Navigator.push(
-                      //   context,
-                      //   MaterialPageRoute(
-                      //     builder: (_) => const ECrewDetailPage(),
-                      //   ),
-                      // );
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ECrewDetailPage(
+                            crew: crew,
+                          ),
+                        ),
+                      );
                     },
                   );
                 }).toList(),
