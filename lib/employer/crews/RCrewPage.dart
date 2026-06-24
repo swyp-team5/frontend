@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:chack_chack/employer/mypage/RMyPage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
 
@@ -19,7 +22,9 @@ class RCrewPage extends StatefulWidget {
 
 class _RCrewPageState extends State<RCrewPage> {
 
-  final List<RCrewModel> crews = [
+  List<RCrewModel> crews = [];
+
+  final List<RCrewModel> defaultCrews = [
     RCrewModel(
       role: "근무자",
       name: "박지연",
@@ -249,6 +254,41 @@ class _RCrewPageState extends State<RCrewPage> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _loadCrews();
+  }
+
+  Future<void> _loadCrews() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final jsonString = prefs.getString("r_crews");
+
+    if (jsonString == null) {
+      crews = List.from(defaultCrews);
+      await _saveCrews();
+    } else {
+      final List list = jsonDecode(jsonString);
+
+      crews =
+          list.map((e) => RCrewModel.fromJson(e)).toList();
+    }
+
+    setState(() {});
+  }
+
+  Future<void> _saveCrews() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final jsonString = jsonEncode(
+      crews.map((e) => e.toJson()).toList(),
+    );
+
+    await prefs.setString("r_crews", jsonString);
+  }
+
+
+  @override
   Widget build(BuildContext context) {
 
     return Scaffold(
@@ -349,16 +389,29 @@ class _RCrewPageState extends State<RCrewPage> {
               const SizedBox(height: 16),
 
               Column(
-                children: crews.map((crew) {
+                children: crews.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final crew = entry.value;
+
                   return RCrewCard(
                     crew: crew,
-                    onTap: () {
-                      Navigator.push(
+                    onTap: () async {
+                      final updatedCrew = await Navigator.push<RCrewModel>(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => RCrewDetailPage(crew: crew,),
+                          builder: (_) => RCrewDetailPage(
+                            crew: crew,
+                          ),
                         ),
                       );
+
+                      if (updatedCrew != null) {
+                        setState(() {
+                          crews[index] = updatedCrew;
+                        });
+
+                        await _saveCrews();
+                      }
                     },
                   );
                 }).toList(),

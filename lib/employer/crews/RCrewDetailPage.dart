@@ -2,6 +2,11 @@ import 'package:chack_chack/employer/crews/widgets/RInfoSectionCard.dart';
 import 'package:chack_chack/employer/crews/widgets/RTagChip.dart';
 import 'package:flutter/material.dart';
 
+import 'bottom_sheets/EmploymentStatusBottomSheet.dart';
+import 'bottom_sheets/EmploymentYearMonthBottomSheet.dart';
+import 'bottom_sheets/TagBottomSheet.dart';
+import 'bottom_sheets/WorkDaysBottomSheet.dart';
+import 'bottom_sheets/WorkingTimeBottomSheet.dart';
 import 'model/RCrewModel.dart';
 
 
@@ -31,19 +36,54 @@ class _RCrewDetailPageState extends State<RCrewDetailPage> {
   // 나중에 API 응답으로 교체
   // crewTags = response.tags;
 
+
+  late DateTime employmentDate;
+
+  late String employmentStatus;
+
+  late TimeOfDay workingStartTime;
+  late TimeOfDay workingEndTime;
+
+  late List<String> workingDays;
+
+
   @override
   void initState() {
     super.initState();
 
     // RCrewPage에서 전달받은 태그를 복사
     crewTags = List<String>.from(widget.crew.tags);
+
+    // TODO: API 연동 시 서버에서 받은 값으로 변경
+    // 더미데이터
+    employmentDate = DateTime(2026, 4, 1);
+
+    // api
+    // employmentDate = DateTime(
+    //   response.year,
+    //   response.month,
+    //   response.day,
+    // );
+
+    //혹은
+    // employmentDate = DateTime.parse(response.joinDate);
+
+    employmentStatus = "재직중";
+
+    // 더미 데이터 (API 연동 시 서버 값으로 변경)
+    workingStartTime = const TimeOfDay(hour: 9, minute: 0);
+    workingEndTime = const TimeOfDay(hour: 14, minute: 0);
+
+    // 더미 데이터 (API 연동 시 서버 값으로 변경)
+    workingDays = ["월요일", "수요일", "금요일"];
+    // 아무것도 선택되지 않은 상태로 시작하고 싶다면
+    // workingDays = [];
+    // api 연동 시
+    // workingDays = response.workingDays;
   }
 
 
   Future<void> _showTagBottomSheet() async {
-    List<String> tempTags = List.from(crewTags);
-    tagController.clear();
-
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -54,276 +94,100 @@ class _RCrewDetailPageState extends State<RCrewDetailPage> {
         ),
       ),
       builder: (_) {
-        return StatefulBuilder(
-          builder: (context, modalSetState) {
-            final bool canAdd =
-                tempTags.length < 3 &&
-                    tagController.text.trim().isNotEmpty;
+        return TagBottomSheet(
+          initialTags: crewTags,
+          onSave: (tags) {
+            setState(() {
+              crewTags = List<String>.from(tags);
+              widget.crew.tags = List<String>.from(tags);
+            });
 
-            /// 최대 3개 미만이어야 저장 가능
-            final bool canSave = tempTags.length > 0 && tempTags.length < 4;
-
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom,
-              ),
-              child: SafeArea(
-                top: false,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 24,),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 48,
-                        height: 5,
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD9D9D9),
-                          borderRadius: BorderRadius.circular(100),
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      Stack(
-                        children: [
-                          // 가운데 제목
-                          const Align(
-                            alignment: Alignment.center,
-                            child: Text(
-                              "근무자 태그 설정",
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-
-                          // 오른쪽 닫기 버튼
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: GestureDetector(
-                              onTap: () => Navigator.pop(context),
-                              child: Container(
-                                width: 32,
-                                height: 32,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFF2F2F7),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.close,
-                                    size: 18,
-                                    color: Color(0xFF9A9AA2),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      const Text(
-                        "특이사항을 최대 3개까지 추가할 수 있어요.",
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Color(0xFF767676),
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: tagController,
-                              enabled: tempTags.length < 3, // 3개면 입력 비활성화
-                              onChanged: (_) {
-                                modalSetState(() {});
-                              },
-                              decoration: InputDecoration(
-                                hintText: "태그를 입력하세요",
-                                hintStyle: const TextStyle(
-                                  color: Color(0xFFB5B5BC),
-                                ),
-
-                                // 태그 3개면 배경색 회색, 아니면 흰색
-                                filled: true,
-                                fillColor: tempTags.length >= 3
-                                    ? const Color(0xFFF7F7FB)
-                                    : Colors.white,
-
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFE5E5EA),
-                                  ),
-                                ),
-
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFE5E5EA),
-                                  ),
-                                ),
-
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFF0084FF),
-                                  ),
-                                ),
-
-                                disabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(
-                                    color: Color(0xFFE5E5EA),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(width: 10),
-
-                          SizedBox(
-                            height: 44,
-                            child: ElevatedButton(
-                              onPressed: canAdd ? () {
-                                final value = tagController.text.trim();
-
-                                if (!tempTags.contains(value)) {
-                                  modalSetState(() {
-                                    tempTags.add(value);
-                                    tagController.clear();
-                                  });
-                                }
-                              } : null,
-                              style: ElevatedButton.styleFrom(
-                                shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8)
-                                ),
-                                backgroundColor: const Color(0xFF0084FF),
-                                disabledBackgroundColor: const Color(0xFFE0E2E5),
-                              ),
-                              child: Text("추가",
-                                style: TextStyle(
-                                  color: canAdd
-                                      ? Colors.white
-                                      : const Color(0xFFB5B5BC), // 비활성화 시 회색
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      Align(
-                        alignment: Alignment.centerLeft,
-                        child: Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: tempTags.map((tag) {
-                            return Chip(
-                              label: Text(
-                                tag,
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.black,
-                                ),
-                              ),
-                              backgroundColor: const Color(0xFFF7F7FB),
-                              deleteIcon: const Icon(
-                                Icons.close,
-                                size: 16,
-                                color: Color(0xFFA5A5AF),
-                              ),
-                              onDeleted: () {
-                                modalSetState(() {
-                                  tempTags.remove(tag);
-                                });
-                              },
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(100),
-                                side: const BorderSide(
-                                  color: Colors.transparent,
-                                  width: 0,
-                                ), // 테두리 제거
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-
-                      const SizedBox(height: 28),
-
-                      SizedBox(
-                        width: double.infinity,
-                        height: 54,
-                        child: ElevatedButton(
-                          // onPressed: canSave
-                          //     ? () {
-                          //   setState(() {
-                          //     crewTags = List.from(tempTags);
-                          //   });
-                          //
-                          //   Navigator.pop(context);
-                          //
-                          //   // API 연동 시
-                          //   // await api.updateCrewTags(crewTags);
-                          // }
-                          //     : null,
-                          onPressed: canSave
-                              ? () {
-                            setState(() {
-                              crewTags = List<String>.from(tempTags);
-                            });
-
-                            Navigator.pop(context);
-                          }
-                              : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                            const Color(0xFF0084FF),
-                            disabledBackgroundColor:
-                            const Color(0xFFE5E5EA),
-                            shape: RoundedRectangleBorder(
-                              borderRadius:
-                              BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: const Text(
-                            "저장",
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 17,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
+            // API 연동 시
+            // await api.updateCrewTags(tags);
           },
         );
       },
     );
   }
+
+  _showEmploymentYearMonthBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => EmploymentYearMonthBottomSheet(
+        initialYear: employmentDate.year,
+        initialMonth: employmentDate.month,
+        onSave: (date) {
+          setState(() {
+            employmentDate = date;
+          });
+        },
+      ),
+    );
+  }
+
+  void _showEmploymentStatusBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => EmploymentStatusBottomSheet(
+        initialStatus: employmentStatus,
+        onSave: (status) {
+          setState(() {
+            employmentStatus = status;
+          });
+        },
+      ),
+    );
+  }
+
+  Future<void> _showWorkingTimeBottomSheet() async {
+    final result = await WorkingTimeBottomSheet.show(
+      context,
+      initialOpenTime: workingStartTime,
+      initialCloseTime: workingEndTime,
+    );
+
+    if (result != null) {
+      setState(() {
+        workingStartTime = result.openTime;
+        workingEndTime = result.closeTime;
+      });
+
+      // API 연동 시
+      // await api.updateWorkingTime(result.openTime, result.closeTime);
+    }
+  }
+
+  Future<void> _showWorkDaysBottomSheet() async {
+    final result = await showModalBottomSheet<List<String>>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => WorkDaysBottomSheet(
+        //initialDays: workingDays,
+        onSave: (days) {
+          setState(() {
+            workingDays = days;
+          });
+
+          // API 연동 시
+          // api.updateWorkingDays(days);
+        },
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        workingDays = result;
+      });
+
+      // API 연동 시
+      // await api.updateWorkingDays(result);
+    }
+  }
+
 
 
   @override
@@ -362,7 +226,9 @@ class _RCrewDetailPageState extends State<RCrewDetailPage> {
                       Align(
                         alignment: Alignment.centerLeft,
                         child: GestureDetector(
-                          onTap: () => Navigator.pop(context),
+                          onTap: () {
+                            Navigator.pop(context, widget.crew);
+                          },
                           child: const Icon(
                             Icons.arrow_back_ios_new,
                             size: 22,
@@ -493,10 +359,24 @@ class _RCrewDetailPageState extends State<RCrewDetailPage> {
                   title: "소속 정보",
                   isEditMode: isEditMode,
                   arrowIndexes: const [1, 2],
+                  onArrowTap: (index) {
+                    if (index == 1) {
+                      // 입사일
+                      _showEmploymentYearMonthBottomSheet();
+                    } else if (index == 2) {
+                      // 재직 상태
+                      _showEmploymentStatusBottomSheet();
+                    }
+                  },
                   items: [
                     ["직급", "근무자"],
-                    ["입사일", "2026년 4월 1일"],
-                    ["재직 상태", "재직중"],
+                    [
+                      "입사일",
+                      "${employmentDate.year}년 "
+                          "${employmentDate.month}월 "
+                          "${employmentDate.day}일",
+                    ],
+                    ["재직 상태", employmentStatus],
                   ],
                 ),
 
@@ -507,9 +387,32 @@ class _RCrewDetailPageState extends State<RCrewDetailPage> {
                   title: '근무 정보',
                   isEditMode: isEditMode,
                   arrowIndexes: const [0, 1],
+                  onArrowTap: (index) {
+                    if (index == 0) {
+                      // 근무 시간
+                      _showWorkingTimeBottomSheet();
+                    } else if (index == 1) {
+                      // 근무 요일
+                      _showWorkDaysBottomSheet();
+                    }
+                  },
                   items: [
-                    ['근무 시간', '오전 09:00 - 오후 14:00'],
-                    ['근무 요일', '월, 수, 금'],
+                    [
+                      '근무 시간',
+                      '오전 ${workingStartTime.hour.toString().padLeft(2, '0')}:'
+                          '${workingStartTime.minute.toString().padLeft(2, '0')}'
+                          ' - '
+                          '오후 ${workingEndTime.hour.toString().padLeft(2, '0')}:'
+                          '${workingEndTime.minute.toString().padLeft(2, '0')}',
+                    ],
+                    [
+                      '근무 요일',
+                      workingDays.isEmpty
+                          ? '-'
+                          : workingDays
+                          .map((e) => e.replaceAll('요일', '')) // 월요일 -> 월
+                          .join(', '),
+                    ],
                   ],
                 ),
 
@@ -554,7 +457,7 @@ class _RCrewDetailPageState extends State<RCrewDetailPage> {
                               ),
                             ),
                           ),
-                          Icon(
+                          const Icon(
                             Icons.chevron_right,
                             color: Colors.black,
                           ),

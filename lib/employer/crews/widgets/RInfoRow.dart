@@ -5,13 +5,15 @@ class RInfoRow extends StatelessWidget {
   final String value;
   final bool isEditMode;
   final bool showArrow;
+  final VoidCallback? onArrowTap;
 
   const RInfoRow({
     super.key,
     required this.label,
     required this.value,
-    this.isEditMode = false,
-    this.showArrow = false,
+    required this.isEditMode,
+    required this.showArrow,
+    this.onArrowTap,
   });
 
   @override
@@ -47,9 +49,12 @@ class RInfoRow extends StatelessWidget {
           ),
 
           if (showArrow)
-            const Icon(
-              Icons.chevron_right,
-              color: Color(0xFF999999),
+            GestureDetector(
+              onTap: onArrowTap,
+              child: const Icon(
+                Icons.chevron_right,
+                color: Colors.black,
+              ),
             ),
         ],
       ),

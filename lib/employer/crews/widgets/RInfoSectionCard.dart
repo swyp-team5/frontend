@@ -8,13 +8,15 @@ class RInfoSectionCard extends StatelessWidget {
   final List<List<String>> items;
   final bool isEditMode;
   final List<int>? arrowIndexes;
+  final void Function(int index)? onArrowTap;
 
   const RInfoSectionCard({
     super.key,
     required this.title,
     required this.items,
     required this.isEditMode,
-    this.arrowIndexes,
+    required this.arrowIndexes,
+    this.onArrowTap,
   });
 
   @override
@@ -52,6 +54,9 @@ class RInfoSectionCard extends StatelessWidget {
               isEditMode: isEditMode,
               showArrow: isEditMode &&
                   (arrowIndexes == null || arrowIndexes!.contains(i)),
+              onArrowTap: onArrowTap == null
+                  ? null
+                  : () => onArrowTap!(i),
             ),
 
             if (i != items.length - 1) ...[
