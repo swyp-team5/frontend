@@ -1,3 +1,4 @@
+import 'package:chack_chack/employer/schedule/Month/RWorkingDetailEditPage.dart';
 import 'package:flutter/material.dart';
 
 import 'RMonthAllSchedulePage.dart';
@@ -193,10 +194,46 @@ class RMonthAllScheduleBottomSheet extends StatelessWidget {
                           ),
                         ),
 
-                        const Icon(
-                          Icons.chevron_right,
-                          size: 24,
-                          color: Color(0xFF1C1C1E),
+
+                        IconButton(
+                          onPressed: () async {
+
+                            final result = await Navigator.push<WorkingEditResult>(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => RWorkingDetailEditPage(
+                                  role: first.role,
+                                  startTime: first.startTime,
+                                  endTime: first.endTime,
+                                  breakTime: first.breakTime,
+                                  workerNames: group
+                                      .map((worker) => worker.name)
+                                      .toList(),
+                                ),
+                              ),
+                            );
+
+                            if (result != null) {
+
+                              for (final worker in group) {
+
+                                worker.role = result.role;
+
+                                worker.startTime = result.startTime;
+
+                                worker.endTime = result.endTime;
+
+                                worker.breakTime = result.breakTime;
+                              }
+
+                              (context as Element).markNeedsBuild();
+                            }
+                          },
+                          icon: const Icon(
+                            Icons.chevron_right,
+                            size: 24,
+                            color: Color(0xFF1C1C1E),
+                          ),
                         ),
                       ],
                     );

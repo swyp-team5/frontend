@@ -3,16 +3,18 @@ import 'package:flutter/material.dart';
 import 'RMonthAllScheduleBottomSheet.dart';
 
 class RScheduleWorker {
-  final String name;
-  final String startTime;
-  final String endTime;
-  final String role;
+  String name;
+  String startTime;
+  String endTime;
+  String role;
+  String breakTime;
 
-  const RScheduleWorker({
+  RScheduleWorker({
     required this.name,
     required this.startTime,
     required this.endTime,
     required this.role,
+    this.breakTime = "없음",
   });
 }
 

@@ -7,7 +7,6 @@ import '../home/RHomePage.dart';
 import '../mypage/RMyPage.dart';
 import 'Month/RMonthAllSchedulePage.dart';
 import 'RWeekSchedulePage.dart';
-import 'RMonthSchedulePage.dart';
 
 class RMainSchedulePage extends StatefulWidget {
   const RMainSchedulePage({super.key});
