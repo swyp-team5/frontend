@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../../common/widgets/BottomNavBar.dart';
+import '../../employee/schedule/Month/AllSchedule/EMonthAllSchedulePage.dart';
 import '../crews/RCrewPage.dart';
 import '../home/RHomePage.dart';
 import '../mypage/RMyPage.dart';
+import 'Month/RMonthAllSchedulePage.dart';
 import 'RWeekSchedulePage.dart';
 import 'RMonthSchedulePage.dart';
 
@@ -21,29 +23,50 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
   /// 현재 선택된 날짜
   DateTime selectedDate = DateTime.now();
 
+
+  /// API 연동 전 더미 데이터
+  final Map<String, List<RScheduleWorker>> allSchedules = {
+    "2026-06-22": [
+      RScheduleWorker(name: "김지연", startTime: "09:00", endTime: "13:00", role: "오픈",),
+      RScheduleWorker(name: "이다빈", startTime: "10:00", endTime: "14:00", role: "오픈",),
+      RScheduleWorker(name: "박춘식", startTime: "12:00", endTime: "16:00", role: "미들",),
+      RScheduleWorker(name: "홍길동", startTime: "16:00", endTime: "20:00", role: "마감",),
+      RScheduleWorker(name: "최민수", startTime: "16:00", endTime: "20:00", role: "마감",),
+    ],
+
+    "2026-06-25": [
+      RScheduleWorker(name: "이다빈", startTime: "09:00", endTime: "13:00", role: "오픈",),
+      RScheduleWorker(name: "김지연", startTime: "10:00", endTime: "14:00", role: "오픈",),
+      RScheduleWorker(name: "박춘식", startTime: "12:00", endTime: "16:00", role: "미들",),
+      RScheduleWorker(name: "강민석", startTime: "14:00", endTime: "18:00", role: "미들",),
+      RScheduleWorker(name: "서지훈", startTime: "12:00", endTime: "16:00", role: "미들",),
+      RScheduleWorker(name: "정은우", startTime: "16:00", endTime: "20:00", role: "마감",),
+    ],
+  };
+
+
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       backgroundColor: Colors.white,
 
+      /// 공통 BottomNavBar 적용
       bottomNavigationBar: BottomNavBar(
         currentIndex: 2,
         onTap: (index) {
           if (index == 0) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const RHomePage()),
-            );
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const RHomePage()));
           } else if (index == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const RCrewPage()),
-            );
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const RCrewPage()));
+          } else if (index == 2) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const RMainSchedulePage()));
           } else if (index == 4) {
             Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const RMyPage()),
-            );
+                context, MaterialPageRoute(builder: (_) => const RMyPage()));
           }
         },
       ),
@@ -134,9 +157,10 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                         });
                       },
                     )
-                        : RMonthSchedulePage(
+                        : RMonthAllSchedulePage(
                       key: const ValueKey("month"),
                       selectedDate: selectedDate,
+                      schedules: allSchedules,
                       onDateChanged: (date) {
                         setState(() {
                           selectedDate = date;
@@ -153,13 +177,10 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
             // ==========================
 
             Positioned(
-              bottom: 14,
-              left: 0,
-              right: 0,
+              bottom: 14, left: 0, right: 0,
               child: Center(
                 child: Container(
-                  width: 88,
-                  height: 34,
+                  width: 88, height: 34,
                   decoration: BoxDecoration(
                     color: const Color(0xFFF2F2F5),
                     borderRadius: BorderRadius.circular(17),
@@ -182,8 +203,7 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                               borderRadius: BorderRadius.circular(17),
                             ),
                             alignment: Alignment.center,
-                            child: Text(
-                              "주",
+                            child: Text("주",
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
@@ -211,8 +231,7 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                               borderRadius: BorderRadius.circular(17),
                             ),
                             alignment: Alignment.center,
-                            child: Text(
-                              "월",
+                            child: Text("월",
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
