@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 
+import 'EMonthMyScheduleBottomSheet.dart';
+
 class EMonthMySchedulePage extends StatelessWidget {
   final DateTime selectedDate;
   final ValueChanged<DateTime> onDateChanged;
 
   /// 날짜별 내 스케줄
-  final Map<String, List<String>> schedules;
+  final Map<String, List<MySchedule>> schedules;
 
   const EMonthMySchedulePage({
     super.key,
@@ -71,15 +73,7 @@ class EMonthMySchedulePage extends StatelessWidget {
       }
     }
 
-    const weekNames = [
-      "일",
-      "월",
-      "화",
-      "수",
-      "목",
-      "금",
-      "토",
-    ];
+    const weekNames = ["일", "월", "화", "수", "목", "금", "토",];
 
     return Column(
       children: [
@@ -88,8 +82,7 @@ class EMonthMySchedulePage extends StatelessWidget {
           height: 36,
           child: Row(
             children: List.generate(
-              7,
-                  (index) => Expanded(
+              7, (index) => Expanded(
                 child: Center(
                   child: Text(
                     weekNames[index],
@@ -116,119 +109,96 @@ class EMonthMySchedulePage extends StatelessWidget {
                 defaultVerticalAlignment:
                 TableCellVerticalAlignment.top,
                 children: List.generate(
-                  6,
-                      (row) => TableRow(
+                  6, (row) => TableRow(
                     children: List.generate(
-                      7,
-                          (col) {
-                        final date =
-                        dates[row * 7 + col];
+                      7, (col) {
+                        final date = dates[row * 7 + col];
 
                         final isCurrentMonth =
-                            date.month ==
-                                selectedDate.month;
+                            date.month == selectedDate.month;
 
                         final isSelected =
-                            date.year ==
-                                selectedDate.year &&
-                                date.month ==
-                                    selectedDate.month &&
-                                date.day ==
-                                    selectedDate.day;
+                            date.year == selectedDate.year &&
+                                date.month == selectedDate.month &&
+                                date.day == selectedDate.day;
 
-                        final dateKey =
-                        _dateKey(date);
+                        final dateKey = _dateKey(date);
 
-                        final workers =
+                        final List<MySchedule> workers =
                             schedules[dateKey] ?? [];
 
                         return GestureDetector(
-                          onTap: () =>
-                              onDateChanged(date),
+                          onTap: () {
+                            onDateChanged(date);
+
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (_) {
+                                return EMonthMyScheduleBottomSheet(
+                                  date: date,
+                                  schedules: workers.map(
+                                        (worker) => MySchedule(
+                                      name: worker.name,
+                                      startTime: worker.startTime,
+                                      endTime: worker.endTime,
+                                    ),
+                                  )
+                                      .toList(),
+                                );
+                              },
+                            );
+                          },
                           child: Container(
                             height: cellHeight,
-                            padding:
-                            const EdgeInsets.only(
-                              top: 8,
-                              left: 4,
-                              right: 4,
+                            padding: const EdgeInsets.only(
+                              top: 8, left: 4, right: 4,
                             ),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? const Color(
-                                  0xFFF2F8FF)
+                                  ? const Color(0xFFF2F8FF)
                                   : Colors.white,
                               border: Border(
                                 top: BorderSide(
-                                  color:
-                                  const Color(
-                                    0xFFE9E9EE,
-                                  ),
-                                  width: row == 0
-                                      ? 0
-                                      : 1,
+                                  color: const Color(0xFFE9E9EE,),
+                                  width: row == 0 ? 0 : 1,
                                 ),
                               ),
                             ),
                             child: Column(
                               children: [
-                                Text(
-                                  "${date.day}",
+                                Text("${date.day}",
                                   style: TextStyle(
                                     fontSize: 18,
-                                    fontWeight:
-                                    FontWeight.w600,
+                                    fontWeight: FontWeight.w600,
                                     color: isSelected
-                                        ? const Color(
-                                        0xFF1976FF)
+                                        ? const Color(0xFF1976FF)
                                         : isCurrentMonth
-                                        ? Colors
-                                        .black
-                                        : const Color(
-                                        0xFFC8C8D2),
+                                        ? Colors.black
+                                        : const Color(0xFFC8C8D2),
                                   ),
                                 ),
 
-                                const SizedBox(
-                                  height: 6,
-                                ),
+                                const SizedBox(height: 6,),
 
-                                if (isCurrentMonth &&
-                                    workers.isNotEmpty)
+                                if (isCurrentMonth && workers.isNotEmpty)
                                   Container(
-                                    padding:
-                                    const EdgeInsets
-                                        .symmetric(
-                                      horizontal: 8,
-                                      vertical: 3,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 3,
                                     ),
-                                    decoration:
-                                    BoxDecoration(
-                                      color:
-                                      const Color(
-                                        0xFFEAF4FF,
-                                      ),
-                                      borderRadius:
-                                      BorderRadius
-                                          .circular(
-                                        12,
-                                      ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFEAF4FF,),
+                                      borderRadius: BorderRadius.circular(12,),
                                     ),
                                     child: Text(
-                                      workers.first,
+                                      workers.first.name,
                                       maxLines: 1,
-                                      overflow:
-                                      TextOverflow
-                                          .ellipsis,
-                                      style:
-                                      const TextStyle(
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
                                         fontSize: 12,
-                                        fontWeight:
-                                        FontWeight
-                                            .w500,
-                                        color: Color(
-                                          0xFF1976FF,
-                                        ),
+                                        fontWeight: FontWeight.w500,
+                                        color: Color(0xFF1976FF,),
                                       ),
                                     ),
                                   ),

@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 
+import 'EMonthAllScheduleBottomSheet.dart';
+
 class ScheduleWorker {
   final String name;
+  final String startTime;
+  final String endTime;
 
   const ScheduleWorker({
     required this.name,
+    required this.startTime,
+    required this.endTime,
   });
 }
 
@@ -88,8 +94,7 @@ class EMonthAllSchedulePage extends StatelessWidget {
           height: 36,
           child: Row(
             children: List.generate(
-              7,
-                  (index) => Expanded(
+              7, (index) => Expanded(
                 child: Center(
                   child: Text(
                     weekNames[index],
@@ -115,56 +120,49 @@ class EMonthAllSchedulePage extends StatelessWidget {
                 defaultVerticalAlignment:
                 TableCellVerticalAlignment.top,
                 children: List.generate(
-                  6,
-                      (row) => TableRow(
+                  6, (row) => TableRow(
                     children: List.generate(
-                      7,
-                          (col) {
-                        final date =
-                        dates[row * 7 + col];
+                      7, (col) {
+                        final date = dates[row * 7 + col];
 
                         final isCurrentMonth =
-                            date.month ==
-                                selectedDate.month;
+                            date.month == selectedDate.month;
 
                         final isSelected =
-                            date.year ==
-                                selectedDate.year &&
-                                date.month ==
-                                    selectedDate.month &&
-                                date.day ==
-                                    selectedDate.day;
+                            date.year == selectedDate.year &&
+                                date.month == selectedDate.month &&
+                                date.day == selectedDate.day;
 
                         final workers =
-                            schedules[_dateKey(date)] ??
-                                [];
+                            schedules[_dateKey(date)] ?? [];
 
                         return GestureDetector(
-                          onTap: () =>
-                              onDateChanged(date),
+                          onTap: () {
+                            onDateChanged(date);
+
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              backgroundColor: Colors.transparent,
+                              builder: (_) => EMonthAllScheduleBottomSheet(
+                                date: date,
+                                workers: workers,
+                              ),
+                            );
+                          },
                           child: Container(
                             height: cellHeight,
-                            padding:
-                            const EdgeInsets.only(
-                              top: 8,
-                              left: 4,
-                              right: 4,
+                            padding: const EdgeInsets.only(
+                              top: 8, left: 4, right: 4,
                             ),
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? const Color(
-                                  0xFFF2F8FF)
+                                  ? const Color(0xFFF2F8FF)
                                   : Colors.white,
                               border: Border(
                                 top: BorderSide(
-                                  color:
-                                  const Color(
-                                    0xFFE9E9EE,
-                                  ),
-                                  width:
-                                  row == 0
-                                      ? 0
-                                      : 1,
+                                  color: const Color(0xFFE9E9EE,),
+                                  width: row == 0 ? 0 : 1,
                                 ),
                               ),
                             ),
@@ -174,25 +172,19 @@ class EMonthAllSchedulePage extends StatelessWidget {
                                   "${date.day}",
                                   style: TextStyle(
                                     fontSize: 18,
-                                    fontWeight:
-                                    FontWeight.w600,
+                                    fontWeight: FontWeight.w600,
                                     color: isSelected
-                                        ? const Color(
-                                        0xFF1976FF)
+                                        ? const Color(0xFF1976FF)
                                         : isCurrentMonth
-                                        ? Colors
-                                        .black
-                                        : const Color(
-                                        0xFFC8C8D2),
-                                  ),
+                                        ? Colors.black
+                                        : const Color(0xFFC8C8D2),),
                                 ),
 
                                 const SizedBox(height: 4,),
 
                                 if (isCurrentMonth)
                                   Expanded(
-                                    child:
-                                    _WorkerScheduleArea(
+                                    child: _WorkerScheduleArea(
                                       workers: workers,
                                     ),
                                   ),

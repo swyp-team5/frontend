@@ -4,8 +4,9 @@ import '../../common/widgets/BottomNavBar.dart';
 import '../crews/ECrewPage.dart';
 import '../home/EHomePage.dart';
 import '../mypage/EMyPage.dart';
-import 'EMonthAllSchedulePage.dart';
-import 'EMonthMySchedulePage.dart';
+import 'Month/AllSchedule/EMonthAllSchedulePage.dart';
+import 'Month/MySchedule/EMonthMyScheduleBottomSheet.dart';
+import 'Month/MySchedule/EMonthMySchedulePage.dart';
 import 'EWeekSchedulePage.dart';
 
 class EMainSchedulePage extends StatefulWidget {
@@ -23,33 +24,46 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
   DateTime selectedDate = DateTime.now();
 
   /// API 연동 전 더미 데이터
-  final Map<String, List<String>> monthSchedules = {
-    "2026-06-02": ["이다빈"],
-    "2026-06-06": ["이다빈"],
-    "2026-06-10": ["이다빈"],
-    "2026-06-13": ["이다빈"],
-    "2026-06-17": ["이다빈"],
-    "2026-06-20": ["이다빈"],
-    "2026-06-24": ["이다빈"],
-    "2026-06-27": ["이다빈"],
+  final Map<String, List<MySchedule>> monthSchedules = {
+    "2026-06-02": [
+      MySchedule(name: "이다빈", startTime: "09:00", endTime: "13:00")
+    ],
+    "2026-06-05": [
+      MySchedule(name: "이다빈", startTime: "10:00", endTime: "14:00")
+    ],
+    "2026-06-07": [
+      MySchedule(name: "이다빈", startTime: "11:00", endTime: "14:00")
+    ],
+    "2026-06-10": [
+      MySchedule(name: "이다빈", startTime: "12:00", endTime: "16:00")
+    ],
+    "2026-06-15": [
+      MySchedule(name: "이다빈", startTime: "16:00", endTime: "20:00")
+    ],
+    "2026-06-19": [
+      MySchedule(name: "이다빈", startTime: "14:00", endTime: "18:00")
+    ],
+    "2026-06-21": [
+      MySchedule(name: "이다빈", startTime: "16:00", endTime: "20:00")
+    ],
   };
 
   final Map<String, List<ScheduleWorker>> allSchedules = {
     "2026-06-02": [
-      ScheduleWorker(name: "김지연"),
-      ScheduleWorker(name: "이다빈"),
-      ScheduleWorker(name: "박춘식"),
-      ScheduleWorker(name: "홍길동"),
-      ScheduleWorker(name: "최민수"),
+      ScheduleWorker(name: "김지연", startTime: "09:00", endTime: "13:00"),
+      ScheduleWorker(name: "이다빈", startTime: "10:00", endTime: "14:00"),
+      ScheduleWorker(name: "박춘식", startTime: "12:00", endTime: "16:00"),
+      ScheduleWorker(name: "홍길동", startTime: "15:00", endTime: "19:00"),
+      ScheduleWorker(name: "최민수", startTime: "16:00", endTime: "20:00"),
     ],
 
     "2026-06-05": [
-      ScheduleWorker(name: "이다빈"),
-      ScheduleWorker(name: "김지연"),
-      ScheduleWorker(name: "박춘식"),
-      ScheduleWorker(name: "강민석"),
-      ScheduleWorker(name: "서지훈"),
-      ScheduleWorker(name: "정은우"),
+      ScheduleWorker(name: "이다빈", startTime: "09:00", endTime: "13:00"),
+      ScheduleWorker(name: "김지연", startTime: "10:00", endTime: "14:00"),
+      ScheduleWorker(name: "박춘식", startTime: "12:00", endTime: "16:00"),
+      ScheduleWorker(name: "강민석", startTime: "14:00", endTime: "18:00"),
+      ScheduleWorker(name: "서지훈", startTime: "15:00", endTime: "19:00"),
+      ScheduleWorker(name: "정은우", startTime: "16:00", endTime: "20:00"),
     ],
   };
 
@@ -109,8 +123,7 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
                         },
                         itemBuilder: (_) {
                           return List.generate(
-                            12,
-                                (index) => PopupMenuItem(
+                            12, (index) => PopupMenuItem(
                               value: index + 1,
                               child: Text("${index + 1}월"),
                             ),
@@ -142,8 +155,7 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
                         child: Container(
                           height: 34,
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 6,
+                            horizontal: 14, vertical: 6,
                           ),
                           decoration: BoxDecoration(
                             color: isAllViewSelected
@@ -179,10 +191,8 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
                   ),
                 ),
 
-                // ==========================
-                // 내용
-                // ==========================
 
+                // 내용
                 Expanded(
                   child: AnimatedSwitcher(
                     duration: const Duration(milliseconds: 250),
@@ -222,18 +232,12 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
               ],
             ),
 
-            // ==========================
             // 주 / 월 토글
-            // ==========================
-
             Positioned(
-              bottom: 14,
-              left: 0,
-              right: 0,
+              bottom: 14, left: 0, right: 0,
               child: Center(
                 child: Container(
-                  width: 88,
-                  height: 34,
+                  width: 88, height: 34,
                   decoration: BoxDecoration(
                     color: const Color(0xFFF2F2F5),
                     borderRadius: BorderRadius.circular(17),
@@ -256,8 +260,7 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
                               borderRadius: BorderRadius.circular(17),
                             ),
                             alignment: Alignment.center,
-                            child: Text(
-                              "주",
+                            child: Text("주",
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
@@ -285,8 +288,7 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
                               borderRadius: BorderRadius.circular(17),
                             ),
                             alignment: Alignment.center,
-                            child: Text(
-                              "월",
+                            child: Text("월",
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600,
