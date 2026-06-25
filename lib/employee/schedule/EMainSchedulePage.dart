@@ -4,6 +4,7 @@ import '../../common/widgets/BottomNavBar.dart';
 import '../crews/ECrewPage.dart';
 import '../home/EHomePage.dart';
 import '../mypage/EMyPage.dart';
+import 'EYearMonthBottomSheet.dart';
 import 'Month/AllSchedule/EMonthAllSchedulePage.dart';
 import 'Month/MySchedule/EMonthMyScheduleBottomSheet.dart';
 import 'Month/MySchedule/EMonthMySchedulePage.dart';
@@ -22,6 +23,9 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
 
   /// 현재 선택된 날짜
   DateTime selectedDate = DateTime.now();
+
+  int selectedYear = DateTime.now().year;
+  int selectedMonth = DateTime.now().month;
 
   /// API 연동 전 더미 데이터
   final Map<String, List<MySchedule>> monthSchedules = {
@@ -71,6 +75,15 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
 
 
   @override
+  void initState() {
+    super.initState();
+
+    selectedYear = selectedDate.year;
+    selectedMonth = selectedDate.month;
+  }
+
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
@@ -110,24 +123,27 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
                   ),
                   child: Row(
                     children: [
-                      PopupMenuButton<int>(
-                        padding: EdgeInsets.zero,
-                        onSelected: (month) {
-                          setState(() {
-                            selectedDate = DateTime(
-                              selectedDate.year,
-                              month,
-                              1,
-                            );
-                          });
-                        },
-                        itemBuilder: (_) {
-                          return List.generate(
-                            12, (index) => PopupMenuItem(
-                              value: index + 1,
-                              child: Text("${index + 1}월"),
-                            ),
+                      GestureDetector(
+                        onTap: () async {
+
+                          final result = await showModalBottomSheet<DateTime>(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (_) => const EYearMonthBottomSheet(),
                           );
+
+                          if (result != null) {
+                            setState(() {
+                              selectedDate = result;
+                            });
+                          }
+
+                          if (result != null) {
+                            setState(() {
+                              selectedDate = result;
+                            });
+                          }
                         },
                         child: Row(
                           children: [
