@@ -4,7 +4,8 @@ import '../../common/widgets/BottomNavBar.dart';
 import '../crews/ECrewPage.dart';
 import '../home/EHomePage.dart';
 import '../mypage/EMyPage.dart';
-import 'EMonthSchedulePage.dart';
+import 'EMonthAllSchedulePage.dart';
+import 'EMonthMySchedulePage.dart';
 import 'EWeekSchedulePage.dart';
 
 class EMainSchedulePage extends StatefulWidget {
@@ -33,6 +34,25 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
     "2026-06-27": ["이다빈"],
   };
 
+  final Map<String, List<ScheduleWorker>> allSchedules = {
+    "2026-06-02": [
+      ScheduleWorker(name: "김지연"),
+      ScheduleWorker(name: "이다빈"),
+      ScheduleWorker(name: "박춘식"),
+      ScheduleWorker(name: "홍길동"),
+      ScheduleWorker(name: "최민수"),
+    ],
+
+    "2026-06-05": [
+      ScheduleWorker(name: "이다빈"),
+      ScheduleWorker(name: "김지연"),
+      ScheduleWorker(name: "박춘식"),
+      ScheduleWorker(name: "강민석"),
+      ScheduleWorker(name: "서지훈"),
+      ScheduleWorker(name: "정은우"),
+    ],
+  };
+
   bool isAllViewSelected = false;
 
 
@@ -41,24 +61,22 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
     return Scaffold(
       backgroundColor: Colors.white,
 
+      /// 공통 BottomNavBar 적용
       bottomNavigationBar: BottomNavBar(
         currentIndex: 2,
         onTap: (index) {
           if (index == 0) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const EHomePage()),
-            );
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const EHomePage()));
           } else if (index == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ECrewPage()),
-            );
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const ECrewPage()));
+          } else if (index == 2) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const EMainSchedulePage()));
           } else if (index == 4) {
             Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const EMyPage()),
-            );
+                context, MaterialPageRoute(builder: (_) => const EMyPage()));
           }
         },
       ),
@@ -178,10 +196,20 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
                         });
                       },
                     )
-                        : EMonthSchedulePage(
-                      key: const ValueKey("month"),
+                        : isAllViewSelected
+                        ? EMonthAllSchedulePage(
+                      key: const ValueKey("month_all"),
                       selectedDate: selectedDate,
-                      isAllViewSelected: isAllViewSelected,
+                      schedules: allSchedules,
+                      onDateChanged: (date) {
+                        setState(() {
+                          selectedDate = date;
+                        });
+                      },
+                    )
+                        : EMonthMySchedulePage(
+                      key: const ValueKey("month_my"),
+                      selectedDate: selectedDate,
                       schedules: monthSchedules,
                       onDateChanged: (date) {
                         setState(() {
