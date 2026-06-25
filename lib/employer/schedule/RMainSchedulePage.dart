@@ -7,6 +7,7 @@ import '../home/RHomePage.dart';
 import '../mypage/RMyPage.dart';
 import 'Month/RMonthAllSchedulePage.dart';
 import 'RWeekSchedulePage.dart';
+import 'RYearMonthBottomSheet.dart';
 
 class RMainSchedulePage extends StatefulWidget {
   const RMainSchedulePage({super.key});
@@ -21,6 +22,9 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
 
   /// 현재 선택된 날짜
   DateTime selectedDate = DateTime.now();
+
+  int selectedYear = DateTime.now().year;
+  int selectedMonth = DateTime.now().month;
 
 
   /// API 연동 전 더미 데이터
@@ -42,6 +46,14 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
       RScheduleWorker(name: "정은우", startTime: "16:00", endTime: "20:00", role: "마감",),
     ],
   };
+
+  @override
+  void initState() {
+    super.initState();
+
+    selectedYear = selectedDate.year;
+    selectedMonth = selectedDate.month;
+  }
 
 
   @override
@@ -85,25 +97,27 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                   ),
                   child: Row(
                     children: [
-                      PopupMenuButton<int>(
-                        padding: EdgeInsets.zero,
-                        onSelected: (month) {
-                          setState(() {
-                            selectedDate = DateTime(
-                              selectedDate.year,
-                              month,
-                              1,
-                            );
-                          });
-                        },
-                        itemBuilder: (_) {
-                          return List.generate(
-                            12,
-                                (index) => PopupMenuItem(
-                              value: index + 1,
-                              child: Text("${index + 1}월"),
-                            ),
+                      GestureDetector(
+                        onTap: () async {
+
+                          final result = await showModalBottomSheet<DateTime>(
+                            context: context,
+                            isScrollControlled: true,
+                            backgroundColor: Colors.transparent,
+                            builder: (_) => const RYearMonthBottomSheet(),
                           );
+
+                          if (result != null) {
+                            setState(() {
+                              selectedDate = result;
+                            });
+                          }
+
+                          if (result != null) {
+                            setState(() {
+                              selectedDate = result;
+                            });
+                          }
                         },
                         child: Row(
                           children: [
