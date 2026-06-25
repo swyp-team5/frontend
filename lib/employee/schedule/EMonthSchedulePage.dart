@@ -3,12 +3,22 @@ import 'package:flutter/material.dart';
 class EMonthSchedulePage extends StatelessWidget {
   final DateTime selectedDate;
   final ValueChanged<DateTime> onDateChanged;
+  final bool isAllViewSelected;
+  final Map<String, List<String>> schedules; // 날짜별 근무자 목록
 
   const EMonthSchedulePage({
     super.key,
     required this.selectedDate,
     required this.onDateChanged,
+    required this.isAllViewSelected,
+    required this.schedules,
   });
+
+  String _dateKey(DateTime date) {
+    return "${date.year.toString().padLeft(4, '0')}-"
+        "${date.month.toString().padLeft(2, '0')}-"
+        "${date.day.toString().padLeft(2, '0')}";
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -110,6 +120,10 @@ class EMonthSchedulePage extends StatelessWidget {
                             date.month == selectedDate.month &&
                             date.day == selectedDate.day;
 
+                    final dateKey = _dateKey(date);
+
+                    final workers = schedules[dateKey] ?? [];
+
                     return GestureDetector(
                       onTap: () => onDateChanged(date),
                       child: Container(
@@ -126,20 +140,45 @@ class EMonthSchedulePage extends StatelessWidget {
                             ),
                           ),
                         ),
-                        child: Align(
-                          alignment: Alignment.topCenter,
-                          child: Text(
-                            "${date.day}",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: isSelected
-                                  ? const Color(0xFF1976FF)
-                                  : isCurrentMonth
-                                  ? Colors.black
-                                  : const Color(0xFFC8C8D2),
+                        child: Column(
+                          children: [
+                            Text(
+                              "${date.day}",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: isSelected
+                                    ? const Color(0xFF1976FF)
+                                    : isCurrentMonth
+                                    ? Colors.black
+                                    : const Color(0xFFC8C8D2),
+                              ),
                             ),
-                          ),
+
+                            const SizedBox(height: 10),
+
+                            if (!isAllViewSelected &&
+                                isCurrentMonth &&
+                                workers.isNotEmpty)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFEAF4FF),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  workers.first,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(0xFF1976FF),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       ),
                     );

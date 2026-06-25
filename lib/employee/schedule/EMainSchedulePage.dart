@@ -21,6 +21,21 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
   /// 현재 선택된 날짜
   DateTime selectedDate = DateTime.now();
 
+  /// API 연동 전 더미 데이터
+  final Map<String, List<String>> monthSchedules = {
+    "2026-06-02": ["이다빈"],
+    "2026-06-06": ["이다빈"],
+    "2026-06-10": ["이다빈"],
+    "2026-06-13": ["이다빈"],
+    "2026-06-17": ["이다빈"],
+    "2026-06-20": ["이다빈"],
+    "2026-06-24": ["이다빈"],
+    "2026-06-27": ["이다빈"],
+  };
+
+  bool isAllViewSelected = false;
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -100,11 +115,40 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
 
                       const Spacer(),
 
-                      TextButton(
-                        onPressed: () {
-                          // TODO : 달력
+                      GestureDetector(
+                        onTap: () {
+                          setState(() {
+                            isAllViewSelected = !isAllViewSelected;
+                          });
                         },
-                        child: const Text("전체 보기")
+                        child: Container(
+                          height: 34,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isAllViewSelected
+                                ? const Color(0xFFEEEBFF)
+                                : const Color(0xFFF1F1F5),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isAllViewSelected
+                                  ? const Color(0xFF7D67FD)
+                                  : const Color(0xFFE0E2E5),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            "전체 보기",
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isAllViewSelected
+                                  ? const Color(0xFF7D67FD)
+                                  : const Color(0xFF767676),
+                            ),
+                          ),
+                        ),
                       ),
 
                       IconButton(
@@ -137,6 +181,8 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
                         : EMonthSchedulePage(
                       key: const ValueKey("month"),
                       selectedDate: selectedDate,
+                      isAllViewSelected: isAllViewSelected,
+                      schedules: monthSchedules,
                       onDateChanged: (date) {
                         setState(() {
                           selectedDate = date;
