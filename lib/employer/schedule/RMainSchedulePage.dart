@@ -6,6 +6,7 @@ import '../crews/RCrewPage.dart';
 import '../home/RHomePage.dart';
 import '../mypage/RMyPage.dart';
 import 'Month/RMonthAllSchedulePage.dart';
+import 'RAddSchedulePage.dart';
 import 'Week/RWeekSchedulePage.dart';
 import 'RYearMonthBottomSheet.dart';
 
@@ -155,11 +156,74 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                         icon: const Icon(Icons.tune),
                       ),
 
-                      IconButton(
-                        onPressed: () {
-                          // TODO : 수정
-                        },
+                      PopupMenuButton<String>(
+                        color: Colors.white,
+                        elevation: 6,
+                        splashRadius: 20,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
                         icon: const Icon(Icons.edit_outlined),
+                        onSelected: (value) {
+                          if (value == 'edit') {
+                            // 수정
+                          } else if (value == 'add') {
+                            // 추가
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const RAddSchedulePage(),
+                              ),
+                            );
+                          }
+                        },
+                        itemBuilder: (_) => [
+                          const PopupMenuItem<String>(
+                            value: 'edit',
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.edit_outlined,
+                                  size: 20,
+                                  color: Colors.black,
+                                ),
+                                SizedBox(width: 10),
+                                Text(
+                                  '수정',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuDivider(height: 1),
+                          const PopupMenuItem<String>(
+                            value: 'add',
+                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.add_outlined,
+                                  size: 20,
+                                  color: Colors.black,
+                                ),
+                                SizedBox(width: 10),
+                                Text(
+                                  '추가',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
