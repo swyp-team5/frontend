@@ -29,19 +29,31 @@ class RWeekGrid extends StatelessWidget {
     return int.parse(time.split(":").first);
   }
 
+  /// 30분 단위 위치 계산
+  double _timeToPosition(String time, int startHour) {
+    final parts = time.split(":");
+
+    final hour = int.parse(parts[0]);
+    final minute = int.parse(parts[1]);
+
+    return (hour - startHour) * 2 +
+        (minute >= 30 ? 1 : 0);
+  }
+
   int get minHour {
     int min = 23;
 
     for (final day in schedules.values) {
       for (final worker in day) {
         final hour = _hour(worker.startTime);
+
         if (hour < min) {
           min = hour;
         }
       }
     }
 
-    return min;
+    return min == 23 ? 0 : min;
   }
 
   int get maxHour {
@@ -50,26 +62,29 @@ class RWeekGrid extends StatelessWidget {
     for (final day in schedules.values) {
       for (final worker in day) {
         final hour = _hour(worker.endTime);
+
         if (hour > max) {
           max = hour;
         }
       }
     }
 
-    return max;
+    return max == 0 ? 24 : max;
   }
-
 
   @override
   Widget build(BuildContext context) {
-    const cellHeight = 80.0;
+    const halfHourHeight = 40.0;
+
     final startHour = minHour;
     final endHour = maxHour;
-    final totalRows = endHour - startHour;
+
+    final hourRows = endHour - startHour;
+    final halfRows = hourRows * 2;
 
     return SingleChildScrollView(
       child: SizedBox(
-        height: totalRows * cellHeight,
+        height: halfRows * halfHourHeight,
         child: Row(
           children: [
             /// ======================
@@ -79,12 +94,12 @@ class RWeekGrid extends StatelessWidget {
               width: 30,
               child: Column(
                 children: List.generate(
-                  totalRows,
+                  hourRows,
                       (index) {
                     final hour = startHour + index;
 
                     return SizedBox(
-                      height: cellHeight,
+                      height: halfHourHeight * 2,
                       child: Align(
                         alignment: Alignment.topCenter,
                         child: Text(
@@ -129,12 +144,14 @@ class RWeekGrid extends StatelessWidget {
                       ),
                       child: Stack(
                         children: [
-                          /// 시간 셀
+                          /// ======================
+                          /// 30분 셀
+                          /// ======================
                           Column(
                             children: List.generate(
-                              totalRows,
+                              halfRows,
                                   (index) => Container(
-                                height: cellHeight,
+                                height: halfHourHeight,
                                 decoration: BoxDecoration(
                                   border: Border(
                                     top: BorderSide(
@@ -147,31 +164,31 @@ class RWeekGrid extends StatelessWidget {
                             ),
                           ),
 
-                          /// 휴무가 아니고 근무가 있을 때만 카드 표시
+                          /// ======================
+                          /// 스케줄 카드
+                          /// ======================
                           if (!isHoliday && workers.isNotEmpty)
                             Builder(
                               builder: (_) {
-                                final startHour = workers
-                                    .map((e) => _hour(e.startTime))
+                                final start = workers
+                                    .map((e) => _timeToPosition(
+                                  e.startTime,
+                                  startHour,
+                                ))
                                     .reduce((a, b) => a < b ? a : b);
 
-                                final endHour = workers
-                                    .map((e) => _hour(e.endTime))
-                                    .reduce((a, b) => a > b ? a : b);
-
-                                final workerStartHour = workers
-                                    .map((e) => _hour(e.startTime))
-                                    .reduce((a, b) => a < b ? a : b);
-
-                                final workerEndHour = workers
-                                    .map((e) => _hour(e.endTime))
+                                final end = workers
+                                    .map((e) => _timeToPosition(
+                                  e.endTime,
+                                  startHour,
+                                ))
                                     .reduce((a, b) => a > b ? a : b);
 
                                 return Positioned(
-                                  top: (workerStartHour - startHour) * cellHeight,
+                                  top: start * halfHourHeight,
                                   left: 0,
                                   right: 0,
-                                  height: (workerEndHour - workerStartHour) * cellHeight,
+                                  height: (end - start) * halfHourHeight,
                                   child: RWeekScheduleCard(
                                     workers: workers,
                                   ),

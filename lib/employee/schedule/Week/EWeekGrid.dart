@@ -32,9 +32,19 @@ class EWeekGrid extends StatelessWidget {
     return int.parse(time.split(":").first);
   }
 
+  double _timeToPosition(String time, int startHour) {
+    final parts = time.split(":");
+
+    final hour = int.parse(parts[0]);
+    final minute = int.parse(parts[1]);
+
+    return (hour - startHour) * 2 +
+        (minute >= 30 ? 1 : 0);
+  }
+
   String _startTime(dynamic e) => e.startTime;
+
   String _endTime(dynamic e) => e.endTime;
-  String _name(dynamic e) => e.name;
 
   int get minHour {
     int min = 23;
@@ -64,28 +74,32 @@ class EWeekGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const cellHeight = 80.0;
+    const halfHourHeight = 40.0;
 
     final startHour = minHour;
     final endHour = maxHour;
-    final totalRows = endHour - startHour;
+
+    final hourRows = endHour - startHour;
+    final halfRows = hourRows * 2;
 
     return SingleChildScrollView(
       child: SizedBox(
-        height: totalRows * cellHeight,
+        height: halfRows * halfHourHeight,
         child: Row(
           children: [
-            /// 시간축
+            /// =========================
+            /// 시간축 (1시간만 표시)
+            /// =========================
             SizedBox(
-              width: 28,
+              width: 30,
               child: Column(
                 children: List.generate(
-                  totalRows,
+                  hourRows,
                       (index) {
                     final hour = startHour + index;
 
                     return SizedBox(
-                      height: cellHeight,
+                      height: halfHourHeight * 2,
                       child: Align(
                         alignment: Alignment.topCenter,
                         child: Text(
@@ -102,13 +116,15 @@ class EWeekGrid extends StatelessWidget {
               ),
             ),
 
+            /// =========================
+            /// 요일별
+            /// =========================
             Expanded(
               child: Row(
                 children: List.generate(7, (dayIndex) {
                   final key = _dateKey(weekDates[dayIndex]);
 
-                  final List<dynamic> workers =
-                      schedules[key] ?? <dynamic>[];
+                  final workers = schedules[key] ?? [];
 
                   final isHoliday = holidays.contains(key);
 
@@ -127,12 +143,14 @@ class EWeekGrid extends StatelessWidget {
                       ),
                       child: Stack(
                         children: [
-                          /// 시간 셀
+                          /// =========================
+                          /// 30분 셀
+                          /// =========================
                           Column(
                             children: List.generate(
-                              totalRows,
-                                  (_) => Container(
-                                height: cellHeight,
+                              halfRows,
+                                  (index) => Container(
+                                height: halfHourHeight,
                                 decoration: BoxDecoration(
                                   border: Border(
                                     top: BorderSide(
@@ -145,22 +163,34 @@ class EWeekGrid extends StatelessWidget {
                             ),
                           ),
 
+                          /// =========================
+                          /// 스케줄 카드
+                          /// =========================
                           if (!isHoliday && workers.isNotEmpty)
                             Builder(
                               builder: (_) {
-                                final firstHour = workers
-                                    .map((e) => _hour(_startTime(e)))
+                                final start =
+                                workers
+                                    .map((e) => _timeToPosition(
+                                  e.startTime,
+                                  startHour,
+                                ))
                                     .reduce((a, b) => a < b ? a : b);
 
-                                final lastHour = workers
-                                    .map((e) => _hour(_endTime(e)))
+                                final end =
+                                workers
+                                    .map((e) => _timeToPosition(
+                                  e.endTime,
+                                  startHour,
+                                ))
                                     .reduce((a, b) => a > b ? a : b);
 
                                 return Positioned(
-                                  top: (firstHour - startHour) * cellHeight,
+                                  top: start * halfHourHeight,
                                   left: 0,
                                   right: 0,
-                                  height: (lastHour - firstHour) * cellHeight,
+                                  height:
+                                  (end - start) * halfHourHeight,
                                   child: EWeekScheduleCard(
                                     workers: workers,
                                     isAllView: isAllView,
