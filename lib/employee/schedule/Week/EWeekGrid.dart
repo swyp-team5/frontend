@@ -166,19 +166,59 @@ class EWeekGrid extends StatelessWidget {
                           /// =========================
                           /// 스케줄 카드
                           /// =========================
+                          // if (!isHoliday && workers.isNotEmpty)
+                          //   Builder(
+                          //     builder: (_) {
+                          //       final start =
+                          //       workers
+                          //           .map((e) => _timeToPosition(
+                          //         e.startTime,
+                          //         startHour,
+                          //       ))
+                          //           .reduce((a, b) => a < b ? a : b);
+                          //
+                          //       final end =
+                          //       workers
+                          //           .map((e) => _timeToPosition(
+                          //         e.endTime,
+                          //         startHour,
+                          //       ))
+                          //           .reduce((a, b) => a > b ? a : b);
+                          //
+                          //       return Positioned(
+                          //         top: start * halfHourHeight,
+                          //         left: 0,
+                          //         right: 0,
+                          //         height:
+                          //         (end - start) * halfHourHeight,
+                          //         child: EWeekScheduleCard(
+                          //           workers: workers,
+                          //           isAllView: isAllView,
+                          //         ),
+                          //       );
+                          //     },
+                          //   ),
                           if (!isHoliday && workers.isNotEmpty)
-                            Builder(
-                              builder: (_) {
-                                final start =
-                                workers
+                            ...(() {
+                              final Map<String, List<dynamic>> grouped = {};
+
+                              // role별 그룹핑
+                              for (final worker in workers) {
+                                grouped.putIfAbsent(worker.role, () => []);
+                                grouped[worker.role]!.add(worker);
+                              }
+
+                              return grouped.entries.map((entry) {
+                                final roleWorkers = entry.value;
+
+                                final start = roleWorkers
                                     .map((e) => _timeToPosition(
                                   e.startTime,
                                   startHour,
                                 ))
                                     .reduce((a, b) => a < b ? a : b);
 
-                                final end =
-                                workers
+                                final end = roleWorkers
                                     .map((e) => _timeToPosition(
                                   e.endTime,
                                   startHour,
@@ -189,15 +229,14 @@ class EWeekGrid extends StatelessWidget {
                                   top: start * halfHourHeight,
                                   left: 0,
                                   right: 0,
-                                  height:
-                                  (end - start) * halfHourHeight,
+                                  height: (end - start) * halfHourHeight,
                                   child: EWeekScheduleCard(
-                                    workers: workers,
+                                    workers: roleWorkers,
                                     isAllView: isAllView,
                                   ),
                                 );
-                              },
-                            ),
+                              }).toList();
+                            })(),
                         ],
                       ),
                     ),

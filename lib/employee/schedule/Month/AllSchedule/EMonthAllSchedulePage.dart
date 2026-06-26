@@ -6,11 +6,13 @@ class ScheduleWorker {
   final String name;
   final String startTime;
   final String endTime;
+  final String role;
 
   const ScheduleWorker({
     required this.name,
     required this.startTime,
     required this.endTime,
+    required this.role,
   });
 }
 

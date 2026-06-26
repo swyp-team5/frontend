@@ -19,23 +19,23 @@ class RWeekScheduleCard extends StatelessWidget {
         return const Color(0xFFEEEBFF);
 
       case "마감":
-        return const Color(0xFFDDF8E8);
+        return const Color(0xFFDCFED8);
 
       default:
-        return const Color(0xFFF3F3F3);
+        return Colors.grey.shade200;
     }
   }
 
   Color _textColor(String role) {
     switch (role) {
       case "오픈":
-        return const Color(0xFF0084FF);
+        return const Color(0xFF0063BF);
 
       case "미들":
         return const Color(0xFF7D67FD);
 
       case "마감":
-        return const Color(0xFF00A86B);
+        return const Color(0xFF007360);
 
       default:
         return Colors.black87;
@@ -53,6 +53,8 @@ class RWeekScheduleCard extends StatelessWidget {
 
     final first = workers.first;
 
+    final role = first.role;
+
     final last = workers.reduce(
           (a, b) =>
       a.endTime.compareTo(b.endTime) > 0 ? a : b,
@@ -66,7 +68,7 @@ class RWeekScheduleCard extends StatelessWidget {
       margin: EdgeInsets.zero,
       padding: EdgeInsets.zero,
       decoration: BoxDecoration(
-        color: _backgroundColor(first.role),
+        color: _backgroundColor(role),
       ),
       child: Center(
         child: Column(
@@ -99,7 +101,7 @@ class RWeekScheduleCard extends StatelessWidget {
                     fontSize: 11,
                     //height: 1.2,
                     fontWeight: FontWeight.w500,
-                    color: _textColor(first.role),
+                    color: _textColor(role),
                   ),
                 ),
               ),

@@ -10,16 +10,70 @@ class EWeekScheduleCard extends StatelessWidget {
     required this.isAllView,
   });
 
-  Color _backgroundColor() {
-    return isAllView
-        ? const Color(0xFFEDE7FF) // 전체보기
-        : const Color(0xFFE6F3FF); // 개인보기
+  /// 개인보기 색상
+  Color _myBackgroundColor(role) {
+    switch (role) {
+      case "오픈":
+        return const Color(0xFFE6F3FF);
+
+      case "미들":
+        return const Color(0xFFEEEBFF);
+
+      case "마감":
+        return const Color(0xFFDCFED8);
+
+      default:
+        return Colors.grey.shade200;
+    }
   }
 
-  Color _textColor() {
-    return isAllView
-        ? const Color(0xFF6B4EFF)
-        : const Color(0xFF1976FF);
+  Color _myTextColor(role) {
+    switch (role) {
+      case "오픈":
+        return const Color(0xFF0063BF);
+
+      case "미들":
+        return const Color(0xFF7D67FD);
+
+      case "마감":
+        return const Color(0xFF007360);
+
+      default:
+        return Colors.black87;
+    }
+  }
+
+  /// 역할별 색상 (전체보기)
+  Color _backgroundColor(String role) {
+    switch (role) {
+      case "오픈":
+        return const Color(0xFFE6F3FF);
+
+      case "미들":
+        return const Color(0xFFEEEBFF);
+
+      case "마감":
+        return const Color(0xFFDCFED8);
+
+      default:
+        return Colors.grey.shade200;
+    }
+  }
+
+  Color _textColor(String role) {
+    switch (role) {
+      case "오픈":
+        return const Color(0xFF0063BF);
+
+      case "미들":
+        return const Color(0xFF7D67FD);
+
+      case "마감":
+        return const Color(0xFF007360);
+
+      default:
+        return Colors.black87;
+    }
   }
 
   @override
@@ -33,46 +87,58 @@ class EWeekScheduleCard extends StatelessWidget {
 
     final first = sorted.first;
 
+    final role = first.role;
+
     final last = sorted.reduce(
-          (a, b) =>
-      a.endTime.compareTo(b.endTime) > 0 ? a : b,
+          (a, b) => a.endTime.compareTo(b.endTime) > 0 ? a : b,
     );
 
-    final names = sorted
-        .map((e) => e.name.toString())
-        .join("\n");
+    final names = sorted.map((e) => e.name).join("\n");
 
     return Container(
       width: double.infinity,
       height: double.infinity,
-      color: _backgroundColor(),
-      alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 4,
-        vertical: 4,
+      margin: EdgeInsets.zero,
+      padding: EdgeInsets.zero,
+      decoration: BoxDecoration(
+        color: isAllView
+            ? _backgroundColor(role) // 역할별
+            : _myBackgroundColor(role),   // 개인보기
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Text(
-          //   "${first.startTime}\n~ ${last.endTime}",
-          //   textAlign: TextAlign.center,
-          //   style: TextStyle(
-          //     fontSize: 9,
-          //     fontWeight: FontWeight.w700,
-          //     color: _textColor(),
-          //   ),
-          // ),
-          // const SizedBox(height: 6),
+          // 필요하면 시간 표시
+          /*
+          Text(
+            "${first.startTime}\n~ ${last.endTime}",
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w700,
+              color: isAllView
+                  ? _textColor(role)
+                  : _myTextColor(),
+            ),
+          ),
+
+          const SizedBox(height: 6),
+          */
+
           Expanded(
             child: Center(
               child: Text(
                 names,
                 textAlign: TextAlign.center,
+                maxLines: 10,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w600,
-                  color: _textColor(),
+                  color: isAllView
+                      ? _textColor(role)
+                      : _myTextColor(role),
                 ),
               ),
             ),

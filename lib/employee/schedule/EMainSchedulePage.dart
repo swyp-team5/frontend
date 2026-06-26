@@ -30,44 +30,44 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
   /// API 연동 전 더미 데이터
   final Map<String, List<MySchedule>> monthSchedules = {
     "2026-06-02": [
-      MySchedule(name: "이다빈", startTime: "09:00", endTime: "13:00")
+      MySchedule(name: "이다빈", startTime: "10:00", endTime: "14:00", role: "오픈")
     ],
     "2026-06-05": [
-      MySchedule(name: "이다빈", startTime: "10:00", endTime: "14:00")
+      MySchedule(name: "이다빈", startTime: "10:00", endTime: "14:00", role: "오픈")
     ],
     "2026-06-07": [
-      MySchedule(name: "이다빈", startTime: "11:00", endTime: "14:00")
+      MySchedule(name: "이다빈", startTime: "12:00", endTime: "16:00", role: "미들")
     ],
     "2026-06-10": [
-      MySchedule(name: "이다빈", startTime: "12:00", endTime: "16:00")
+      MySchedule(name: "이다빈", startTime: "12:00", endTime: "16:00", role: "미들")
     ],
     "2026-06-15": [
-      MySchedule(name: "이다빈", startTime: "16:00", endTime: "20:00")
+      MySchedule(name: "이다빈", startTime: "16:00", endTime: "20:00", role: "마감")
     ],
     "2026-06-19": [
-      MySchedule(name: "이다빈", startTime: "14:00", endTime: "18:00")
+      MySchedule(name: "이다빈", startTime: "16:00", endTime: "20:00", role: "마감")
     ],
     "2026-06-23": [
-      MySchedule(name: "이다빈", startTime: "16:00", endTime: "20:00")
+      MySchedule(name: "이다빈", startTime: "12:00", endTime: "16:00", role: "미들")
     ],
   };
 
   final Map<String, List<ScheduleWorker>> allSchedules = {
     "2026-06-23": [
-      ScheduleWorker(name: "김지연", startTime: "09:00", endTime: "13:00"),
-      ScheduleWorker(name: "이다빈", startTime: "10:00", endTime: "14:00"),
-      ScheduleWorker(name: "박춘식", startTime: "12:00", endTime: "16:00"),
-      ScheduleWorker(name: "홍길동", startTime: "15:00", endTime: "19:00"),
-      ScheduleWorker(name: "최민수", startTime: "16:00", endTime: "20:00"),
+      ScheduleWorker(name: "김지연", startTime: "09:00", endTime: "12:00", role: "오픈"),
+      ScheduleWorker(name: "이다빈", startTime: "09:00", endTime: "12:00", role: "오픈"),
+      ScheduleWorker(name: "박춘식", startTime: "12:00", endTime: "16:00", role: "미들"),
+      ScheduleWorker(name: "홍길동", startTime: "12:00", endTime: "16:00", role: "미들"),
+      ScheduleWorker(name: "최민수", startTime: "16:00", endTime: "20:00", role: "마감"),
     ],
 
     "2026-06-25": [
-      ScheduleWorker(name: "이다빈", startTime: "09:00", endTime: "13:00"),
-      ScheduleWorker(name: "김지연", startTime: "10:00", endTime: "14:00"),
-      ScheduleWorker(name: "박춘식", startTime: "12:00", endTime: "16:00"),
-      ScheduleWorker(name: "강민석", startTime: "14:00", endTime: "18:00"),
-      ScheduleWorker(name: "서지훈", startTime: "15:00", endTime: "19:00"),
-      ScheduleWorker(name: "정은우", startTime: "16:00", endTime: "20:00"),
+      ScheduleWorker(name: "이다빈", startTime: "09:00", endTime: "12:00", role: "오픈"),
+      ScheduleWorker(name: "김지연", startTime: "09:00", endTime: "12:00", role: "오픈"),
+      ScheduleWorker(name: "박춘식", startTime: "12:00", endTime: "16:00", role: "미들"),
+      ScheduleWorker(name: "강민석", startTime: "12:00", endTime: "16:00", role: "미들"),
+      ScheduleWorker(name: "서지훈", startTime: "16:00", endTime: "19:00", role: "마감"),
+      ScheduleWorker(name: "정은우", startTime: "16:00", endTime: "20:00", role: "마감"),
     ],
   };
 

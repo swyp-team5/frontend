@@ -30,8 +30,8 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
   /// API 연동 전 더미 데이터
   final Map<String, List<RScheduleWorker>> allSchedules = {
     "2026-06-23": [
-      RScheduleWorker(name: "김지연", startTime: "09:30", endTime: "13:00", role: "오픈",),
-      RScheduleWorker(name: "이다빈", startTime: "10:00", endTime: "14:00", role: "오픈",),
+      RScheduleWorker(name: "김지연", startTime: "09:00", endTime: "11:00", role: "오픈",),
+      RScheduleWorker(name: "이다빈", startTime: "09:00", endTime: "11:00", role: "오픈",),
       RScheduleWorker(name: "박춘식", startTime: "12:00", endTime: "16:00", role: "미들",),
       RScheduleWorker(name: "홍길동", startTime: "16:00", endTime: "20:00", role: "마감",),
       RScheduleWorker(name: "최민수", startTime: "16:00", endTime: "20:00", role: "마감",),
@@ -44,11 +44,11 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
     ],
 
     "2026-06-25": [
-      RScheduleWorker(name: "이다빈", startTime: "10:00", endTime: "13:00", role: "오픈",),
+      RScheduleWorker(name: "이다빈", startTime: "10:00", endTime: "14:00", role: "오픈",),
       RScheduleWorker(name: "김지연", startTime: "10:00", endTime: "14:00", role: "오픈",),
-      RScheduleWorker(name: "박춘식", startTime: "12:00", endTime: "16:00", role: "미들",),
-      RScheduleWorker(name: "강민석", startTime: "14:00", endTime: "18:00", role: "미들",),
-      RScheduleWorker(name: "서지훈", startTime: "12:00", endTime: "16:00", role: "미들",),
+      RScheduleWorker(name: "박춘식", startTime: "14:00", endTime: "16:00", role: "미들",),
+      RScheduleWorker(name: "강민석", startTime: "14:00", endTime: "16:00", role: "미들",),
+      RScheduleWorker(name: "서지훈", startTime: "14:00", endTime: "16:00", role: "미들",),
       RScheduleWorker(name: "정은우", startTime: "16:00", endTime: "20:00", role: "마감",),
     ],
   };

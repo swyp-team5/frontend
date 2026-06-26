@@ -190,10 +190,12 @@ class MySchedule{
   final String name;
   final String startTime;
   final String endTime;
+  final String role;
 
   const MySchedule({
     required this.name,
     required this.startTime,
     required this.endTime,
+    required this.role,
   });
 }

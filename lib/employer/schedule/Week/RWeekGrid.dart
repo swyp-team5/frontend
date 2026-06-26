@@ -72,6 +72,7 @@ class RWeekGrid extends StatelessWidget {
     return max == 0 ? 24 : max;
   }
 
+
   @override
   Widget build(BuildContext context) {
     const halfHourHeight = 40.0;
@@ -167,21 +168,53 @@ class RWeekGrid extends StatelessWidget {
                           /// ======================
                           /// 스케줄 카드
                           /// ======================
+                          // if (!isHoliday && workers.isNotEmpty)
+                          //   Builder(
+                          //     builder: (_) {
+                          //       final start = workers
+                          //           .map((e) => _timeToPosition(
+                          //         e.startTime,
+                          //         startHour,
+                          //       ))
+                          //           .reduce((a, b) => a < b ? a : b);
+                          //
+                          //       final end = workers
+                          //           .map((e) => _timeToPosition(
+                          //         e.endTime,
+                          //         startHour,
+                          //       ))
+                          //           .reduce((a, b) => a > b ? a : b);
+                          //
+                          //       return Positioned(
+                          //         top: start * halfHourHeight,
+                          //         left: 0,
+                          //         right: 0,
+                          //         height: (end - start) * halfHourHeight,
+                          //         child: RWeekScheduleCard(
+                          //           workers: workers,
+                          //         ),
+                          //       );
+                          //     },
+                          //   ),
                           if (!isHoliday && workers.isNotEmpty)
-                            Builder(
-                              builder: (_) {
-                                final start = workers
-                                    .map((e) => _timeToPosition(
-                                  e.startTime,
-                                  startHour,
-                                ))
+                            ...(() {
+                              /// role별 그룹
+                              final Map<String, List<RScheduleWorker>> roleGroups = {};
+
+                              for (final worker in workers) {
+                                roleGroups.putIfAbsent(worker.role, () => []);
+                                roleGroups[worker.role]!.add(worker);
+                              }
+
+                              return roleGroups.entries.map((entry) {
+                                final roleWorkers = entry.value;
+
+                                final start = roleWorkers
+                                    .map((e) => _timeToPosition(e.startTime, startHour))
                                     .reduce((a, b) => a < b ? a : b);
 
-                                final end = workers
-                                    .map((e) => _timeToPosition(
-                                  e.endTime,
-                                  startHour,
-                                ))
+                                final end = roleWorkers
+                                    .map((e) => _timeToPosition(e.endTime, startHour))
                                     .reduce((a, b) => a > b ? a : b);
 
                                 return Positioned(
@@ -190,11 +223,11 @@ class RWeekGrid extends StatelessWidget {
                                   right: 0,
                                   height: (end - start) * halfHourHeight,
                                   child: RWeekScheduleCard(
-                                    workers: workers,
+                                    workers: roleWorkers,
                                   ),
                                 );
-                              },
-                            ),
+                              }).toList();
+                            })(),
                         ],
                       ),
                     ),
