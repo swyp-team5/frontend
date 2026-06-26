@@ -262,32 +262,35 @@ class _WorkerChip extends StatelessWidget {
     required this.worker,
   });
 
-  int get colorIndex =>
-      worker.name.hashCode.abs() % 3;
-
   Color get backgroundColor {
-    switch (colorIndex) {
-      case 0:
+    switch (worker.role) {
+      case "오픈":
         return const Color(0xFFE6F3FF);
 
-      case 1:
+      case "미들":
         return const Color(0xFFEEEBFF);
 
-      default:
+      case "마감":
         return const Color(0xFFDCFED8);
+
+      default:
+        return const Color(0xFFF2F2F5);
     }
   }
 
   Color get textColor {
-    switch (colorIndex) {
-      case 0:
+    switch (worker.role) {
+      case "오픈":
         return const Color(0xFF0063BF);
 
-      case 1:
+      case "미들":
         return const Color(0xFF7D67FD);
 
-      default:
+      case "마감":
         return const Color(0xFF007360);
+
+      default:
+        return Colors.black87;
     }
   }
 

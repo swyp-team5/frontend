@@ -282,15 +282,18 @@ class RMonthAllScheduleBottomSheet extends StatelessWidget {
   }
 
   Color _workerColor(RScheduleWorker worker) {
-    switch (worker.name.hashCode.abs() % 3) {
-      case 0:
+    switch (worker.role) {
+      case "오픈":
         return const Color(0xFFE6F3FF);
 
-      case 1:
+      case "미들":
         return const Color(0xFFEEEBFF);
 
-      default:
+      case "마감":
         return const Color(0xFFDCFED8);
+
+      default:
+        return const Color(0xFFE6F3FF);
     }
   }
 }
