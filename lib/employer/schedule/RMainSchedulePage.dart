@@ -98,9 +98,9 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
           } else if (index == 1) {
             Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const RCrewPage()));
-          } else if (index == 2) {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const RMainSchedulePage()));
+          // } else if (index == 2) {
+          //   Navigator.push(context,
+          //       MaterialPageRoute(builder: (_) => const RMainSchedulePage()));
           } else if (index == 4) {
             Navigator.push(
                 context, MaterialPageRoute(builder: (_) => const RMyPage()));
@@ -132,12 +132,6 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                             backgroundColor: Colors.transparent,
                             builder: (_) => const RYearMonthBottomSheet(),
                           );
-
-                          if (result != null) {
-                            setState(() {
-                              selectedDate = result;
-                            });
-                          }
 
                           if (result != null) {
                             setState(() {
@@ -189,8 +183,9 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                               ),
                             );
 
-                            // 수정 후 다시 화면 갱신
-                            setState(() {});
+                            if (mounted) {
+                              setState(() {});
+                            }
                           } else if (value == 'add') {
                             final ScheduleModel? schedule =
                             await Navigator.push<ScheduleModel>(

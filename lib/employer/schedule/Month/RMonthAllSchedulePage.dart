@@ -18,7 +18,7 @@ class RScheduleWorker {
   });
 }
 
-class RMonthAllSchedulePage extends StatelessWidget {
+class RMonthAllSchedulePage extends StatefulWidget {
   final DateTime selectedDate;
   final ValueChanged<DateTime> onDateChanged;
 
@@ -32,6 +32,14 @@ class RMonthAllSchedulePage extends StatelessWidget {
     required this.schedules,
   });
 
+  @override
+  State<RMonthAllSchedulePage> createState() =>
+      _RMonthAllSchedulePageState();
+}
+
+class _RMonthAllSchedulePageState
+    extends State<RMonthAllSchedulePage> {
+
   String _dateKey(DateTime date) {
     return "${date.year.toString().padLeft(4, '0')}-"
         "${date.month.toString().padLeft(2, '0')}-"
@@ -41,21 +49,21 @@ class RMonthAllSchedulePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final firstDay = DateTime(
-      selectedDate.year,
-      selectedDate.month,
+      widget.selectedDate.year,
+      widget.selectedDate.month,
       1,
     );
 
     final lastDay = DateTime(
-      selectedDate.year,
-      selectedDate.month + 1,
+      widget.selectedDate.year,
+      widget.selectedDate.month + 1,
       0,
     );
 
     final startOffset = firstDay.weekday % 7;
 
     final prevMonthLast =
-    DateTime(selectedDate.year, selectedDate.month, 0);
+    DateTime(widget.selectedDate.year, widget.selectedDate.month, 0);
 
     final List<DateTime> dates = [];
 
@@ -65,24 +73,24 @@ class RMonthAllSchedulePage extends StatelessWidget {
       if (day <= 0) {
         dates.add(
           DateTime(
-            selectedDate.year,
-            selectedDate.month - 1,
+            widget.selectedDate.year,
+            widget.selectedDate.month - 1,
             prevMonthLast.day + day,
           ),
         );
       } else if (day > lastDay.day) {
         dates.add(
           DateTime(
-            selectedDate.year,
-            selectedDate.month + 1,
+            widget.selectedDate.year,
+            widget.selectedDate.month + 1,
             day - lastDay.day,
           ),
         );
       } else {
         dates.add(
           DateTime(
-            selectedDate.year,
-            selectedDate.month,
+            widget.selectedDate.year,
+            widget.selectedDate.month,
             day,
           ),
         );
@@ -130,29 +138,32 @@ class RMonthAllSchedulePage extends StatelessWidget {
                     final date = dates[row * 7 + col];
 
                     final isCurrentMonth =
-                        date.month == selectedDate.month;
+                        date.month == widget.selectedDate.month;
 
                     final isSelected =
-                        date.year == selectedDate.year &&
-                            date.month == selectedDate.month &&
-                            date.day == selectedDate.day;
+                        date.year == widget.selectedDate.year &&
+                            date.month == widget.selectedDate.month &&
+                            date.day == widget.selectedDate.day;
 
-                    final workers =
-                        schedules[_dateKey(date)] ?? [];
+                    final workers = widget.schedules[_dateKey(date)] ?? [];
 
                     return GestureDetector(
-                      onTap: () {
-                        onDateChanged(date);
+                      onTap: () async {
 
-                        showModalBottomSheet(
+                        widget.onDateChanged(date);
+
+                        await showModalBottomSheet(
                           context: context,
                           isScrollControlled: true,
                           backgroundColor: Colors.transparent,
                           builder: (_) => RMonthAllScheduleBottomSheet(
                             date: date,
                             workers: workers,
+                            schedules: widget.schedules,
                           ),
                         );
+
+                        setState(() {});
                       },
                       child: Container(
                         height: cellHeight,

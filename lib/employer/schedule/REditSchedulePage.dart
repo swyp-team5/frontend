@@ -26,24 +26,21 @@ class _RScheduleEditPageState extends State<RScheduleEditPage> {
   late final DateTime nextSunday;
 
   @override
+  @override
   void initState() {
     super.initState();
 
-    // 현재 날짜 기준
     final now = DateTime.now();
 
-    // 이번주 월요일
     final thisMonday =
     DateTime(now.year, now.month, now.day)
         .subtract(Duration(days: now.weekday - 1));
 
-    // 다음주 월요일
     nextMonday = thisMonday.add(const Duration(days: 7));
-
-    // 다음주 일요일
     nextSunday = nextMonday.add(const Duration(days: 6));
 
-    focusedDay = nextMonday;
+    focusedDay = widget.selectedDate;
+    selectedDay = widget.selectedDate;
   }
 
   String dateKey(DateTime date) {
@@ -349,28 +346,32 @@ class _RScheduleEditPageState extends State<RScheduleEditPage> {
                                       final oldKey = dateKey(selectedDay!);
                                       final newKey = dateKey(result.date);
 
-                                      // 기존 그룹 삭제
-                                      widget.schedules[oldKey]?.removeWhere((worker) {
-                                        return group.contains(worker);
-                                      });
+                                      // 기존 날짜에서 그룹 제거
+                                      widget.schedules[oldKey]?.removeWhere(
+                                            (worker) => group.contains(worker),
+                                      );
 
-                                      // 새로운 날짜 리스트 생성
-                                      widget.schedules.putIfAbsent(newKey, () => []);
-
-                                      // 수정된 근무자 추가
-                                      for (final name in result.workers) {
-                                        widget.schedules[newKey]!.add(
-                                          RScheduleWorker(
-                                            name: name,
-                                            role: result.role,
-                                            startTime: result.startTime,
-                                            endTime: result.endTime,
-                                            breakTime: result.breakTime,
-                                          ),
-                                        );
+                                      // 기존 날짜가 비어있으면 삭제
+                                      if (widget.schedules[oldKey]?.isEmpty ?? false) {
+                                        widget.schedules.remove(oldKey);
                                       }
 
-                                      // 선택 날짜도 변경
+                                      // 새 날짜 생성
+                                      widget.schedules.putIfAbsent(newKey, () => []);
+
+                                      // 수정된 그룹 생성
+                                      final updatedWorkers = result.workers.map((name) {
+                                        return RScheduleWorker(
+                                          name: name,
+                                          role: result.role,
+                                          startTime: result.startTime,
+                                          endTime: result.endTime,
+                                          breakTime: result.breakTime,
+                                        );
+                                      }).toList();
+
+                                      widget.schedules[newKey]!.addAll(updatedWorkers);
+
                                       selectedDay = result.date;
                                       focusedDay = result.date;
                                     });

@@ -3,39 +3,62 @@ import 'package:flutter/material.dart';
 
 import 'RMonthAllSchedulePage.dart';
 
-class RMonthAllScheduleBottomSheet extends StatelessWidget {
+class RMonthAllScheduleBottomSheet extends StatefulWidget {
   final DateTime date;
   final List<RScheduleWorker> workers;
+  final Map<String, List<RScheduleWorker>> schedules;
 
   const RMonthAllScheduleBottomSheet({
     super.key,
     required this.date,
     required this.workers,
+    required this.schedules,
   });
 
-  String get weekDay {
-    const days = ["월", "화", "수", "목", "금", "토", "일",];
+  @override
+  State<RMonthAllScheduleBottomSheet> createState() =>
+      _RMonthAllScheduleBottomSheetState();
+}
 
-    return days[date.weekday - 1];
+class _RMonthAllScheduleBottomSheetState
+    extends State<RMonthAllScheduleBottomSheet> {
+
+  String get weekDay {
+    const days = ["월","화","수","목","금","토","일"];
+    return days[widget.date.weekday - 1];
   }
 
-  String get WeekOfMonth {
-    final firstDay = DateTime(date.year, date.month, 1);
+  String get weekOfMonth {
+    final firstDay = DateTime(widget.date.year, widget.date.month, 1);
 
-    // 해당 월의 첫 주에 포함된 날짜 수 고려
     final weekNumber =
-        ((date.day + firstDay.weekday - 2) ~/ 7) + 1;
+        ((widget.date.day + firstDay.weekday - 2) ~/ 7) + 1;
 
-    const weekTexts = ["", "첫째", "둘째", "셋째", "넷째", "다섯째", "여섯째",];
+    const weekTexts = [
+      "",
+      "첫째",
+      "둘째",
+      "셋째",
+      "넷째",
+      "다섯째",
+      "여섯째"
+    ];
 
     return weekTexts[weekNumber];
   }
+
+  String dateKey(DateTime date) {
+    return "${date.year.toString().padLeft(4, '0')}-"
+        "${date.month.toString().padLeft(2, '0')}-"
+        "${date.day.toString().padLeft(2, '0')}";
+  }
+
 
   @override
   Widget build(BuildContext context) {
     final groupedSchedules = <String, List<RScheduleWorker>>{};
 
-    for (final worker in workers) {
+    for (final worker in widget.workers) {
       final key =
           "${worker.role}_${worker.startTime}_${worker.endTime}";
 
@@ -43,8 +66,10 @@ class RMonthAllScheduleBottomSheet extends StatelessWidget {
       groupedSchedules[key]!.add(worker);
     }
 
+    final groups = groupedSchedules.values.toList();
+
     return Container(
-      height: workers.isEmpty ? 250 : 450,
+      height: widget.workers.isEmpty ? 250 : 450,
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(
@@ -56,7 +81,8 @@ class RMonthAllScheduleBottomSheet extends StatelessWidget {
           const SizedBox(height: 10),
 
           Container(
-            width: 48, height: 5,
+            width: 48,
+            height: 5,
             decoration: BoxDecoration(
               color: const Color(0xFFE0E0E0),
               borderRadius: BorderRadius.circular(999),
@@ -69,14 +95,13 @@ class RMonthAllScheduleBottomSheet extends StatelessWidget {
             children: [
               Center(
                 child: Text(
-                  "${date.month}월 ${date.day}일 $weekDay요일",
+                  "${widget.date.month}월 ${widget.date.day}일 $weekDay요일",
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
-
               Positioned(
                 right: 20,
                 child: GestureDetector(
@@ -103,9 +128,7 @@ class RMonthAllScheduleBottomSheet extends StatelessWidget {
 
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.symmetric(
-              vertical: 14,
-            ),
+            padding: const EdgeInsets.symmetric(vertical: 14),
             decoration: const BoxDecoration(
               border: Border(
                 top: BorderSide(
@@ -115,7 +138,7 @@ class RMonthAllScheduleBottomSheet extends StatelessWidget {
             ),
             child: Center(
               child: Text(
-                "${date.year}년 ${date.month}월 $WeekOfMonth주 $weekDay요일",
+                "${widget.date.year}년 ${widget.date.month}월 ${weekOfMonth}주 $weekDay요일",
                 style: const TextStyle(
                   fontSize: 14,
                   color: Color(0xFF505050),
@@ -125,7 +148,7 @@ class RMonthAllScheduleBottomSheet extends StatelessWidget {
           ),
 
           Expanded(
-            child: workers.isEmpty
+            child: widget.workers.isEmpty
                 ? const Center(
               child: Text(
                 "등록된 근무가 없어요",
@@ -135,135 +158,137 @@ class RMonthAllScheduleBottomSheet extends StatelessWidget {
                 ),
               ),
             )
-                : Builder(
-              builder: (_) {
-                final groups = groupedSchedules.entries.toList();
+                : ListView.separated(
+              padding: const EdgeInsets.all(20),
+              itemCount: groups.length,
+              separatorBuilder: (_, __) =>
+              const SizedBox(height: 20),
+              itemBuilder: (_, index) {
+                final group = groups[index];
+                final first = group.first;
 
-                return ListView.separated(
-                  padding: const EdgeInsets.all(20),
-                  itemCount: groups.length,
-                  separatorBuilder: (_, __) =>
-                  const SizedBox(height: 20),
-                  itemBuilder: (_, index) {
-                    final group = groups[index].value;
-                    final first = group.first;
+                final names = group.map((e) => e.name).join(" · ");
 
-                    final names =
-                    group.map((e) => e.name).join(" · ");
+                return Row(
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 5,
+                      height: 58,
+                      decoration: BoxDecoration(
+                        color: _workerColor(first),
+                        borderRadius:
+                        BorderRadius.circular(999),
+                      ),
+                    ),
 
-                    return Row(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: 5,
-                          height: 58,
-                          decoration: BoxDecoration(
-                            color: _workerColor(first),
-                            borderRadius:
-                            BorderRadius.circular(999),
+                    const SizedBox(width: 14),
+
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "${first.role} ${first.startTime} - ${first.endTime}",
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF767676),
+                            ),
                           ),
-                        ),
-
-                        const SizedBox(width: 14),
-
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment:
-                            CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "${first.role} "
-                                    "${first.startTime} - ${first.endTime}",
-                                style: const TextStyle(
-                                  fontSize: 14,
-                                  color: Color(0xFF767676),
-                                ),
-                              ),
-
-                              const SizedBox(height: 6),
-
-                              Text(names,
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w600,
-                                  color: Colors.black,
-                                ),
-                              ),
-                            ],
+                          const SizedBox(height: 6),
+                          Text(
+                            names,
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black,
+                            ),
                           ),
-                        ),
+                        ],
+                      ),
+                    ),
 
-
-                        IconButton(
-                          onPressed: () async {
-
-                            final result = await Navigator.push<WorkingEditResult>(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => RWorkingDetailEditPage(
+                    IconButton(
+                      icon: const Icon(
+                        Icons.chevron_right,
+                        size: 24,
+                        color: Color(0xFF1C1C1E),
+                      ),
+                      onPressed: () async {
+                        final result =
+                        await Navigator.push<WorkingEditResult>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                RWorkingDetailEditPage(
                                   role: first.role,
                                   startTime: first.startTime,
                                   endTime: first.endTime,
                                   breakTime: first.breakTime,
-                                  date: date,
+                                  date: widget.date,
                                   workerNames: group
-                                      .map((worker) => worker.name)
+                                      .map((e) => e.name)
                                       .toList(),
                                 ),
-                              ),
+                          ),
+                        );
+
+                        if (result != null) {
+                          setState(() {
+                            final oldKey = dateKey(widget.date);
+                            final newKey = dateKey(result.date);
+
+                            widget.schedules[oldKey]?.removeWhere(
+                                  (worker) => group.contains(worker),
                             );
 
-                            if (result != null) {
-
-                              for (final worker in group) {
-
-                                worker.role = result.role;
-
-                                worker.startTime = result.startTime;
-
-                                worker.endTime = result.endTime;
-
-                                worker.breakTime = result.breakTime;
-                              }
-
-                              (context as Element).markNeedsBuild();
+                            if (widget.schedules[oldKey]?.isEmpty ?? false) {
+                              widget.schedules.remove(oldKey);
                             }
-                          },
-                          icon: const Icon(
-                            Icons.chevron_right,
-                            size: 24,
-                            color: Color(0xFF1C1C1E),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
+
+                            widget.schedules.putIfAbsent(newKey, () => []);
+
+                            final updatedWorkers = result.workers.map((name) {
+                              return RScheduleWorker(
+                                name: name,
+                                role: result.role,
+                                startTime: result.startTime,
+                                endTime: result.endTime,
+                                breakTime: result.breakTime,
+                              );
+                            }).toList();
+
+                            widget.schedules[newKey]!.addAll(updatedWorkers);
+                          });
+                        }
+                      },
+                    ),
+                  ],
                 );
               },
             ),
           ),
 
-          if (workers.isNotEmpty)
+          if (widget.workers.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                20,
-                0,
-                20,
-                20,
-              ),
+                  20, 0, 20, 20),
               child: SizedBox(
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
                   onPressed: () {
-                    // TODO: 근무 삭제 API
+                    // TODO: 근무 삭제
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1976FF),
+                    backgroundColor:
+                    const Color(0xFF1976FF),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius:
+                      BorderRadius.circular(12),
                     ),
                   ),
                   child: const Text(
