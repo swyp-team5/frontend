@@ -283,21 +283,21 @@ class _RHomePageState extends State<RHomePage> {
 
                       /// 다음주 날짜
                       Positioned(
-                        left: 24,
-                        top: 98,
+                        left: 20,
+                        top: 90,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 12,
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFFE6F3FF),
-                            borderRadius: BorderRadius.circular(10),
+                            color: const Color(0xFFBFE1FF),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             nextWeekRange,
                             style: const TextStyle(
-                              fontSize: 13,
+                              fontSize: 12,
                               fontWeight: FontWeight.w600,
                               color: Color(0xFF0084FF),
                             ),

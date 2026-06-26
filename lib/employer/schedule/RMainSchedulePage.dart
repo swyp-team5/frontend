@@ -6,7 +6,7 @@ import '../crews/RCrewPage.dart';
 import '../home/RHomePage.dart';
 import '../mypage/RMyPage.dart';
 import 'Month/RMonthAllSchedulePage.dart';
-import 'RWeekSchedulePage.dart';
+import 'Week/RWeekSchedulePage.dart';
 import 'RYearMonthBottomSheet.dart';
 
 class RMainSchedulePage extends StatefulWidget {
@@ -29,7 +29,7 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
 
   /// API 연동 전 더미 데이터
   final Map<String, List<RScheduleWorker>> allSchedules = {
-    "2026-06-22": [
+    "2026-06-23": [
       RScheduleWorker(name: "김지연", startTime: "09:00", endTime: "13:00", role: "오픈",),
       RScheduleWorker(name: "이다빈", startTime: "10:00", endTime: "14:00", role: "오픈",),
       RScheduleWorker(name: "박춘식", startTime: "12:00", endTime: "16:00", role: "미들",),
@@ -37,8 +37,14 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
       RScheduleWorker(name: "최민수", startTime: "16:00", endTime: "20:00", role: "마감",),
     ],
 
+    "2026-06-24": [
+      RScheduleWorker(name: "이다빈", startTime: "10:00", endTime: "13:00", role: "오픈",),
+      RScheduleWorker(name: "박춘식", startTime: "12:00", endTime: "16:00", role: "미들",),
+      RScheduleWorker(name: "서지훈", startTime: "12:00", endTime: "16:00", role: "미들",),
+    ],
+
     "2026-06-25": [
-      RScheduleWorker(name: "이다빈", startTime: "09:00", endTime: "13:00", role: "오픈",),
+      RScheduleWorker(name: "이다빈", startTime: "10:00", endTime: "13:00", role: "오픈",),
       RScheduleWorker(name: "김지연", startTime: "10:00", endTime: "14:00", role: "오픈",),
       RScheduleWorker(name: "박춘식", startTime: "12:00", endTime: "16:00", role: "미들",),
       RScheduleWorker(name: "강민석", startTime: "14:00", endTime: "18:00", role: "미들",),
@@ -46,6 +52,12 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
       RScheduleWorker(name: "정은우", startTime: "16:00", endTime: "20:00", role: "마감",),
     ],
   };
+
+  /// 휴무일 더미 데이터
+  final Set<String> holidays = {
+    "2026-06-22",
+  };
+
 
   @override
   void initState() {
@@ -164,6 +176,8 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                         ? RWeekSchedulePage(
                       key: const ValueKey("week"),
                       selectedDate: selectedDate,
+                      schedules: allSchedules,
+                      holidays: holidays,
                       onDateChanged: (date) {
                         setState(() {
                           selectedDate = date;
