@@ -21,11 +21,14 @@ class EMonthAllSchedulePage extends StatelessWidget {
   /// API 응답
   final Map<String, List<ScheduleWorker>> schedules;
 
+  final Set<String> holidays;
+
   const EMonthAllSchedulePage({
     super.key,
     required this.selectedDate,
     required this.onDateChanged,
     required this.schedules,
+    required this.holidays,
   });
 
   String _dateKey(DateTime date) {

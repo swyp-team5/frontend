@@ -9,11 +9,14 @@ class EMonthMySchedulePage extends StatelessWidget {
   /// 날짜별 내 스케줄
   final Map<String, List<MySchedule>> schedules;
 
+  final Set<String> holidays;
+
   const EMonthMySchedulePage({
     super.key,
     required this.selectedDate,
     required this.onDateChanged,
     required this.schedules,
+    required this.holidays,
   });
 
   String _dateKey(DateTime date) {

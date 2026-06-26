@@ -8,7 +8,7 @@ import 'EYearMonthBottomSheet.dart';
 import 'Month/AllSchedule/EMonthAllSchedulePage.dart';
 import 'Month/MySchedule/EMonthMyScheduleBottomSheet.dart';
 import 'Month/MySchedule/EMonthMySchedulePage.dart';
-import 'EWeekSchedulePage.dart';
+import 'Week/EWeekSchedulePage.dart';
 
 class EMainSchedulePage extends StatefulWidget {
   const EMainSchedulePage({super.key});
@@ -47,13 +47,13 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
     "2026-06-19": [
       MySchedule(name: "이다빈", startTime: "14:00", endTime: "18:00")
     ],
-    "2026-06-21": [
+    "2026-06-23": [
       MySchedule(name: "이다빈", startTime: "16:00", endTime: "20:00")
     ],
   };
 
   final Map<String, List<ScheduleWorker>> allSchedules = {
-    "2026-06-02": [
+    "2026-06-23": [
       ScheduleWorker(name: "김지연", startTime: "09:00", endTime: "13:00"),
       ScheduleWorker(name: "이다빈", startTime: "10:00", endTime: "14:00"),
       ScheduleWorker(name: "박춘식", startTime: "12:00", endTime: "16:00"),
@@ -61,7 +61,7 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
       ScheduleWorker(name: "최민수", startTime: "16:00", endTime: "20:00"),
     ],
 
-    "2026-06-05": [
+    "2026-06-25": [
       ScheduleWorker(name: "이다빈", startTime: "09:00", endTime: "13:00"),
       ScheduleWorker(name: "김지연", startTime: "10:00", endTime: "14:00"),
       ScheduleWorker(name: "박춘식", startTime: "12:00", endTime: "16:00"),
@@ -69,6 +69,11 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
       ScheduleWorker(name: "서지훈", startTime: "15:00", endTime: "19:00"),
       ScheduleWorker(name: "정은우", startTime: "16:00", endTime: "20:00"),
     ],
+  };
+
+  /// 휴무일 더미 데이터
+  final Set<String> holidays = {
+    "2026-06-22",
   };
 
   bool isAllViewSelected = false;
@@ -221,12 +226,25 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
                           selectedDate = date;
                         });
                       },
+
+                      /// 개인 스케줄
+                      monthSchedules: monthSchedules,
+
+                      /// 전체 스케줄
+                      allSchedules: allSchedules,
+
+                      /// 휴무일
+                      holidays: holidays,
+
+                      /// 상단 토글
+                      isAllView: isAllViewSelected,
                     )
                         : isAllViewSelected
                         ? EMonthAllSchedulePage(
                       key: const ValueKey("month_all"),
                       selectedDate: selectedDate,
                       schedules: allSchedules,
+                      holidays: holidays,
                       onDateChanged: (date) {
                         setState(() {
                           selectedDate = date;
@@ -237,6 +255,7 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
                       key: const ValueKey("month_my"),
                       selectedDate: selectedDate,
                       schedules: monthSchedules,
+                      holidays: holidays,
                       onDateChanged: (date) {
                         setState(() {
                           selectedDate = date;
