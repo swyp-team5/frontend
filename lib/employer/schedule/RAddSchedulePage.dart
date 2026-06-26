@@ -9,6 +9,7 @@ import 'widgets/RCompleteButton.dart';
 import 'widgets/RDropdownField.dart';
 import 'widgets/RInputBox.dart';
 import 'widgets/RTimeField.dart';
+import 'models/schedule_model.dart';
 
 class RAddSchedulePage extends StatefulWidget {
   const RAddSchedulePage({super.key});
@@ -351,17 +352,24 @@ class _RAddSchedulePageState extends State<RAddSchedulePage> {
             enabled: canSubmit,
             onPressed: canSubmit
                 ? () async {
-
-              final result =
+              final ok =
               await RegisterScheduleBottomSheet.show(context);
 
-              if (result == true) {
+              if (ok == true) {
 
                 /// TODO : API 호출
-
-                Navigator.pop(context);
+                Navigator.pop(
+                  context,
+                  ScheduleModel(
+                    workName: workNameController.text,
+                    startTime: startTime,
+                    endTime: endTime,
+                    breakTime: breakTime,
+                    dates: selectedDates,
+                    workers: selectedWorkers,
+                  ),
+                );
               }
-
             }
                 : null,
           ),

@@ -9,6 +9,7 @@ import 'Month/RMonthAllSchedulePage.dart';
 import 'RAddSchedulePage.dart';
 import 'Week/RWeekSchedulePage.dart';
 import 'RYearMonthBottomSheet.dart';
+import 'models/schedule_model.dart';
 
 class RMainSchedulePage extends StatefulWidget {
   const RMainSchedulePage({super.key});
@@ -26,6 +27,8 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
 
   int selectedYear = DateTime.now().year;
   int selectedMonth = DateTime.now().month;
+
+  List<ScheduleModel> schedules = [];
 
 
   /// API 연동 전 더미 데이터
@@ -164,17 +167,42 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                           borderRadius: BorderRadius.circular(14),
                         ),
                         icon: const Icon(Icons.edit_outlined),
-                        onSelected: (value) {
+                        onSelected: (value) async {
                           if (value == 'edit') {
                             // 수정
                           } else if (value == 'add') {
-                            // 추가
-                            Navigator.push(
+                            final ScheduleModel? schedule =
+                            await Navigator.push<ScheduleModel>(
                               context,
                               MaterialPageRoute(
                                 builder: (_) => const RAddSchedulePage(),
                               ),
                             );
+
+                            if (schedule != null) {
+                              setState(() {
+                                schedules.add(schedule);
+
+                                // 캘린더용 Map에도 추가
+                                for (final date in schedule.dates) {
+                                  final key =
+                                      "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+
+                                  allSchedules.putIfAbsent(key, () => []);
+
+                                  for (final worker in schedule.workers) {
+                                    allSchedules[key]!.add(
+                                      RScheduleWorker(
+                                        name: worker,
+                                        startTime: schedule.startTime,
+                                        endTime: schedule.endTime,
+                                        role: schedule.workName,
+                                      ),
+                                    );
+                                  }
+                                }
+                              });
+                            }
                           }
                         },
                         itemBuilder: (_) => [
