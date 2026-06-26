@@ -7,6 +7,7 @@ import '../home/RHomePage.dart';
 import '../mypage/RMyPage.dart';
 import 'Month/RMonthAllSchedulePage.dart';
 import 'RAddSchedulePage.dart';
+import 'REditSchedulePage.dart';
 import 'Week/RWeekSchedulePage.dart';
 import 'RYearMonthBottomSheet.dart';
 import 'models/schedule_model.dart';
@@ -48,6 +49,15 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
     ],
 
     "2026-06-25": [
+      RScheduleWorker(name: "이다빈", startTime: "10:00", endTime: "14:00", role: "오픈",),
+      RScheduleWorker(name: "김지연", startTime: "10:00", endTime: "14:00", role: "오픈",),
+      RScheduleWorker(name: "박춘식", startTime: "14:00", endTime: "16:00", role: "미들",),
+      RScheduleWorker(name: "강민석", startTime: "14:00", endTime: "16:00", role: "미들",),
+      RScheduleWorker(name: "서지훈", startTime: "14:00", endTime: "16:00", role: "미들",),
+      RScheduleWorker(name: "정은우", startTime: "16:00", endTime: "20:00", role: "마감",),
+    ],
+
+    "2026-06-30": [
       RScheduleWorker(name: "이다빈", startTime: "10:00", endTime: "14:00", role: "오픈",),
       RScheduleWorker(name: "김지연", startTime: "10:00", endTime: "14:00", role: "오픈",),
       RScheduleWorker(name: "박춘식", startTime: "14:00", endTime: "16:00", role: "미들",),
@@ -169,7 +179,18 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                         icon: const Icon(Icons.edit_outlined),
                         onSelected: (value) async {
                           if (value == 'edit') {
-                            // 수정
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => RScheduleEditPage(
+                                  selectedDate: selectedDate,
+                                  schedules: allSchedules,
+                                ),
+                              ),
+                            );
+
+                            // 수정 후 다시 화면 갱신
+                            setState(() {});
                           } else if (value == 'add') {
                             final ScheduleModel? schedule =
                             await Navigator.push<ScheduleModel>(
@@ -183,10 +204,12 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                               setState(() {
                                 schedules.add(schedule);
 
-                                // 캘린더용 Map에도 추가
+                                // 캘린더 데이터 반영
                                 for (final date in schedule.dates) {
                                   final key =
-                                      "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
+                                      "${date.year.toString().padLeft(4, '0')}-"
+                                      "${date.month.toString().padLeft(2, '0')}-"
+                                      "${date.day.toString().padLeft(2, '0')}";
 
                                   allSchedules.putIfAbsent(key, () => []);
 
@@ -197,6 +220,7 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                                         startTime: schedule.startTime,
                                         endTime: schedule.endTime,
                                         role: schedule.workName,
+                                        breakTime: schedule.breakTime,
                                       ),
                                     );
                                   }
@@ -208,7 +232,7 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                         itemBuilder: (_) => [
                           const PopupMenuItem<String>(
                             value: 'edit',
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            padding: EdgeInsets.symmetric(horizontal: 20),
                             child: Row(
                               children: [
                                 Icon(
@@ -231,7 +255,7 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                           const PopupMenuDivider(height: 1),
                           const PopupMenuItem<String>(
                             value: 'add',
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            padding: EdgeInsets.symmetric(horizontal: 20),
                             child: Row(
                               children: [
                                 Icon(
@@ -252,7 +276,7 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                             ),
                           ),
                         ],
-                      ),
+                      )
                     ],
                   ),
                 ),

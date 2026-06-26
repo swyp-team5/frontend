@@ -1,17 +1,26 @@
 import 'package:flutter/material.dart';
 
+import '../REditCalendarBottomSheet.dart';
+import '../REditSchedulePage.dart';
+import '../widgets/CalendarBottomSheet.dart';
+import '../widgets/WorkerBottomSheet.dart';
+
 /// 수정 결과 전달용 모델
 class WorkingEditResult {
   final String role;
   final String startTime;
   final String endTime;
   final String breakTime;
+  final DateTime date;
+  final List<String> workers;
 
   const WorkingEditResult({
     required this.role,
     required this.startTime,
     required this.endTime,
     required this.breakTime,
+    required this.date,
+    required this.workers,
   });
 }
 
@@ -21,6 +30,7 @@ class RWorkingDetailEditPage extends StatefulWidget {
   final String endTime;
   final List<String> workerNames;
   final String breakTime;
+  final DateTime date;
 
   const RWorkingDetailEditPage({
     super.key,
@@ -29,6 +39,7 @@ class RWorkingDetailEditPage extends StatefulWidget {
     required this.endTime,
     required this.workerNames,
     required this.breakTime,
+    required this.date,
   });
 
 
@@ -39,8 +50,13 @@ class RWorkingDetailEditPage extends StatefulWidget {
 
 class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
   late String selectedWorkType;
+
+  late String selectedStartTime;
+  late String selectedEndTime;
+
   String selectedBreakTime = "30분";
-  String selectedDate = "06.11";
+
+  late DateTime selectedDate;
 
   late List<String> workers;
 
@@ -48,13 +64,21 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
 
   final List<String> breakTimes = ["없음", "30분", "1시간", "1시간 30분",];
 
+
   @override
   void initState() {
     super.initState();
 
     selectedWorkType = widget.role;
+
+    selectedStartTime = widget.startTime;
+    selectedEndTime = widget.endTime;
+
     selectedBreakTime = widget.breakTime;
-    workers = widget.workerNames;
+
+    workers = List.from(widget.workerNames);
+
+    selectedDate = widget.date;
   }
 
   Future<void> _showSelectSheet({
@@ -143,12 +167,15 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
             child: ElevatedButton(
               onPressed: () {
                 // TODO : 수정 완료 API
-                Navigator.pop(context,
+                Navigator.pop(
+                  context,
                   WorkingEditResult(
                     role: selectedWorkType,
-                    startTime: widget.startTime,
-                    endTime: widget.endTime,
+                    startTime: selectedStartTime,
+                    endTime: selectedEndTime,
                     breakTime: selectedBreakTime,
+                    date: selectedDate,
+                    workers: workers,
                   ),
                 );
               },
@@ -263,7 +290,7 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
                         Expanded(
                           child: _TimeField(
                             label: "출근 시간",
-                            value: widget.startTime,
+                            value: selectedStartTime,
                           ),
                         ),
 
@@ -272,7 +299,7 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
                         Expanded(
                           child: _TimeField(
                             label: "퇴근 시간",
-                            value: widget.endTime,
+                            value: selectedEndTime,
                           ),
                         ),
                       ],
@@ -320,75 +347,98 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
                     const SizedBox(height: 12),
 
                     _DropdownBox(
-                      value: selectedDate,
-                      onTap: () {},
+                      value:
+                      "${selectedDate.month.toString().padLeft(2, '0')}."
+                          "${selectedDate.day.toString().padLeft(2, '0')}",
+                      onTap: () async {
+                        final result = await showModalBottomSheet<DateTime>(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.white,
+                          builder: (_) => REditCalendarBottomSheet(
+                            initialDate: selectedDate,
+                          ),
+                        );
+
+                        if (result != null) {
+                          setState(() {
+                            selectedDate = result;
+                          });
+                        }
+                      },
                     ),
 
                     const SizedBox(height: 28),
 
-                    /// 근무자
                     Row(
-                      crossAxisAlignment:
-                      CrossAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         const Text(
                           "근무자",
                           style: TextStyle(
                             fontSize: 16,
-                            fontWeight:
-                            FontWeight.w700,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
 
                         const Spacer(),
 
-                        Wrap(
-                          spacing: 8,
-                          children: workers.map((name) {
-                            return Container(
-                              padding:
-                              const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration:
-                              BoxDecoration(
-                                color:
-                                const Color(
-                                  0xFFF5F7FB,
-                                ),
-                                borderRadius:
-                                BorderRadius
-                                    .circular(
-                                  10,
-                                ),
-                              ),
-                              child: Text(
-                                name,
-                                style:
-                                const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight:
-                                  FontWeight
-                                      .w500,
-                                  color:
-                                  Color(
-                                    0xFF004B9A,
-                                  ),
-                                ),
-                              ),
+                        GestureDetector(
+                          onTap: () async {
+                            final result = await WorkerBottomSheet.show(
+                              context,
+                              workers: const [
+                                "모수연",
+                                "박춘식",
+                                "윤서준",
+                                "이다빈",
+                              ],
+                              initialSelected: workers,
                             );
-                          }).toList(),
-                        ),
 
-                        const SizedBox(width: 8),
+                            if (result != null) {
+                              setState(() {
+                                workers = result;
+                              });
+                            }
+                          },
+                          child: Row(
+                            children: [
+                              Wrap(
+                                spacing: 8,
+                                children: workers.map((name) {
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFF7F7FB),
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Text(
+                                      name,
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w500,
+                                        color: Color(0xFF00315F),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
 
-                        const Icon(
-                          Icons.chevron_right,
-                          size: 24,
+                              const SizedBox(width: 8),
+
+                              const Icon(
+                                Icons.chevron_right,
+                                size: 24,
+                              ),
+                            ],
+                          ),
                         ),
                       ],
-                    ),
+                    )
                   ],
                 ),
               ),

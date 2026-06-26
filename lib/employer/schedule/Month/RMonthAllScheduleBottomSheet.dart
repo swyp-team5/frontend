@@ -206,6 +206,7 @@ class RMonthAllScheduleBottomSheet extends StatelessWidget {
                                   startTime: first.startTime,
                                   endTime: first.endTime,
                                   breakTime: first.breakTime,
+                                  date: date,
                                   workerNames: group
                                       .map((worker) => worker.name)
                                       .toList(),
