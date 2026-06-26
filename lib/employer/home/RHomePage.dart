@@ -17,6 +17,24 @@ class RHomePage extends StatefulWidget {
 
 class _RHomePageState extends State<RHomePage> {
 
+  String get nextWeekRange {
+    final now = DateTime.now();
+
+    // 이번 주 월요일
+    final thisMonday = now.subtract(
+      Duration(days: now.weekday - DateTime.monday),
+    );
+
+    // 다음 주 월요일
+    final nextMonday = thisMonday.add(const Duration(days: 7));
+
+    // 다음 주 일요일
+    final nextSunday = nextMonday.add(const Duration(days: 6));
+
+    return "${nextMonday.month}월 ${nextMonday.day}일 - "
+        "${nextSunday.month}월 ${nextSunday.day}일";
+  }
+
   void _showScheduleBottomSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -249,7 +267,7 @@ class _RHomePageState extends State<RHomePage> {
               SizedBox(
                 width: double.infinity,
                 child: AspectRatio(
-                  aspectRatio: 1080 / 693, // 업로드한 이미지 비율
+                  aspectRatio: 1080 / 693,
                   child: Stack(
                     children: [
                       /// 배경 이미지
@@ -259,6 +277,30 @@ class _RHomePageState extends State<RHomePage> {
                           child: Image.asset(
                             "assets/images/r_main_card.png",
                             fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+
+                      /// 다음주 날짜
+                      Positioned(
+                        left: 24,
+                        top: 98,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE6F3FF),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            nextWeekRange,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF0084FF),
+                            ),
                           ),
                         ),
                       ),
