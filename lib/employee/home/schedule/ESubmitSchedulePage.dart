@@ -37,13 +37,20 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
     super.initState();
 
     final now = DateTime.now();
+
+    // 캘린더가 처음 보여줄 날짜
     selectedDate = now;
 
-    final weekday = now.weekday;
-    final thisWeekStart =
-    now.subtract(Duration(days: weekday % 7));
+    // 다음주 월요일 계산
+    final nextMonday =
+    now.add(Duration(days: DateTime.daysPerWeek - now.weekday + 1));
 
-    startDate = thisWeekStart.add(const Duration(days: 7));
+    startDate = DateTime(
+      nextMonday.year,
+      nextMonday.month,
+      nextMonday.day,
+    );
+
     endDate = startDate.add(const Duration(days: 6));
   }
 
@@ -126,7 +133,7 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
           children: [
             const SizedBox(height: 20),
 
-            /// ✅ 커스텀 헤더 (RStoreClosePage 스타일)
+            /// 커스텀 헤더
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 20,
@@ -165,195 +172,192 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
                 const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
                   children: [
-                    SizedBox(height: 420,
-                      child:
-                      TableCalendar(
-                        rowHeight: 60,
-                        daysOfWeekHeight: 40,
-                        locale: 'ko_KR',
-                        firstDay: DateTime.now()
-                            .subtract(const Duration(days: 365)),
-                        lastDay: DateTime.now()
-                            .add(const Duration(days: 365)),
-                        focusedDay: selectedDate,
-                        calendarFormat: CalendarFormat.month,
+                    TableCalendar(
+                      rowHeight: 60,
+                      daysOfWeekHeight: 40,
+                      locale: 'ko_KR',
+                      firstDay: DateTime.now()
+                          .subtract(const Duration(days: 365)),
+                      lastDay: DateTime.now()
+                          .add(const Duration(days: 365)),
+                      focusedDay: selectedDate,
+                      calendarFormat: CalendarFormat.month,
 
-                        startingDayOfWeek:
-                        StartingDayOfWeek.sunday,
+                      startingDayOfWeek:
+                      StartingDayOfWeek.sunday,
 
-                        selectedDayPredicate: (day) {
-                          return isSelected(day) && !isSaved(day);
-                        },
+                      selectedDayPredicate: (day) {
+                        return isSelected(day) && !isSaved(day);
+                      },
 
-                        enabledDayPredicate: (day) {
-                          return isSelectable(day);
-                        },
+                      enabledDayPredicate: (day) {
+                        return isSelectable(day);
+                      },
 
-                        onDaySelected:
-                            (selectedDay, focusedDay) {
-                          _onDayTap(selectedDay);
-                        },
+                      onDaySelected:
+                          (selectedDay, focusedDay) {
+                        _onDayTap(selectedDay);
+                      },
 
-                        onPageChanged: (focusedDay) {
-                          setState(() {
-                            selectedDate = focusedDay;
-                          });
-                        },
+                      onPageChanged: (focusedDay) {
+                        setState(() {
+                          selectedDate = focusedDay;
+                        });
+                      },
 
-                        headerStyle: HeaderStyle(
-                          formatButtonVisible: false,
-                          titleCentered: true,
+                      headerStyle: HeaderStyle(
+                        formatButtonVisible: false,
+                        titleCentered: true,
 
-                          titleTextStyle: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.black,
-                          ),
+                        titleTextStyle: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.black,
+                        ),
 
-                          leftChevronIcon: Transform.translate(
-                            offset: const Offset(-15, 0), // 왼쪽으로 15
-                            child: Container(
-                              width: 30,
-                              height: 30,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFF4F5FA),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.chevron_left,
-                                color: Color(0xFFB7BCC8),
-                              ),
+                        leftChevronIcon: Transform.translate(
+                          offset: const Offset(-15, 0), // 왼쪽으로 15
+                          child: Container(
+                            width: 30,
+                            height: 30,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFF4F5FA),
+                              shape: BoxShape.circle,
                             ),
-                          ),
-
-                          rightChevronIcon: Transform.translate(
-                            offset: const Offset(15, 0), // 오른쪽으로 15
-                            child: Container(
-                              width: 30,
-                              height: 30,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFF4F5FA),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.chevron_right,
-                                color: Color(0xFFB7BCC8),
-                              ),
+                            child: const Icon(
+                              Icons.chevron_left,
+                              color: Color(0xFFB7BCC8),
                             ),
                           ),
                         ),
 
-                        daysOfWeekStyle: const DaysOfWeekStyle(
-                          weekdayStyle: TextStyle(
-                            fontSize: 15,
-                            color: Color(0xFF9B9B9B),
-                            fontWeight: FontWeight.w500,
-                          ),
-                          weekendStyle: TextStyle(
-                            fontSize: 15,
-                            color: Color(0xFF9B9B9B),
-                            fontWeight: FontWeight.w500,
+                        rightChevronIcon: Transform.translate(
+                          offset: const Offset(15, 0), // 오른쪽으로 15
+                          child: Container(
+                            width: 30,
+                            height: 30,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFF4F5FA),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.chevron_right,
+                              color: Color(0xFFB7BCC8),
+                            ),
                           ),
                         ),
+                      ),
 
-                        calendarStyle: CalendarStyle(
-                          isTodayHighlighted: false,
+                      daysOfWeekStyle: const DaysOfWeekStyle(
+                        weekdayStyle: TextStyle(
+                          fontSize: 15,
+                          color: Color(0xFF9B9B9B),
+                          fontWeight: FontWeight.w500,
+                        ),
+                        weekendStyle: TextStyle(
+                          fontSize: 15,
+                          color: Color(0xFF9B9B9B),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
 
-                          outsideTextStyle: const TextStyle(
-                            color: Color(0xFFD5D7E2),
-                            fontSize: 16,
-                          ),
+                      calendarStyle: CalendarStyle(
+                        isTodayHighlighted: false,
 
-                          defaultTextStyle: const TextStyle(
-                            color: Colors.black,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
-                          ),
-
-                          disabledTextStyle: const TextStyle(
-                            color: Color(0xFFD5D7E2),
-                            fontSize: 16,
-                          ),
-
-                          cellMargin: const EdgeInsets.all(4),
-
-                          tablePadding: EdgeInsets.zero,
+                        outsideTextStyle: const TextStyle(
+                          color: Color(0xFFD5D7E2),
+                          fontSize: 16,
                         ),
 
-                        calendarBuilders: CalendarBuilders(
-                          defaultBuilder: (context, day, focusedDay) {
-                            if (isSaved(day)) {
-                              return Center(
-                                child: Container(
-                                  width: 44,
-                                  height: 44,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF1F1F5),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  alignment: Alignment.center,
-                                  child: Text(
-                                    '${day.day}',
-                                    style: const TextStyle(
-                                      color: Color(0xFF767676),
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }
+                        defaultTextStyle: const TextStyle(
+                          color: Colors.black,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
 
-                            final enable = isSelectable(day);
+                        disabledTextStyle: const TextStyle(
+                          color: Color(0xFFD5D7E2),
+                          fontSize: 16,
+                        ),
 
-                            return Center(
-                              child: Text(
-                                '${day.day}',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                  color: enable
-                                      ? Colors.black
-                                      : const Color(0xFFD5D7E2),
-                                ),
-                              ),
-                            );
-                          },
+                        cellMargin: const EdgeInsets.all(4),
 
-                          outsideBuilder: (context, day, focusedDay) {
-                            return Center(
-                              child: Text(
-                                '${day.day}',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  color: Color(0xFFD5D7E2),
-                                ),
-                              ),
-                            );
-                          },
+                        tablePadding: EdgeInsets.zero,
+                      ),
 
-                          selectedBuilder: (context, day, focusedDay) {
+                      calendarBuilders: CalendarBuilders(
+                        defaultBuilder: (context, day, focusedDay) {
+                          if (isSaved(day)) {
                             return Center(
                               child: Container(
                                 width: 44,
                                 height: 44,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF0084FF),
+                                  color: const Color(0xFFF1F1F5),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 alignment: Alignment.center,
                                 child: Text(
                                   '${day.day}',
                                   style: const TextStyle(
-                                    color: Colors.white,
+                                    color: Color(0xFF767676),
                                     fontSize: 16,
-                                    fontWeight: FontWeight.w500,
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ),
                             );
-                          },
-                        ),
+                          }
+
+                          final enable = isSelectable(day);
+
+                          return Center(
+                            child: Text(
+                              '${day.day}',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                                color: enable
+                                    ? Colors.black
+                                    : const Color(0xFFD5D7E2),
+                              ),
+                            ),
+                          );
+                        },
+
+                        outsideBuilder: (context, day, focusedDay) {
+                          return Center(
+                            child: Text(
+                              '${day.day}',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                color: Color(0xFFD5D7E2),
+                              ),
+                            ),
+                          );
+                        },
+
+                        selectedBuilder: (context, day, focusedDay) {
+                          return Center(
+                            child: Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF0084FF),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                '${day.day}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
 
@@ -416,8 +420,7 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
                       ),
                     )
 
-                        : Expanded(
-                      child: ListView.builder(
+                        : ListView.builder(
                         itemCount: savedSchedules.length,
                         itemBuilder: (context, index) {
                           final date = savedSchedules.keys.elementAt(index);
@@ -488,7 +491,6 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
                           );
                         },
                       ),
-                    ),
                   ],
                 ),
               ),

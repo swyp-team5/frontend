@@ -1,3 +1,4 @@
+import 'package:chack_chack/employee/home/schedule/ESubmitSchedulePage.dart';
 import 'package:chack_chack/employee/home/widgets/ECheckInCard.dart';
 import 'package:chack_chack/employee/home/widgets/EHomeCalendar.dart';
 import 'package:chack_chack/employee/home/widgets/EHomeHeader.dart';
@@ -47,7 +48,7 @@ class _EHomePageState extends State<EHomePage> {
   //==========================================================
 
   /// TODO-null이면 실제 로직 사용
-  /// 매주 스케줄(다음주 스케 제출 요청)
+  /// 매주 스케줄(다음주 스케줄 제출 요청)
   static const HomeCardType? debugCardType =
       HomeCardType.weeklySchedule;
 
@@ -171,16 +172,50 @@ class _EHomePageState extends State<EHomePage> {
               const SizedBox(height: 16),
 
               /// Schedule Card
-              if (cardType != HomeCardType.none && isCardVisible)
-                EScheduleCard(
-                  type: cardType,
-                  daysLeft: daysLeft,
-                  onClose: () {
-                    setState(() {
-                      isCardVisible = false;
-                    });
-                  },
-                ),
+              EScheduleCard(
+                type: cardType,
+                daysLeft: daysLeft,
+                onClose: () {
+                  setState(() {
+                    isCardVisible = false;
+                  });
+                },
+                onDetailTap: () {
+                  switch (cardType) {
+                    case HomeCardType.weeklySchedule:
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ESubmitSchedulePage(),
+                        ),
+                      );
+                      break;
+
+                    case HomeCardType.scheduleCompleted:
+                    // TODO
+                      break;
+
+                    case HomeCardType.scheduleChanged:
+                    // TODO
+                      break;
+
+                    case HomeCardType.shiftRequest:
+                    // TODO
+                      break;
+
+                    case HomeCardType.substituteRequest:
+                    // TODO
+                      break;
+
+                    case HomeCardType.ownerWorkRequest:
+                    // TODO
+                      break;
+
+                    case HomeCardType.none:
+                      break;
+                  }
+                },
+              ),
 
               const SizedBox(height: 14),
 
