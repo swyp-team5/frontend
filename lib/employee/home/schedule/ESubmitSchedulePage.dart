@@ -422,6 +422,8 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
 
                         : ListView.builder(
                         itemCount: savedSchedules.length,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
                         itemBuilder: (context, index) {
                           final date = savedSchedules.keys.elementAt(index);
                           final info = savedSchedules.values.elementAt(index);
