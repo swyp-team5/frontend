@@ -43,6 +43,7 @@ flutter:
   assets:
     - assets/images/r_main_card.png
     - assets/images/e_main_card.png
+    - assets/images/check.png
 
 
   uses-material-design: true

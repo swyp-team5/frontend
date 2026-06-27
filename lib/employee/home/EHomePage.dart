@@ -1,4 +1,5 @@
 import 'package:chack_chack/common/notification/NotificationPage.dart';
+import 'package:chack_chack/employee/home/schedule/ESubmitSchedulePage.dart';
 import 'package:chack_chack/employee/mypage/EMyPage.dart';
 import 'package:chack_chack/employee/schedule/EMainSchedulePage.dart';
 import 'package:flutter/material.dart';
@@ -217,6 +218,12 @@ class _EHomePageState extends State<EHomePage> {
                               child: InkWell(
                                 onTap: () {
                                   // TODO: 자세히 보기 페이지 이동
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ESubmitSchedulePage(),
+                                    ),
+                                  );
                                 },
                                 child: const Row(
                                   mainAxisSize: MainAxisSize.min,
