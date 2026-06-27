@@ -1,5 +1,10 @@
 import 'package:chack_chack/employer/home/schedule/RMakingSchedulePage.dart';
 import 'package:chack_chack/employer/home/schedule/RRecentSchedulePage.dart';
+import 'package:chack_chack/employer/home/widgets/RHomeHeader.dart';
+import 'package:chack_chack/employer/home/widgets/RNoticeBanner.dart';
+import 'package:chack_chack/employer/home/widgets/RNoticeWriteCard.dart';
+import 'package:chack_chack/employer/home/widgets/RScheduleCard.dart';
+import 'package:chack_chack/employer/home/widgets/RTodayWorkCard.dart';
 import 'package:flutter/material.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
@@ -16,24 +21,6 @@ class RHomePage extends StatefulWidget {
 }
 
 class _RHomePageState extends State<RHomePage> {
-
-  String get nextWeekRange {
-    final now = DateTime.now();
-
-    // 이번 주 월요일
-    final thisMonday = now.subtract(
-      Duration(days: now.weekday - DateTime.monday),
-    );
-
-    // 다음 주 월요일
-    final nextMonday = thisMonday.add(const Duration(days: 7));
-
-    // 다음 주 일요일
-    final nextSunday = nextMonday.add(const Duration(days: 6));
-
-    return "${nextMonday.month}월 ${nextMonday.day}일 - "
-        "${nextSunday.month}월 ${nextSunday.day}일";
-  }
 
   void _showScheduleBottomSheet(BuildContext context) {
     showModalBottomSheet(
@@ -198,362 +185,72 @@ class _RHomePageState extends State<RHomePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               /// ---------------- Header ----------------
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: const [
-                      Text(
-                        "매장명",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      SizedBox(width: 2),
-                      Icon(Icons.keyboard_arrow_down),
-                    ],
-                  ),
-                  IconButton(
-                    onPressed: () {},
-                    icon: const Icon(
-                      Icons.notifications_none,
-                      size: 28,
+              RHomeHeader(
+                storeName: "매장명",
+                onStoreTap: () {
+                  // TODO : 매장 선택
+                },
+                onNotificationTap: () {
+                  // TODO : 알림 페이지 이동
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const RNotificationPage(),
                     ),
-                  ),
-                ],
+                  );
+                },
               ),
 
               const SizedBox(height: 14),
 
               /// ---------------- 공지 ----------------
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 14,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: Row(
-                  children: const [
-                    SizedBox(width: 10),
-                    Text(
-                      "공지 \t 📌",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 14,
-                      ),
+              RNoticeBanner(
+                notice: "마감 때 쓰레기 비우는거 잊지 마세요",
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const RNotificationPage(),
                     ),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        "마감 때 쓰레기 비우는거 잊지 마세요",
-                        style: TextStyle(
-                          fontSize: 14,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
+                  );
+                },
               ),
 
               const SizedBox(height: 16),
 
               /// ---------------- 메인 카드 ----------------
-              SizedBox(
-                width: double.infinity,
-                child: AspectRatio(
-                  aspectRatio: 1080 / 693,
-                  child: Stack(
-                    children: [
-                      /// 배경 이미지
-                      Positioned.fill(
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(20),
-                          child: Image.asset(
-                            "assets/images/r_main_card.png",
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-
-                      /// 다음주 날짜
-                      Positioned(
-                        left: 20,
-                        top: 90,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFBFE1FF),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            nextWeekRange,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF0084FF),
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      /// 하단 버튼
-                      Positioned(
-                        left: 24,
-                        right: 24,
-                        bottom: 16,
-                        child: SizedBox(
-                          height: 52,
-                          child: ElevatedButton(
-                            onPressed: () {
-                              _showScheduleBottomSheet(context);
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF0084FF),
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                            ),
-                            child: const Text(
-                              "스케줄 만들기",
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              RScheduleCard(
+                onMakeScheduleTap: () {
+                  _showScheduleBottomSheet(context);
+                },
               ),
 
               const SizedBox(height: 14),
 
               /// ---------------- 공지 작성 ----------------
-              GestureDetector(
+              RNoticeWriteCard(
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) =>
-                      const RNotificationPage(),
+                      builder: (_) => const RNotificationPage(),
                     ),
                   );
                 },
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 20,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius:
-                    BorderRadius.circular(18),
-                  ),
-                  child: Row(
-                    mainAxisAlignment:
-                    MainAxisAlignment.spaceBetween,
-                    children: const [
-                      Text(
-                        "공지 작성",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                      Icon(Icons.chevron_right),
-                    ],
-                  ),
-                ),
               ),
 
               const SizedBox(height: 14),
 
               /// ---------------- 오늘 근무 ----------------
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius:
-                  BorderRadius.circular(18),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      children: const [
-                        Text(
-                          "오늘 근무",
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    _workRow(
-                      label: "오픈",
-                      labelColor:
-                      const Color(0xFFE6F3FF),
-                      textColor: Color(0xFF0084FF),
-                      time: "07:00 - 12:00",
-                      employee: "손흥민, 이수봉",
-                    ),
-
-                    const Divider(
-                      height: 40,              // 위아래 포함 전체 높이(간격)
-                      thickness: 1,            // 선 두께
-                      color: Color(0xFFF2F2F5), // 연한 회색
-                    ),
-
-                    _workRow(
-                      label: "미들",
-                      labelColor:
-                      const Color(0xFFEEEBFF),
-                      textColor: Color(0xFF7D67FD),
-                      time: "12:00 - 19:00",
-                      employee: "모수연, 김다봉",
-                    ),
-
-                    const Divider(
-                      height: 40,              // 위아래 포함 전체 높이(간격)
-                      thickness: 1,            // 선 두께
-                      color: Color(0xFFF2F2F5), // 연한 회색
-                    ),
-
-                    _workRow(
-                      label: "마감",
-                      labelColor:
-                      const Color(0xFFD0F9D5),
-                      textColor: Color(0xFF0FA48B),
-                      time: "19:00 - 22:00",
-                      employee: "김지연",
-                    ),
-
-                    const SizedBox(height: 18),
-
-                    InkWell(
-                      onTap: () {},
-                      child: Row(
-                        mainAxisAlignment:
-                        MainAxisAlignment.center,
-                        children: const [
-                          Text(
-                            "자세히 보기",
-                            style: TextStyle(
-                              color: Colors.grey,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          SizedBox(width: 4),
-                          Icon(
-                            Icons.chevron_right,
-                            color: Colors.grey,
-                            size: 18,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+              RTodayWorkCard(
+                onDetailTap: () {
+                  // TODO : 오늘 근무 상세 페이지 이동
+                },
               ),
             ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _chip(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 6,
-      ),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.blue,
-        ),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.blue,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
-
-  Widget _workRow({
-    required String label,
-    required Color labelColor,
-    required Color textColor,
-    required String time,
-    required String employee,
-  }) {
-    return Row(
-      children: [
-        Container(
-          width: 52,
-          alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(
-            vertical: 6,
-          ),
-          decoration: BoxDecoration(
-            color: labelColor,
-            borderRadius:
-            BorderRadius.circular(20),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: textColor,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-
-        const SizedBox(width: 12),
-
-        SizedBox(
-          width: 95,
-          child: Text(
-            time,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-
-        Expanded(
-          child: Text(
-            employee,
-            textAlign: TextAlign.end,
-            style: const TextStyle(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
