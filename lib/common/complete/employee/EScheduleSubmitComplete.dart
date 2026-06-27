@@ -72,10 +72,7 @@ class EScheduleSubmitComplete extends StatelessWidget {
                 height: 58,
                 child: ElevatedButton(
                   onPressed: () {
-                    Navigator.popUntil(
-                      context,
-                          (route) => route.isFirst,
-                    );
+
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0084FF),
