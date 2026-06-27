@@ -42,14 +42,14 @@ class _RHomePageState extends State<RHomePage> {
   // 개발용
   //==========================================================
 
-  // static const HomeCardType? debugCardType =
-  //     HomeCardType.weeklySchedule;
+  static const HomeCardType? debugCardType =
+      HomeCardType.weeklySchedule;
 
   // static const HomeCardType? debugCardType =
   //     HomeCardType.scheduleCreationAvailable;
 
-  static const HomeCardType? debugCardType =
-      HomeCardType.submissionStatus;
+  // static const HomeCardType? debugCardType =
+  //     HomeCardType.submissionStatus;
 
   // static const HomeCardType? debugCardType =
   //     HomeCardType.none;

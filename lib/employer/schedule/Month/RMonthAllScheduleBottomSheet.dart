@@ -1,6 +1,7 @@
 import 'package:chack_chack/employer/schedule/Month/RWorkingDetailEditPage.dart';
 import 'package:flutter/material.dart';
 
+import '../widgets/RDeleteWorkingBottomSheet.dart';
 import 'RMonthAllSchedulePage.dart';
 
 class RMonthAllScheduleBottomSheet extends StatefulWidget {
@@ -280,7 +281,39 @@ class _RMonthAllScheduleBottomSheetState
                 height: 52,
                 child: ElevatedButton(
                   onPressed: () {
-                    // TODO: 근무 삭제
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) {
+                        return RDeleteWorkingBottomSheet(
+                          works: groups.map((group) {
+                            final first = group.first;
+
+                            return DeleteWorkItem(
+                              role: first.role,
+                              startTime: first.startTime,
+                              endTime: first.endTime,
+                              workers: group.map((e) => e.name).toList(),
+                            );
+                          }).toList(),
+
+                          onDelete: (selected) {
+                            setState(() {
+                              for (final index in selected.reversed) {
+                                final group = groups[index];
+
+                                widget.schedules[dateKey(widget.date)]
+                                    ?.removeWhere((worker) => group.contains(worker));
+                              }
+                            });
+
+                            Navigator.pop(context);
+                            Navigator.pop(context);
+                          },
+                        );
+                      },
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor:
