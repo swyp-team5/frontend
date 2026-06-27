@@ -28,8 +28,8 @@ class RNoticeWriteCard extends StatelessWidget {
             Text(
               "공지 작성",
               style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
               ),
             ),
             Icon(Icons.chevron_right),

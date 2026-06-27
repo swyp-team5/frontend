@@ -1,3 +1,4 @@
+import 'package:chack_chack/employer/home/notification/RNotificationPage.dart';
 import 'package:chack_chack/employer/home/schedule/RMakingSchedulePage.dart';
 import 'package:chack_chack/employer/home/schedule/RRecentSchedulePage.dart';
 import 'package:chack_chack/employer/home/widgets/RHomeHeader.dart';
@@ -11,7 +12,15 @@ import '../../../common/widgets/BottomNavBar.dart';
 import '../crews/RCrewPage.dart';
 import '../mypage/RMyPage.dart';
 import '../schedule/RMainSchedulePage.dart';
-import 'notification/RNotificationPage.dart';
+
+enum HomeCardType {
+  none,
+
+  /// 스케줄
+  weeklySchedule,
+  scheduleCreationAvailable,
+  submissionStatus,
+}
 
 class RHomePage extends StatefulWidget {
   const RHomePage({super.key});
@@ -21,13 +30,52 @@ class RHomePage extends StatefulWidget {
 }
 
 class _RHomePageState extends State<RHomePage> {
+  bool isCardVisible = true;
+
+  /// 카드에서 사용할 남은 일수
+  int get daysLeft {
+    final now = DateTime.now();
+    return 8 - now.weekday;
+  }
+
+  //==========================================================
+  // 개발용
+  //==========================================================
+
+  // static const HomeCardType? debugCardType =
+  //     HomeCardType.weeklySchedule;
+
+  // static const HomeCardType? debugCardType =
+  //     HomeCardType.scheduleCreationAvailable;
+
+  static const HomeCardType? debugCardType =
+      HomeCardType.submissionStatus;
+
+  // static const HomeCardType? debugCardType =
+  //     HomeCardType.none;
+
+  // static const HomeCardType? debugCardType = null;
+
+  //==========================================================
+  // 실제 카드 타입
+  //==========================================================
+
+  HomeCardType get cardType {
+    if (debugCardType != null) {
+      return debugCardType!;
+    }
+
+    /// TODO : API 연결
+
+    return HomeCardType.none;
+  }
 
   void _showScheduleBottomSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) {
+      builder: (_) {
         return SafeArea(
           child: Container(
             margin: const EdgeInsets.all(16),
@@ -39,7 +87,6 @@ class _RHomePageState extends State<RHomePage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                /// 상단 작은 막대 (Drag Handle)
                 Center(
                   child: Container(
                     width: 48,
@@ -53,29 +100,26 @@ class _RHomePageState extends State<RHomePage> {
 
                 const SizedBox(height: 24),
 
-                /// 제목 + 설명 (가운데 정렬)
-                const Center(
-                  child: Column(
-                    children: [
-                      Text(
-                        "최근 기록 불러오기",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
+                const Column(
+                  children: [
+                    Text(
+                      "최근 기록 불러오기",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
                       ),
-                      SizedBox(height: 8),
-                      Text(
-                        "최근에 작성했던 스케줄 상세 내용을\n불러올 수 있어요",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 15,
-                          color: Colors.grey,
-                        ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      "최근에 작성했던 스케줄 상세 내용을\n불러올 수 있어요",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF767676),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
 
                 const SizedBox(height: 32),
@@ -105,12 +149,11 @@ class _RHomePageState extends State<RHomePage> {
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 12),
 
                 /// 직접 만들기 버튼
@@ -140,7 +183,7 @@ class _RHomePageState extends State<RHomePage> {
                       style: TextStyle(
                         color: Colors.black,
                         fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
@@ -158,40 +201,47 @@ class _RHomePageState extends State<RHomePage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F7),
 
-      /// 공통 BottomNavBar 적용
       bottomNavigationBar: BottomNavBar(
         currentIndex: 0,
         onTap: (index) {
-          if (index == 0) {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const RHomePage()));
-          } else if (index == 1) {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const RCrewPage()));
+          if (index == 1) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const RCrewPage(),
+              ),
+            );
           } else if (index == 2) {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const RMainSchedulePage()));
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const RMainSchedulePage(),
+              ),
+            );
           } else if (index == 4) {
             Navigator.push(
-                context, MaterialPageRoute(builder: (_) => const RMyPage()));
+              context,
+              MaterialPageRoute(
+                builder: (_) => const RMyPage(),
+              ),
+            );
           }
         },
       ),
 
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(20, 20, 20, 30),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 30,
+          ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              /// ---------------- Header ----------------
+              /// Header
               RHomeHeader(
                 storeName: "매장명",
-                onStoreTap: () {
-                  // TODO : 매장 선택
-                },
+                onStoreTap: () {},
                 onNotificationTap: () {
-                  // TODO : 알림 페이지 이동
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -201,9 +251,9 @@ class _RHomePageState extends State<RHomePage> {
                 },
               ),
 
-              const SizedBox(height: 14),
+              const SizedBox(height: 20),
 
-              /// ---------------- 공지 ----------------
+              /// Notice
               RNoticeBanner(
                 notice: "마감 때 쓰레기 비우는거 잊지 마세요",
                 onTap: () {
@@ -218,16 +268,24 @@ class _RHomePageState extends State<RHomePage> {
 
               const SizedBox(height: 16),
 
-              /// ---------------- 메인 카드 ----------------
-              RScheduleCard(
-                onMakeScheduleTap: () {
-                  _showScheduleBottomSheet(context);
-                },
-              ),
+              /// Schedule Card
+              if (cardType != HomeCardType.none && isCardVisible)
+                RScheduleCard(
+                  type: cardType,
+                  daysLeft: daysLeft,
+                  onClose: () {
+                    setState(() {
+                      isCardVisible = false;
+                    });
+                  },
+                  onMakeScheduleTap: () {
+                    _showScheduleBottomSheet(context);
+                  },
+                ),
 
               const SizedBox(height: 14),
 
-              /// ---------------- 공지 작성 ----------------
+              /// Notice Write
               RNoticeWriteCard(
                 onTap: () {
                   Navigator.push(
@@ -241,11 +299,9 @@ class _RHomePageState extends State<RHomePage> {
 
               const SizedBox(height: 14),
 
-              /// ---------------- 오늘 근무 ----------------
+              /// Today Work
               RTodayWorkCard(
-                onDetailTap: () {
-                  // TODO : 오늘 근무 상세 페이지 이동
-                },
+                onDetailTap: () {},
               ),
             ],
           ),

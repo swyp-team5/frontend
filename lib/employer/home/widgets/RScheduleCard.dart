@@ -1,76 +1,205 @@
 import 'package:flutter/material.dart';
+import '../RHomePage.dart';
 
 class RScheduleCard extends StatelessWidget {
+  final HomeCardType type;
+  final int daysLeft;
   final VoidCallback? onMakeScheduleTap;
+  final VoidCallback? onClose;
 
   const RScheduleCard({
     super.key,
+    required this.type,
+    required this.daysLeft,
     this.onMakeScheduleTap,
+    this.onClose,
   });
 
-  /// 다음 주 기간
+  /// TODO : API 연결 시 교체
+  static const List<String> unsubmittedEmployees = [
+    "손흥민",
+    "김지연",
+    "모수연",
+  ];
+
+  int get unsubmittedCount => unsubmittedEmployees.length;
+
+  String get _imagePath {
+    switch (type) {
+      case HomeCardType.weeklySchedule:
+        return "assets/images/r_weeklySchedule_card.png";
+
+      case HomeCardType.scheduleCreationAvailable:
+        return "assets/images/r_scheduleCreationAvailable_card.png";
+
+      case HomeCardType.submissionStatus:
+        return "assets/images/r_submissionStatus_card.png";
+
+      case HomeCardType.none:
+        return "";
+    }
+  }
+
+
+
+  String get _buttonText {
+    switch (type) {
+      case HomeCardType.weeklySchedule:
+        return "스케줄 만들기";
+
+      case HomeCardType.scheduleCreationAvailable:
+        return "스케줄 생성하기";
+
+      case HomeCardType.submissionStatus:
+        return "제출 현황 보기";
+
+      case HomeCardType.none:
+        return "";
+    }
+  }
+
   String get nextWeekRange {
     final now = DateTime.now();
 
-    // 이번 주 월요일
-    final thisMonday = now.subtract(
-      Duration(days: now.weekday - DateTime.monday),
-    );
+    DateTime nextMonday;
 
-    // 다음 주 월요일
-    final nextMonday = thisMonday.add(const Duration(days: 7));
+    if (now.weekday == DateTime.monday) {
+      // 월요일이면 이번주가 이미 제출 대상이므로
+      // 다음다음주를 표시
+      nextMonday = now.add(const Duration(days: 14));
+    } else {
+      // 화~일은 가장 가까운 다음 월요일
+      nextMonday = now.add(
+        Duration(days: 8 - now.weekday),
+      );
+    }
 
-    // 다음 주 일요일
     final nextSunday = nextMonday.add(const Duration(days: 6));
 
-    return "${nextMonday.month}월 ${nextMonday.day}일 - "
-        "${nextSunday.month}월 ${nextSunday.day}일";
+    return "${nextMonday.month}월 ${nextMonday.day}일 - ${nextSunday.month}월 ${nextSunday.day}일";
   }
 
-  @override
+
+    @override
   Widget build(BuildContext context) {
+    if (type == HomeCardType.none) {
+      return const SizedBox.shrink();
+    }
+
     return SizedBox(
       width: double.infinity,
       child: AspectRatio(
         aspectRatio: 1080 / 693,
         child: Stack(
           children: [
-            /// 배경 이미지
             Positioned.fill(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
                 child: Image.asset(
-                  "assets/images/r_main_card.png",
+                  _imagePath,
                   fit: BoxFit.cover,
                 ),
               ),
             ),
 
-            /// 다음주 날짜
+            /// X 버튼
             Positioned(
-              left: 20,
-              top: 90,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFBFE1FF),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  nextWeekRange,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF0084FF),
+              top: 16,
+              right: 16,
+              child: GestureDetector(
+                onTap: onClose,
+                child: Container(
+                  width: 28,
+                  height: 28,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.25),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.close,
+                    size: 18,
+                    color: Colors.grey,
                   ),
                 ),
               ),
             ),
 
-            /// 스케줄 만들기 버튼
+            /// 다음주 스케줄 제출
+            if (type == HomeCardType.weeklySchedule)
+              Positioned(
+                left: 20,
+                bottom: 115,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFBFE1FF),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    nextWeekRange,
+                    style: const TextStyle(
+                      color: Color(0xFF0084FF),
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+
+            /// 스케줄 생성 가능
+            if (type == HomeCardType.scheduleCreationAvailable)
+              Positioned(
+                left: 20,
+                bottom: 115,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFBFE1FF),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    nextWeekRange,
+                    style: const TextStyle(
+                      color: Color(0xFF0084FF),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+
+            /// 제출 현황
+            if (type == HomeCardType.submissionStatus)
+              Positioned(
+                left: 20,
+                bottom: 115,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFBFE1FF),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    "미제출 근무자 $unsubmittedCount명",
+                    style: const TextStyle(
+                      color: Color(0xFF0084FF),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+
+            /// 하단 버튼
             Positioned(
               left: 24,
               right: 24,
@@ -86,9 +215,9 @@ class RScheduleCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(30),
                     ),
                   ),
-                  child: const Text(
-                    "스케줄 만들기",
-                    style: TextStyle(
+                  child: Text(
+                    _buttonText,
+                    style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,

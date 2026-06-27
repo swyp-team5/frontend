@@ -41,14 +41,18 @@ flutter:
   generate: true
 
   assets:
-    - assets/images/r_main_card.png
     - assets/images/e_weeklySchedule_card.png
     - assets/images/e_ownerWorkRequest_card.png
     - assets/images/e_scheduleChanged_card.png
     - assets/images/e_scheduleCompleted_card.png
     - assets/images/e_shiftRequest_card.png
     - assets/images/e_substituteRequest_card.png
-    - assets/images/check.png
+
+    - assets/images/r_weeklySchedule_card.png
+    - assets/images/r_scheduleCreationAvailable_card.png
+    - assets/images/r_submissionStatus_card.png
+
+    - assets/images/accept.png
 
 
   uses-material-design: true

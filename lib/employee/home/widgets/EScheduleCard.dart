@@ -57,7 +57,7 @@ class EScheduleCard extends StatelessWidget {
 
     final nextSunday = nextMonday.add(const Duration(days: 6));
 
-    return "${nextMonday.month}.${nextMonday.day} - ${nextSunday.month}.${nextSunday.day}";
+    return "${nextMonday.month}월 ${nextMonday.day}일 - ${nextSunday.month}월 ${nextSunday.day}일";
   }
 
   /// 교대 요청 더미 데이터

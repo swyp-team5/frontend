@@ -28,7 +28,7 @@ class EScheduleSubmitComplete extends StatelessWidget {
 
               /// 체크 아이콘
               Image.asset(
-                "assets/images/check.png", // <- 체크 이미지
+                "assets/images/accept.png", // <- 체크 이미지
                 width: 200,
                 height: 200,
               ),
