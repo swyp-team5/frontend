@@ -1,6 +1,7 @@
 import 'package:chack_chack/employer/home/notification/RNotificationPage.dart';
 import 'package:chack_chack/employer/home/schedule/RMakingSchedulePage.dart';
 import 'package:chack_chack/employer/home/schedule/RRecentSchedulePage.dart';
+import 'package:chack_chack/employer/home/widgets/RAutoScheduleBottomSheet.dart';
 import 'package:chack_chack/employer/home/widgets/RHomeHeader.dart';
 import 'package:chack_chack/employer/home/widgets/RNoticeBanner.dart';
 import 'package:chack_chack/employer/home/widgets/RNoticeWriteCard.dart';
@@ -42,11 +43,11 @@ class _RHomePageState extends State<RHomePage> {
   // 개발용
   //==========================================================
 
-  static const HomeCardType? debugCardType =
-      HomeCardType.weeklySchedule;
-
   // static const HomeCardType? debugCardType =
-  //     HomeCardType.scheduleCreationAvailable;
+  //     HomeCardType.weeklySchedule;
+
+  static const HomeCardType? debugCardType =
+      HomeCardType.scheduleCreationAvailable;
 
   // static const HomeCardType? debugCardType =
   //     HomeCardType.submissionStatus;
@@ -279,7 +280,40 @@ class _RHomePageState extends State<RHomePage> {
                     });
                   },
                   onMakeScheduleTap: () {
-                    _showScheduleBottomSheet(context);
+                    switch (cardType) {
+                    /// 제출 기간 (최근 기록 불러오기 BottomSheet)
+                      case HomeCardType.weeklySchedule:
+                        _showScheduleBottomSheet(context);
+                        break;
+
+                    /// 제출 완료 → 자동 스케줄 안내 BottomSheet
+                      case HomeCardType.scheduleCreationAvailable:
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => RAutoScheduleBottomSheet(
+                            onNext: () {
+                              // 자동 스케줄 생성 페이지로 이동
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const RMakingSchedulePage(),
+                                ),
+                              );
+                            },
+                          ),
+                        );
+                        break;
+
+                    /// 제출 현황
+                      case HomeCardType.submissionStatus:
+                      // TODO : 제출 현황 페이지 이동
+                        break;
+
+                      case HomeCardType.none:
+                        break;
+                    }
                   },
                 ),
 

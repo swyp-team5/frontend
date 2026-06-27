@@ -164,7 +164,7 @@ class RScheduleCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    nextWeekRange,
+                    "미제출 근무자 $unsubmittedCount명",
                     style: const TextStyle(
                       color: Color(0xFF0084FF),
                       fontSize: 12,
@@ -189,7 +189,7 @@ class RScheduleCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    "미제출 근무자 $unsubmittedCount명",
+                    "마감까지 ${daysLeft}일",
                     style: const TextStyle(
                       color: Color(0xFF0084FF),
                       fontSize: 12,

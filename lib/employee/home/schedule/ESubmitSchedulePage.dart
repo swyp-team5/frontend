@@ -2,7 +2,7 @@ import 'package:chack_chack/employee/home/schedule/widgets/ESubmitScheduleBottom
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 
-import '../../../common/complete/employee/EScheduleSubmitComplete.dart';
+import '../../../common/employee/EScheduleSubmitComplete.dart';
 import 'models/ScheduleInfo.dart';
 
 class ESubmitSchedulePage extends StatefulWidget {
