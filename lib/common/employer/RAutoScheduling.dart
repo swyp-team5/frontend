@@ -1,7 +1,6 @@
+import 'package:chack_chack/employer/home/autoschedule/RSelectAutoSchedulePage.dart';
 import 'package:flutter/material.dart';
-import 'package:chack_chack/employer/schedule/RMainSchedulePage.dart';
 
-import '../../employer/home/schedule/RSelectSchedulePage.dart';
 
 class RAutoSchedulingPage extends StatefulWidget {
   const RAutoSchedulingPage({super.key});
@@ -22,7 +21,7 @@ class _RAutoSchedulingPageState extends State<RAutoSchedulingPage> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => const RSelectSchedulePage(),
+          builder: (_) => const RSelectAutoSchedulePage(),
         ),
       );
     });
