@@ -5,9 +5,13 @@ class ShiftCount {
   /// 실제 배치 가능한 인원
   final int available;
 
+  /// 휴무 여부
+  final bool isOff;
+
   const ShiftCount({
     required this.required,
     required this.available,
+    this.isOff = false,
   });
 
   /// 부족 여부

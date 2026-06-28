@@ -32,13 +32,22 @@ class RShiftRow extends StatelessWidget {
           ...counts.map(
                 (e) => Expanded(
               child: Center(
-                child: Container(
+                child: e.isOff
+                    ? const Text(
+                  "휴무",
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF767676),
+                  ),
+                )
+                    : Container(
                   width: 34,
                   height: 34,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: e.shortage
-                        ? Colors.red
+                        ? const Color(0xFFFF4D4F)
                         : _backgroundColor(title),
                   ),
                   alignment: Alignment.center,
@@ -54,7 +63,7 @@ class RShiftRow extends StatelessWidget {
                 ),
               ),
             ),
-          )
+          ),
         ],
       ),
     );

@@ -27,7 +27,7 @@ class _RSelectAutoSchedulePageState
       ScheduleScenario(
         title: "시안 1",
         open: const [
-          ShiftCount(required: 2, available: 1,),
+          ShiftCount(required: 2, available: 1, isOff: true), // 월요일 휴무
           ShiftCount(required: 2, available: 2,),
           ShiftCount(required: 2, available: 1,),
           ShiftCount(required: 2, available: 2,),
@@ -36,7 +36,7 @@ class _RSelectAutoSchedulePageState
           ShiftCount(required: 4, available: 3,),
         ],
         middle: const [
-          ShiftCount(required: 2, available: 2,),
+          ShiftCount(required: 2, available: 2, isOff: true), // 월요일 휴무
           ShiftCount(required: 2, available: 2,),
           ShiftCount(required: 2, available: 2,),
           ShiftCount(required: 2, available: 2,),
@@ -45,11 +45,11 @@ class _RSelectAutoSchedulePageState
           ShiftCount(required: 2, available: 2,),
         ],
         close: const [
+          ShiftCount(required: 2, available: 2, isOff: true), // 월요일 휴무
+          ShiftCount(required: 3, available: 2,),
           ShiftCount(required: 2, available: 2,),
           ShiftCount(required: 3, available: 2,),
-          ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 3, available: 2,),
-          ShiftCount(required: 2, available: 1,),
+          ShiftCount(required: 2, available: 2,),
           ShiftCount(required: 2, available: 1,),
           ShiftCount(required: 2, available: 2,),
         ],
@@ -59,7 +59,7 @@ class _RSelectAutoSchedulePageState
       ScheduleScenario(
         title: "시안 2",
         open: const [
-          ShiftCount(required: 2, available: 1,),
+          ShiftCount(required: 2, available: 1, isOff: true), // 월요일 휴무
           ShiftCount(required: 2, available: 2,),
           ShiftCount(required: 3, available: 2,),
           ShiftCount(required: 2, available: 2,),
@@ -68,7 +68,7 @@ class _RSelectAutoSchedulePageState
           ShiftCount(required: 4, available: 2,),
         ],
         middle: const [
-          ShiftCount(required: 2, available: 1,),
+          ShiftCount(required: 2, available: 1, isOff: true), // 월요일 휴무
           ShiftCount(required: 2, available: 2,),
           ShiftCount(required: 2, available: 1,),
           ShiftCount(required: 2, available: 2,),
@@ -77,7 +77,7 @@ class _RSelectAutoSchedulePageState
           ShiftCount(required: 2, available: 2,),
         ],
         close: const [
-          ShiftCount(required: 2, available: 1,),
+          ShiftCount(required: 2, available: 1, isOff: true), // 월요일 휴무
           ShiftCount(required: 2, available: 2,),
           ShiftCount(required: 2, available: 1,),
           ShiftCount(required: 2, available: 2,),
@@ -91,7 +91,7 @@ class _RSelectAutoSchedulePageState
       ScheduleScenario(
         title: "시안 3",
         open: const [
-          ShiftCount(required: 2, available: 1,),
+          ShiftCount(required: 2, available: 1, isOff: true), // 월요일 휴무
           ShiftCount(required: 2, available: 2,),
           ShiftCount(required: 2, available: 1,),
           ShiftCount(required: 2, available: 2,),
@@ -100,7 +100,7 @@ class _RSelectAutoSchedulePageState
           ShiftCount(required: 2, available: 2,),
         ],
         middle: const [
-          ShiftCount(required: 2, available: 1,),
+          ShiftCount(required: 2, available: 1, isOff: true), // 월요일 휴무
           ShiftCount(required: 2, available: 2,),
           ShiftCount(required: 2, available: 1,),
           ShiftCount(required: 2, available: 2,),
@@ -109,7 +109,7 @@ class _RSelectAutoSchedulePageState
           ShiftCount(required: 2, available: 2,),
         ],
         close: const [
-          ShiftCount(required: 2, available: 1,),
+          ShiftCount(required: 2, available: 1, isOff: true), // 월요일 휴무
           ShiftCount(required: 2, available: 2,),
           ShiftCount(required: 2, available: 1,),
           ShiftCount(required: 2, available: 2,),
@@ -123,7 +123,7 @@ class _RSelectAutoSchedulePageState
       ScheduleScenario(
         title: "시안 4",
         open: const [
-          ShiftCount(required: 2, available: 1,),
+          ShiftCount(required: 2, available: 1, isOff: true), // 월요일 휴무
           ShiftCount(required: 2, available: 2,),
           ShiftCount(required: 2, available: 1,),
           ShiftCount(required: 2, available: 2,),
@@ -132,7 +132,7 @@ class _RSelectAutoSchedulePageState
           ShiftCount(required: 2, available: 2,),
         ],
         middle: const [
-          ShiftCount(required: 2, available: 1,),
+          ShiftCount(required: 2, available: 1, isOff: true), // 월요일 휴무
           ShiftCount(required: 2, available: 2,),
           ShiftCount(required: 2, available: 1,),
           ShiftCount(required: 2, available: 2,),
@@ -141,7 +141,7 @@ class _RSelectAutoSchedulePageState
           ShiftCount(required: 2, available: 2,),
         ],
         close: const [
-          ShiftCount(required: 2, available: 1,),
+          ShiftCount(required: 2, available: 1, isOff: true), // 월요일 휴무
           ShiftCount(required: 2, available: 2,),
           ShiftCount(required: 2, available: 1,),
           ShiftCount(required: 2, available: 2,),

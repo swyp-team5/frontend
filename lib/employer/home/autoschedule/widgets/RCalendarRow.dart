@@ -36,7 +36,7 @@ class RCalendarRow extends StatelessWidget {
         children: [
           Container(
             padding: const EdgeInsets.symmetric(
-              horizontal: 14,
+              horizontal: 5,
               vertical: 5,
             ),
             decoration: BoxDecoration(
@@ -72,15 +72,7 @@ class RCalendarRow extends StatelessWidget {
                           color: Color(0xFF8B8B8B),
                           fontWeight: FontWeight.w500,
                         ),
-                      ),
-                      // const SizedBox(height: 4),
-                      // Text(
-                      //   "${day.month}/${day.day}",
-                      //   style: const TextStyle(
-                      //     fontSize: 15,
-                      //     fontWeight: FontWeight.w600,
-                      //   ),
-                      // ),
+                      )
                     ],
                   ),
                 );
