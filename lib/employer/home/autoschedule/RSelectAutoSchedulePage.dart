@@ -46,11 +46,11 @@ class _RSelectAutoSchedulePageState
         ],
         close: const [
           ShiftCount(required: 2, available: 2, isOff: true), // 월요일 휴무
-          ShiftCount(required: 3, available: 2,),
+          ShiftCount(required: 3, available: 3,),
           ShiftCount(required: 2, available: 2,),
           ShiftCount(required: 3, available: 2,),
           ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 1,),
+          ShiftCount(required: 2, available: 2,),
           ShiftCount(required: 2, available: 2,),
         ],
       ),
@@ -63,9 +63,9 @@ class _RSelectAutoSchedulePageState
           ShiftCount(required: 2, available: 2,),
           ShiftCount(required: 3, available: 2,),
           ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 4, available: 2,),
-          ShiftCount(required: 4, available: 3,),
-          ShiftCount(required: 4, available: 2,),
+          ShiftCount(required: 4, available: 3),
+          ShiftCount(required: 4, available: 4,),
+          ShiftCount(required: 4, available: 4,),
         ],
         middle: const [
           ShiftCount(required: 2, available: 1, isOff: true), // 월요일 휴무
@@ -73,7 +73,7 @@ class _RSelectAutoSchedulePageState
           ShiftCount(required: 2, available: 1,),
           ShiftCount(required: 2, available: 2,),
           ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 2, available: 1,),
+          ShiftCount(required: 2, available: 2,),
           ShiftCount(required: 2, available: 2,),
         ],
         close: const [
@@ -82,7 +82,7 @@ class _RSelectAutoSchedulePageState
           ShiftCount(required: 2, available: 1,),
           ShiftCount(required: 2, available: 2,),
           ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 2, available: 1,),
+          ShiftCount(required: 2, available: 2,),
           ShiftCount(required: 2, available: 2,),
         ],
       ),
@@ -127,8 +127,8 @@ class _RSelectAutoSchedulePageState
           ShiftCount(required: 2, available: 2,),
           ShiftCount(required: 2, available: 1,),
           ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 2, available: 1,),
+          ShiftCount(required: 2, available: 2,),
+          ShiftCount(required: 2, available: 2,),
           ShiftCount(required: 2, available: 2,),
         ],
         middle: const [
@@ -206,8 +206,8 @@ class _RSelectAutoSchedulePageState
 
             /// 안내문
             Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20),
-              padding: const EdgeInsets.symmetric(vertical: 14),
+              margin: const EdgeInsets.symmetric(horizontal: 90),
+              padding: const EdgeInsets.symmetric(vertical: 5),
               decoration: BoxDecoration(
                 color: const Color(0xFFF1F1F5),
                 borderRadius: BorderRadius.circular(4),
@@ -226,6 +226,34 @@ class _RSelectAutoSchedulePageState
 
             const SizedBox(height: 20),
 
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              child: Row(
+                children: [
+                  const SizedBox(width: 50),
+
+                  ...const [
+                    "월", "화", "수", "목", "금", "토", "일",
+                  ].map(
+                        (day) => Expanded(
+                      child: Center(
+                        child: Text(
+                          day,
+                          style: TextStyle(
+                            color: Color(0xFF767676),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            Divider(height: 10),
+
             /// 달력
             Expanded(
               child: RWeekCalendar(
@@ -236,42 +264,6 @@ class _RSelectAutoSchedulePageState
                     selectedScenario = index;
                   });
                 },
-              ),
-            ),
-
-            /// 버튼
-            SafeArea(
-              child: Padding(
-                padding:
-                const EdgeInsets.fromLTRB(20, 10, 20, 20),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      print(
-                        scenarios[selectedScenario].title,
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      elevation: 0,
-                      backgroundColor:
-                      const Color(0xFF1687F8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius:
-                        BorderRadius.circular(14),
-                      ),
-                    ),
-                    child: const Text(
-                      "선택 완료",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
               ),
             ),
           ],

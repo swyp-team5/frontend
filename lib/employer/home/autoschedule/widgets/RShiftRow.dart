@@ -14,11 +14,11 @@ class RShiftRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 54,
+      height: 50,
       child: Row(
         children: [
           SizedBox(
-            width: 52,
+            width: 50,
             child: Center(
               child: Text(
                 title,

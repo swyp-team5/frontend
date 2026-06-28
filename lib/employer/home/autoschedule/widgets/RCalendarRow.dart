@@ -23,57 +23,49 @@ class RCalendarRow extends StatelessWidget {
           (index) => nextMonday.add(Duration(days: index)),
     );
 
-    const weekText = ["월", "화", "수", "목", "금", "토", "일",];
 
     return Container(
       color: Colors.white,
       padding: const EdgeInsets.symmetric(
         horizontal: 20,
-        vertical: 16,
+        vertical: 8,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 5,
-              vertical: 5,
-            ),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1687F8),
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: Text(
-              scenario.title,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
           Row(
             children: [
-              const SizedBox(width: 52),
+              Container(
+                width: 50,
+                height: 28,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1687F8),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  scenario.title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
 
               ...List.generate(7, (index) {
                 final day = weekDays[index];
 
                 return Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        weekText[index],
-                        style: const TextStyle(
-                          fontSize: 13,
-                          color: Color(0xFF8B8B8B),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      )
-                    ],
+                  child: Center(
+                    child: Text(
+                      "${day.day}",
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.black,
+                      ),
+                    ),
                   ),
                 );
               }),
