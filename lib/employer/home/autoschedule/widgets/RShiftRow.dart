@@ -43,7 +43,7 @@ class RShiftRow extends StatelessWidget {
                   ),
                   alignment: Alignment.center,
                   child: Text(
-                    "${e.count}",
+                    "${e.available}",
                     style: TextStyle(
                       color: e.shortage
                           ? Colors.white
