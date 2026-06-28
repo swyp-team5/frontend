@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../common/employer/RAutoScheduleComplete.dart';
 import 'models/ScheduleScenario.dart';
 import 'models/ShiftCount.dart';
 import 'models/ShiftTime.dart';
@@ -46,18 +47,26 @@ class RAutoScheduleDetailPage extends StatelessWidget {
           child: SizedBox(
             height: 50,
             child: ElevatedButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const RAutoScheduleComplete(),
+                  ),
+                );
+              },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xff1687F8),
+                backgroundColor: const Color(0xFF0084FF),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(8),
                 ),
               ),
               child: const Text(
                 "선택하기",
                 style: TextStyle(
                   color: Colors.white,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w500,
+                  fontSize: 16,
                 ),
               ),
             ),
@@ -70,40 +79,46 @@ class RAutoScheduleDetailPage extends StatelessWidget {
           children: [
             //---------------- AppBar ----------------
 
-            SizedBox(
-              height: 56,
-              child: Stack(
-                children: [
-                  const Align(
-                    alignment: Alignment.center,
-                    child: Text(
-                      "근무 상세",
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 18,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 30, 20, 0),
+              child: SizedBox(
+                height: 32,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerLeft,
+                      child: GestureDetector(
+                        onTap: () => Navigator.pop(context),
+                        child: const Icon(
+                          Icons.arrow_back_ios_new,
+                          size: 22,
+                        ),
                       ),
                     ),
-                  ),
 
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(Icons.arrow_back_ios_new),
+                    const Center(
+                      child: Text(
+                        "근무 상세",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
 
-            const SizedBox(height: 12),
+            const SizedBox(height: 24),
 
             Text(
               "${nextMonday.month}월 ${nextMonday.day}일 - "
                   "${nextSunday.month}월 ${nextSunday.day}일",
               style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                fontSize: 22,
+                fontWeight: FontWeight.w600,
+                fontSize: 20,
               ),
             ),
 
@@ -124,7 +139,12 @@ class RAutoScheduleDetailPage extends StatelessWidget {
                   const SizedBox(width: 34),
 
                   ...List.generate(7, (index) {
-                    const week = ["월", "화", "수", "목", "금", "토", "일",];
+                    const week = ["월", "화", "수", "목", "금", "토", "일"];
+
+                    final isOff =
+                        scenario.open[index].isOff &&
+                            scenario.middle[index].isOff &&
+                            scenario.close[index].isOff;
 
                     return Expanded(
                       child: Column(
@@ -132,8 +152,10 @@ class RAutoScheduleDetailPage extends StatelessWidget {
                         children: [
                           Text(
                             week[index],
-                            style: const TextStyle(
-                              color: Colors.grey,
+                            style: TextStyle(
+                              color: isOff ? const Color(0xFF999999) : Colors.black,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
                             ),
                           ),
 
@@ -141,9 +163,10 @@ class RAutoScheduleDetailPage extends StatelessWidget {
 
                           Text(
                             "${weekDays[index].day}",
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 20,
+                            style: TextStyle(
+                              color: isOff ? const Color(0xFF999999) : Colors.black,
+                              fontWeight: FontWeight.w600,
+                              fontSize: 18,
                             ),
                           ),
                         ],
@@ -333,8 +356,8 @@ class RAutoScheduleDetailPage extends StatelessWidget {
               ? Colors.redAccent
               : _color(type),
           text: shift.shortage
-              ? "${shift.shortageCount}명\n부족"
-              : "${shift.available}명",
+              ? "${shift.workers.join('\n')}\n(${shift.shortageCount}명 부족)"
+              : shift.workers.join('\n'),
           textColor: shift.shortage
               ? Colors.white
               : _textColor(type),

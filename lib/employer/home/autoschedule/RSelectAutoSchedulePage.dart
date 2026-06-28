@@ -28,33 +28,141 @@ class _RSelectAutoSchedulePageState
     super.initState();
 
     openDummy = const [
-      ShiftCount(required: 2, available: 1, type: ShiftType.open, isOff: true),
-      ShiftCount(required: 2, available: 2, type: ShiftType.open),
-      ShiftCount(required: 2, available: 1, type: ShiftType.open),
-      ShiftCount(required: 2, available: 2, type: ShiftType.open),
-      ShiftCount(required: 4, available: 3, type: ShiftType.open),
-      ShiftCount(required: 4, available: 4, type: ShiftType.open),
-      ShiftCount(required: 4, available: 3, type: ShiftType.open),
+      ShiftCount(
+        required: 2,
+        available: 1,
+        type: ShiftType.open,
+        isOff: true,
+        workers: [],
+      ),
+      ShiftCount(
+        required: 2,
+        available: 2,
+        type: ShiftType.open,
+        workers: ["김민수", "이서연"],
+      ),
+      ShiftCount(
+        required: 2,
+        available: 1,
+        type: ShiftType.open,
+        workers: ["박지훈"],
+      ),
+      ShiftCount(
+        required: 2,
+        available: 2,
+        type: ShiftType.open,
+        workers: ["최유진", "정현우"],
+      ),
+      ShiftCount(
+        required: 4,
+        available: 3,
+        type: ShiftType.open,
+        workers: ["김민수", "이서연", "박지훈"],
+      ),
+      ShiftCount(
+        required: 4,
+        available: 4,
+        type: ShiftType.open,
+        workers: ["최유진", "정현우", "김도윤", "한소희"],
+      ),
+      ShiftCount(
+        required: 4,
+        available: 3,
+        type: ShiftType.open,
+        workers: ["이서연", "정현우", "김도윤"],
+      ),
     ];
 
     middleDummy = const [
-      ShiftCount(required: 2, available: 2, type: ShiftType.middle, isOff: true),
-      ShiftCount(required: 2, available: 2, type: ShiftType.middle),
-      ShiftCount(required: 2, available: 2, type: ShiftType.middle),
-      ShiftCount(required: 2, available: 2, type: ShiftType.middle),
-      ShiftCount(required: 2, available: 1, type: ShiftType.middle),
-      ShiftCount(required: 2, available: 1, type: ShiftType.middle),
-      ShiftCount(required: 2, available: 2, type: ShiftType.middle),
+      ShiftCount(
+        required: 2,
+        available: 2,
+        type: ShiftType.middle,
+        isOff: true,
+        workers: [],
+      ),
+      ShiftCount(
+        required: 2,
+        available: 2,
+        type: ShiftType.middle,
+        workers: ["김도윤", "최유진"],
+      ),
+      ShiftCount(
+        required: 2,
+        available: 2,
+        type: ShiftType.middle,
+        workers: ["박지훈", "한소희"],
+      ),
+      ShiftCount(
+        required: 2,
+        available: 2,
+        type: ShiftType.middle,
+        workers: ["김민수", "정현우"],
+      ),
+      ShiftCount(
+        required: 2,
+        available: 1,
+        type: ShiftType.middle,
+        workers: ["이서연"],
+      ),
+      ShiftCount(
+        required: 2,
+        available: 1,
+        type: ShiftType.middle,
+        workers: ["김도윤"],
+      ),
+      ShiftCount(
+        required: 2,
+        available: 2,
+        type: ShiftType.middle,
+        workers: ["최유진", "박지훈"],
+      ),
     ];
 
     closeDummy = const [
-      ShiftCount(required: 2, available: 2, type: ShiftType.close, isOff: true),
-      ShiftCount(required: 3, available: 3, type: ShiftType.close),
-      ShiftCount(required: 2, available: 2, type: ShiftType.close),
-      ShiftCount(required: 3, available: 2, type: ShiftType.close),
-      ShiftCount(required: 2, available: 2, type: ShiftType.close),
-      ShiftCount(required: 2, available: 2, type: ShiftType.close),
-      ShiftCount(required: 2, available: 2, type: ShiftType.close),
+      ShiftCount(
+        required: 2,
+        available: 2,
+        type: ShiftType.close,
+        isOff: true,
+        workers: [],
+      ),
+      ShiftCount(
+        required: 3,
+        available: 3,
+        type: ShiftType.close,
+        workers: ["김민수", "이서연", "김도윤"],
+      ),
+      ShiftCount(
+        required: 2,
+        available: 2,
+        type: ShiftType.close,
+        workers: ["정현우", "최유진"],
+      ),
+      ShiftCount(
+        required: 3,
+        available: 2,
+        type: ShiftType.close,
+        workers: ["박지훈", "한소희"],
+      ),
+      ShiftCount(
+        required: 2,
+        available: 2,
+        type: ShiftType.close,
+        workers: ["김민수", "정현우"],
+      ),
+      ShiftCount(
+        required: 2,
+        available: 2,
+        type: ShiftType.close,
+        workers: ["이서연", "최유진"],
+      ),
+      ShiftCount(
+        required: 2,
+        available: 2,
+        type: ShiftType.close,
+        workers: ["김도윤", "박지훈"],
+      ),
     ];
 
     scenarios = [

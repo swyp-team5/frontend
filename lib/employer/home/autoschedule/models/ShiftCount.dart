@@ -7,6 +7,9 @@ class ShiftCount {
   /// 실제 배치 가능한 인원
   final int available;
 
+  /// 근무 가능한 직원 이름
+  final List<String> workers;
+
   final ShiftType type;
 
   /// 휴무 여부
@@ -16,6 +19,7 @@ class ShiftCount {
   const ShiftCount({
     required this.required,
     required this.available,
+    this.workers = const [],
     required this.type,
     this.isOff = false,
   });
