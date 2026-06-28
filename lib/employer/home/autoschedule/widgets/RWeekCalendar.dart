@@ -1,3 +1,4 @@
+import 'package:chack_chack/employer/home/autoschedule/RAutoScheduleDetailPage.dart';
 import 'package:flutter/material.dart';
 
 import '../models/ScheduleScenario.dart';
@@ -15,23 +16,8 @@ class RWeekCalendar extends StatelessWidget {
     required this.onSelect,
   });
 
-
-
   @override
   Widget build(BuildContext context) {
-
-    final now = DateTime.now();
-
-    // 다음주 월요일
-    final nextMonday = DateTime(
-      now.year, now.month, now.day,).add(Duration(days: 8 - now.weekday));
-
-    final weekDays = List.generate(7,
-          (index) => nextMonday.add(Duration(days: index)),
-    );
-
-    const weekText = ["월", "화", "수", "목", "금", "토", "일",];
-
     return ListView.separated(
       padding: EdgeInsets.zero,
       itemCount: scenarios.length,
@@ -40,11 +26,20 @@ class RWeekCalendar extends StatelessWidget {
         color: const Color(0xFFF1F1F5),
       ),
       itemBuilder: (_, index) {
-        return GestureDetector(
-          onTap: () => onSelect(index),
-          child: RCalendarRow(
-            scenario: scenarios[index],
-          ),
+        return RCalendarRow(
+          scenario: scenarios[index],
+          onTap: () {
+            onSelect(index);
+
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => RAutoScheduleDetailPage(
+                  scenario: scenarios[index],
+                ),
+              ),
+            );
+          },
         );
       },
     );

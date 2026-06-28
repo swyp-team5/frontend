@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'models/ScheduleScenario.dart';
 import 'models/ShiftCount.dart';
+import 'models/ShiftType.dart';
 import 'widgets/RWeekCalendar.dart';
 
 class RSelectAutoSchedulePage extends StatefulWidget {
@@ -16,139 +17,73 @@ class _RSelectAutoSchedulePageState
     extends State<RSelectAutoSchedulePage> {
   int selectedScenario = 0;
 
+  late final List<ShiftCount> openDummy;
+  late final List<ShiftCount> middleDummy;
+  late final List<ShiftCount> closeDummy;
+
   late final List<ScheduleScenario> scenarios;
 
   @override
   void initState() {
     super.initState();
 
+    openDummy = const [
+      ShiftCount(required: 2, available: 1, type: ShiftType.open, isOff: true),
+      ShiftCount(required: 2, available: 2, type: ShiftType.open),
+      ShiftCount(required: 2, available: 1, type: ShiftType.open),
+      ShiftCount(required: 2, available: 2, type: ShiftType.open),
+      ShiftCount(required: 4, available: 3, type: ShiftType.open),
+      ShiftCount(required: 4, available: 4, type: ShiftType.open),
+      ShiftCount(required: 4, available: 3, type: ShiftType.open),
+    ];
+
+    middleDummy = const [
+      ShiftCount(required: 2, available: 2, type: ShiftType.middle, isOff: true),
+      ShiftCount(required: 2, available: 2, type: ShiftType.middle),
+      ShiftCount(required: 2, available: 2, type: ShiftType.middle),
+      ShiftCount(required: 2, available: 2, type: ShiftType.middle),
+      ShiftCount(required: 2, available: 1, type: ShiftType.middle),
+      ShiftCount(required: 2, available: 1, type: ShiftType.middle),
+      ShiftCount(required: 2, available: 2, type: ShiftType.middle),
+    ];
+
+    closeDummy = const [
+      ShiftCount(required: 2, available: 2, type: ShiftType.close, isOff: true),
+      ShiftCount(required: 3, available: 3, type: ShiftType.close),
+      ShiftCount(required: 2, available: 2, type: ShiftType.close),
+      ShiftCount(required: 3, available: 2, type: ShiftType.close),
+      ShiftCount(required: 2, available: 2, type: ShiftType.close),
+      ShiftCount(required: 2, available: 2, type: ShiftType.close),
+      ShiftCount(required: 2, available: 2, type: ShiftType.close),
+    ];
+
     scenarios = [
-      /// ---------------- 시안1 ----------------
       ScheduleScenario(
         title: "시안 1",
-        open: const [
-          ShiftCount(required: 2, available: 1, isOff: true), // 월요일 휴무
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 4, available: 3,),
-          ShiftCount(required: 4, available: 4,),
-          ShiftCount(required: 4, available: 3,),
-        ],
-        middle: const [
-          ShiftCount(required: 2, available: 2, isOff: true), // 월요일 휴무
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 2, available: 2,),
-        ],
-        close: const [
-          ShiftCount(required: 2, available: 2, isOff: true), // 월요일 휴무
-          ShiftCount(required: 3, available: 3,),
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 3, available: 2,),
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 2,),
-        ],
+        open: openDummy,
+        middle: middleDummy,
+        close: closeDummy,
       ),
 
-      /// ---------------- 시안2 ----------------
       ScheduleScenario(
         title: "시안 2",
-        open: const [
-          ShiftCount(required: 2, available: 1, isOff: true), // 월요일 휴무
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 3, available: 2,),
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 4, available: 3),
-          ShiftCount(required: 4, available: 4,),
-          ShiftCount(required: 4, available: 4,),
-        ],
-        middle: const [
-          ShiftCount(required: 2, available: 1, isOff: true), // 월요일 휴무
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 2,),
-        ],
-        close: const [
-          ShiftCount(required: 2, available: 1, isOff: true), // 월요일 휴무
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 2,),
-        ],
+        open: openDummy,
+        middle: middleDummy,
+        close: closeDummy,
       ),
 
-      /// ---------------- 시안3 ----------------
       ScheduleScenario(
         title: "시안 3",
-        open: const [
-          ShiftCount(required: 2, available: 1, isOff: true), // 월요일 휴무
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 2, available: 2,),
-        ],
-        middle: const [
-          ShiftCount(required: 2, available: 1, isOff: true), // 월요일 휴무
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 2, available: 2,),
-        ],
-        close: const [
-          ShiftCount(required: 2, available: 1, isOff: true), // 월요일 휴무
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 2, available: 2,),
-        ],
+        open: openDummy,
+        middle: middleDummy,
+        close: closeDummy,
       ),
 
-      /// ---------------- 시안4 ----------------
       ScheduleScenario(
         title: "시안 4",
-        open: const [
-          ShiftCount(required: 2, available: 1, isOff: true), // 월요일 휴무
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 2,),
-        ],
-        middle: const [
-          ShiftCount(required: 2, available: 1, isOff: true), // 월요일 휴무
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 2, available: 2,),
-        ],
-        close: const [
-          ShiftCount(required: 2, available: 1, isOff: true), // 월요일 휴무
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 2, available: 2,),
-          ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 2, available: 1,),
-          ShiftCount(required: 2, available: 2,),
-        ],
+        open: openDummy,
+        middle: middleDummy,
+        close: closeDummy,
       ),
     ];
   }

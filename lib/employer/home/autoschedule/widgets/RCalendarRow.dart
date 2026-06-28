@@ -4,10 +4,12 @@ import 'RShiftRow.dart';
 
 class RCalendarRow extends StatelessWidget {
   final ScheduleScenario scenario;
+  final VoidCallback? onTap;
 
   const RCalendarRow({
     super.key,
     required this.scenario,
+    this.onTap,
   });
 
   @override
@@ -24,75 +26,82 @@ class RCalendarRow extends StatelessWidget {
     );
 
 
-    return Container(
+    return Material(
       color: Colors.white,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 8,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          color: Colors.white,
+          padding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 8,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 50,
-                height: 28,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF1687F8),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  scenario.title,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-
-              ...List.generate(7, (index) {
-                final day = weekDays[index];
-
-                return Expanded(
-                  child: Center(
+              Row(
+                children: [
+                  Container(
+                    width: 50,
+                    height: 28,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1687F8),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     child: Text(
-                      "${day.day}",
+                      scenario.title,
                       style: const TextStyle(
+                        color: Colors.white,
                         fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        color: Colors.black,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
-                );
-              }),
+
+                  ...List.generate(7, (index) {
+                    final day = weekDays[index];
+
+                    return Expanded(
+                      child: Center(
+                        child: Text(
+                          "${day.day}",
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+
+              const Divider(),
+
+              RShiftRow(
+                title: "오픈",
+                counts: scenario.open,
+              ),
+
+              const Divider(),
+
+              RShiftRow(
+                title: "미들",
+                counts: scenario.middle,
+              ),
+
+              const Divider(),
+
+              RShiftRow(
+                title: "마감",
+                counts: scenario.close,
+              ),
             ],
           ),
-
-          const Divider(),
-
-          RShiftRow(
-            title: "오픈",
-            counts: scenario.open,
-          ),
-
-          const Divider(),
-
-          RShiftRow(
-            title: "미들",
-            counts: scenario.middle,
-          ),
-
-          const Divider(),
-
-          RShiftRow(
-            title: "마감",
-            counts: scenario.close,
-          ),
-        ],
+        ),
       ),
     );
   }
