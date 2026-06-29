@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../common/employee/EShiftApplicationComplete.dart';
+
 class ConfirmApplicationBottomSheet extends StatelessWidget {
   const ConfirmApplicationBottomSheet({
     super.key,
@@ -249,7 +251,16 @@ class ConfirmApplicationBottomSheet extends StatelessWidget {
                   child: SizedBox(
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: onConfirm,
+                      onPressed: () {
+                        onConfirm();
+
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const EShiftApplicationComplete(),
+                          ),
+                        );
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xff0084FF),
                         elevation: 0,

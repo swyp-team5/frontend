@@ -54,6 +54,7 @@ flutter:
 
     - assets/images/accept.png
     - assets/images/automatic_schedule_creation.png
+    - assets/images/shift_complete.png
 
 
   uses-material-design: true
