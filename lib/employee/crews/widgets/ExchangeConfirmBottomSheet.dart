@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../common/employee/EShiftApplicationComplete.dart';
 
-class ConfirmApplicationBottomSheet extends StatelessWidget {
-  const ConfirmApplicationBottomSheet({
+class ExchangeConfirmBottomSheet extends StatelessWidget {
+  const ExchangeConfirmBottomSheet({
     super.key,
     required this.myName,
     required this.workerName,

@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 
 class ApplicationCalendar extends StatelessWidget {
+
+  final bool isSubstitute;
+
   const ApplicationCalendar({
     super.key,
+    required this.isSubstitute,
     required this.focusedMonth,
     required this.days,
     required this.selectedDate,
@@ -156,8 +160,18 @@ class ApplicationCalendar extends StatelessWidget {
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: workerMode
-                        ? showWorkerSelect
-                    // 근무자 선택 중
+                        ? isSubstitute
+                    // ==========================
+                    // 대타 신청
+                    // ==========================
+                        ? (isMySelected
+                        ? const Color(0xff0084FF)
+                        : Colors.transparent)
+
+                    // ==========================
+                    // 교대 신청
+                    // ==========================
+                        : showWorkerSelect
                         ? (workerWorkDay
                         ? (isWorkerSelected
                         ? const Color(0xff27C840)
@@ -165,7 +179,6 @@ class ApplicationCalendar extends StatelessWidget {
                         : (isMySelected
                         ? const Color(0xffF1F1F5)
                         : Colors.transparent))
-                    // 근무자 확정 후
                         : (isMySelected
                         ? const Color(0xff0084FF)
                         : workerWorkDay
@@ -173,6 +186,7 @@ class ApplicationCalendar extends StatelessWidget {
                         ? const Color(0xff27C840)
                         : Colors.transparent)
                         : Colors.transparent)
+
                         : (isMySelected
                         ? const Color(0xff0084FF)
                         : (myWorkDay && isNextWeek(day))
@@ -191,10 +205,19 @@ class ApplicationCalendar extends StatelessWidget {
                       // 근무자 선택 단계
                       // ==========================
                           : workerMode && showWorkerSelect
-                          ? isWorkerSelected
+                          ? isSubstitute
+                      // ---------- 대타 ----------
+                          ? isMySelected
+                          ? Colors.white
+                          : selectable
+                          ? Colors.black
+                          : const Color(0xffBDBDBD)
+
+                      // ---------- 교대 ----------
+                          : isWorkerSelected
                           ? Colors.white
                           : workerWorkDay
-                          ? const Color(0xff8F8F8F) // ← 회색
+                          ? const Color(0xff8F8F8F)
                           : isMySelected
                           ? const Color(0xff999999)
                           : selectable
@@ -205,12 +228,21 @@ class ApplicationCalendar extends StatelessWidget {
                       // 근무자 확정 이후
                       // ==========================
                           : workerMode
+                          ? isSubstitute
+                      // ---------- 대타 ----------
                           ? isMySelected
+                          ? Colors.white
+                          : selectable
+                          ? Colors.black
+                          : const Color(0xffBDBDBD)
+
+                      // ---------- 교대 ----------
+                          : isMySelected
                           ? Colors.white
                           : isWorkerSelected
                           ? Colors.white
                           : workerWorkDay
-                          ? const Color(0xffBDBDBD) // ← 선택 안 된 상대 근무일은 회색
+                          ? const Color(0xffBDBDBD)
                           : selectable
                           ? Colors.black
                           : const Color(0xffBDBDBD)

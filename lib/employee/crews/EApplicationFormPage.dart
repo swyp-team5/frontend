@@ -1,7 +1,8 @@
 import 'package:chack_chack/employee/crews/widgets/ApplicationCalendar.dart';
 import 'package:chack_chack/employee/crews/widgets/ApplicationForm.dart';
-import 'package:chack_chack/employee/crews/widgets/ConfirmBottomSheet.dart';
+import 'package:chack_chack/employee/crews/widgets/ExchangeConfirmBottomSheet.dart';
 import 'package:chack_chack/employee/crews/widgets/ReasonBottomSheet.dart';
+import 'package:chack_chack/employee/crews/widgets/SubstituteConfirmBottomSheet.dart';
 import 'package:chack_chack/employee/crews/widgets/WorkerInfoCard.dart';
 import 'package:chack_chack/employee/crews/widgets/WorkerSelect.dart';
 import 'package:flutter/material.dart';
@@ -126,16 +127,45 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
   }
 
   bool get canSubmit {
-    final hasSchedule = _selectedDate != null;
 
-    final hasWorker =
-        _workerConfirmed && _selectedWorker != null && _selectedWorkerDate != null;
+    final selectedDate =
+    isSubstitute
+        ? _substituteSelectedDate
+        : _exchangeSelectedDate;
 
-    final hasReason = _selectedReason != null;
+    final selectedWorker =
+    isSubstitute
+        ? _substituteSelectedWorker
+        : _exchangeSelectedWorker;
 
-    // 기타를 선택했으면 내용도 입력해야 함
-    final hasEtc = _selectedReason != "기타" ||
-        (_selectedEtc != null && _selectedEtc!.trim().isNotEmpty);
+    final selectedWorkerDate =
+    isSubstitute
+        ? _substituteSelectedWorkerDate
+        : _exchangeSelectedWorkerDate;
+
+    final selectedReason =
+    isSubstitute
+        ? _substituteSelectedReason
+        : _exchangeSelectedReason;
+
+    final selectedEtc =
+    isSubstitute
+        ? _substituteSelectedEtc
+        : _exchangeSelectedEtc;
+
+    final hasSchedule = selectedDate != null;
+
+    final hasWorker = isSubstitute
+        ? (_workerConfirmed && selectedWorker != null)
+        : (_workerConfirmed &&
+        selectedWorker != null &&
+        selectedWorkerDate != null);
+
+    final hasReason = selectedReason != null;
+
+    final hasEtc =
+        selectedReason != "기타" ||
+            (selectedEtc != null && selectedEtc.trim().isNotEmpty);
 
     return hasSchedule &&
         hasWorker &&
@@ -434,12 +464,36 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
     }
   }
 
+  MyWorkSchedule? getSelectedSubstituteWorkerSchedule() {
+    if (_selectedWorker == null || _selectedDate == null) {
+      return null;
+    }
+
+    final all = [
+      ...worker1Schedules,
+      ...worker2Schedules,
+    ];
+
+    try {
+      return all.firstWhere(
+            (schedule) =>
+        schedule.name == _selectedWorker &&
+            schedule.date.year == _selectedDate!.year &&
+            schedule.date.month == _selectedDate!.month &&
+            schedule.date.day == _selectedDate!.day,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
     final days = buildCalendarDays();
     final selectedSchedule = getSelectedSchedule();
     final selectedWorkerSchedule = getSelectedWorkerSchedule();
+    final substituteWorkerSchedule = getSelectedSubstituteWorkerSchedule();
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -487,6 +541,8 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
                   const SizedBox(height: 28),
 
                   ApplicationCalendar(
+                    isSubstitute: isSubstitute,
+
                     focusedMonth: _focusedMonth,
                     days: days,
 
@@ -619,7 +675,15 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
                 onConfirm: () {
                   setState(() {
                     showWorkerSelect = false;
-                    showWorkerInfo = true;
+
+                    if (isSubstitute) {
+                      // 대타는 이름만 확정하고 바로 신청서로
+                      _workerConfirmed = true;
+                      showWorkerInfo = false;
+                    } else {
+                      // 교대는 기존처럼 근무정보 확인
+                      showWorkerInfo = true;
+                    }
                   });
                 },
               )
@@ -655,8 +719,23 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
                 workerTile: _MenuTile(
                   title: isSubstitute ? "대타 근무자" : "교대 상대 근무자",
 
-                  trailing: _workerConfirmed &&
-                      selectedWorkerSchedule != null
+                  trailing: _workerConfirmed
+                      ? isSubstitute
+                  // ===========================
+                  // 대타 : 이름만 표시
+                  // ===========================
+                      ? Text(
+                    _selectedWorker ?? "",
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  )
+
+                  // ===========================
+                  // 교대 : 이름 + 근무정보 표시
+                  // ===========================
+                      : selectedWorkerSchedule != null
                       ? Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.end,
@@ -680,6 +759,13 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
                         ),
                       ),
                     ],
+                  )
+                      : const Text(
+                    "선택 안함",
+                    style: TextStyle(
+                      color: Color(0xff8F8F8F),
+                      fontSize: 16,
+                    ),
                   )
                       : const Text(
                     "선택 안함",
@@ -747,6 +833,7 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
                       isScrollControlled: true,
                       backgroundColor: Colors.transparent,
                       builder: (_) => ReasonBottomSheet(
+                        isSubstitute: isSubstitute,
                         initialReason: _selectedReason,
                         initialEtc: _selectedEtc,
                       ),
@@ -763,31 +850,110 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
 
                 onSubmit: canSubmit
                     ? () {
-                  showModalBottomSheet(
-                    context: context,
-                    backgroundColor: Colors.transparent,
-                    isScrollControlled: true,
-                    builder: (_) => ConfirmApplicationBottomSheet(
-                      myName: "최세중(나)",
-                      workerName: selectedWorkerSchedule!.name,
-                      myDate:
-                      "${selectedSchedule!.date.month}월 ${selectedSchedule.date.day}일",
-                      workerDate:
-                      "${selectedWorkerSchedule.date.month}월 ${selectedWorkerSchedule.date.day}일",
-                      myTime:
-                      "${selectedSchedule.startTime} - ${selectedSchedule.endTime}",
-                      workerTime:
-                      "${selectedWorkerSchedule.startTime} - ${selectedWorkerSchedule.endTime}",
-                      reason: _selectedReason == "기타"
-                          ? "기타 / $_selectedEtc"
-                          : _selectedReason!,
-                      onConfirm: () {
-                        Navigator.pop(context);
 
-                        // TODO : 신청 API 호출
-                      },
-                    ),
-                  );
+                  // ==========================
+                  // 대타 신청
+                  // ==========================
+
+                  // 내 근무
+                  final mySchedule = getSelectedSchedule();
+
+                  if (mySchedule == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("내 근무를 선택해주세요.")),
+                    );
+                    return;
+                  }
+
+                  if (isSubstitute) {
+
+                    // 대타는 근무자 이름만 있으면 됨
+                    if (_selectedWorker == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("대타 근무자를 선택해주세요.")),
+                      );
+                      return;
+                    }
+
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: Colors.transparent,
+                      isScrollControlled: true,
+                      builder: (_) => SubstituteConfirmBottomSheet(
+                        myName: "최세중(나)",
+
+                        // 이름만 사용
+                        workerName: _selectedWorker!,
+
+                        // 내 근무 정보
+                        myDate:
+                        "${mySchedule.date.month}월 ${mySchedule.date.day}일",
+                        myTime:
+                        "${mySchedule.startTime} - ${mySchedule.endTime}",
+
+                        // 대타는 내 근무를 대신하는 것이므로
+                        // 날짜/시간도 동일
+                        workerDate:
+                        "${mySchedule.date.month}월 ${mySchedule.date.day}일",
+                        workerTime:
+                        "${mySchedule.startTime} - ${mySchedule.endTime}",
+
+                        reason: _selectedReason == "기타"
+                            ? "기타 / $_selectedEtc"
+                            : _selectedReason!,
+
+                        onConfirm: () {
+                          Navigator.pop(context);
+
+                          // TODO : 대타 신청 API
+                        },
+                      ),
+                    );
+
+                  } else {
+
+                    // ==========================
+                    // 교대 신청
+                    // ==========================
+                    final workerSchedule = getSelectedWorkerSchedule();
+
+                    if (workerSchedule == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("교대 근무를 선택해주세요.")),
+                      );
+                      return;
+                    }
+
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: Colors.transparent,
+                      isScrollControlled: true,
+                      builder: (_) => ExchangeConfirmBottomSheet(
+                        myName: "최세중(나)",
+                        workerName: workerSchedule.name,
+
+                        myDate:
+                        "${mySchedule.date.month}월 ${mySchedule.date.day}일",
+                        workerDate:
+                        "${workerSchedule.date.month}월 ${workerSchedule.date.day}일",
+
+                        myTime:
+                        "${mySchedule.startTime} - ${mySchedule.endTime}",
+                        workerTime:
+                        "${workerSchedule.startTime} - ${workerSchedule.endTime}",
+
+                        reason: _selectedReason == "기타"
+                            ? "기타 / $_selectedEtc"
+                            : _selectedReason!,
+
+                        onConfirm: () {
+                          Navigator.pop(context);
+
+                          // TODO : 교대 신청 API
+                        },
+                      ),
+                    );
+                  }
                 }
                     : null,
               ),

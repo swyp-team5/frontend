@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 class ReasonBottomSheet extends StatefulWidget {
   const ReasonBottomSheet({
     super.key,
+    required this.isSubstitute,
     this.initialReason,
     this.initialEtc,
   });
 
+  final bool isSubstitute;
   final String? initialReason;
   final String? initialEtc;
 
@@ -76,8 +78,8 @@ class _ReasonBottomSheetState extends State<ReasonBottomSheet> {
                 children: [
                   const Spacer(),
 
-                  const Text(
-                    "교대 사유",
+                  Text(
+                    widget.isSubstitute ? "대타 사유" : "교대 사유",
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
@@ -98,9 +100,11 @@ class _ReasonBottomSheetState extends State<ReasonBottomSheet> {
 
               const SizedBox(height: 10),
 
-              const Text(
-                "교대 신청 사유를 선택하세요",
-                style: TextStyle(
+              Text(
+                widget.isSubstitute
+                    ? "대타 신청 사유를 선택하세요"
+                    : "교대 신청 사유를 선택하세요",
+                style: const TextStyle(
                   color: Color(0xff8F8F8F),
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
