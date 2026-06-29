@@ -5,6 +5,7 @@ import '../../../common/widgets/BottomNavBar.dart';
 import '../home/EHomePage.dart';
 import '../mypage/EMyPage.dart';
 import '../mypage/EProfileEditPage.dart';
+import 'EApplicationFormPage.dart';
 import 'ECrewDetailPage.dart';
 import 'model/ECrewModel.dart';
 import 'widgets/ECrewCard.dart';
@@ -128,7 +129,7 @@ class _ECrewPageState extends State<ECrewPage> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
-                    vertical: 18,
+                    vertical: 10,
                   ),
                   decoration: BoxDecoration(
                     color: Color(0xFFEEEBFF),
@@ -152,9 +153,26 @@ class _ECrewPageState extends State<ECrewPage> {
                           ),
                         ),
                       ),
-                      Icon(
-                        Icons.chevron_right,
-                        color: Colors.grey.shade500,
+                      IconButton(
+                        icon: Icon(
+                          Icons.chevron_right,
+                          color: Colors.grey.shade500,
+                          size: 22,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(
+                          minWidth: 24,
+                          minHeight: 24,
+                        ),
+                        splashRadius: 18,
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const EApplicationFormPage(),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
