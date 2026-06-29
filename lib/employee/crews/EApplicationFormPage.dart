@@ -36,12 +36,6 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
   bool isSubstitute = false;
 
   late DateTime _focusedMonth;
-  DateTime? _selectedDate;
-  /// 상대 근무자가 선택한 날짜
-  DateTime? _selectedWorkerDate;
-
-  /// 선택한 교대 상대
-  String? _selectedWorker;
 
   /// false = 신청서
   /// true = 근무자 선택 화면
@@ -49,12 +43,87 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
 
   bool _workerMode = false;
 
-  bool _workerConfirmed = false;
+  bool _exchangeWorkerConfirmed = false;
+  bool _substituteWorkerConfirmed = false;
 
   bool showWorkerInfo = false;
 
-  String? _selectedReason;
-  String? _selectedEtc;
+  /// =========================
+  /// 교대 신청 데이터
+  /// =========================
+  DateTime? _exchangeSelectedDate;
+  DateTime? _exchangeSelectedWorkerDate;
+  String? _exchangeSelectedWorker;
+  String? _exchangeSelectedReason;
+  String? _exchangeSelectedEtc;
+
+  /// =========================
+  /// 대타 신청 데이터
+  /// =========================
+  DateTime? _substituteSelectedDate;
+  DateTime? _substituteSelectedWorkerDate;
+  String? _substituteSelectedWorker;
+  String? _substituteSelectedReason;
+  String? _substituteSelectedEtc;
+
+  // =========================
+// 현재 탭에서 사용할 데이터
+// =========================
+
+  DateTime? get _selectedDate =>
+      isSubstitute ? _substituteSelectedDate : _exchangeSelectedDate;
+
+  set _selectedDate(DateTime? value) {
+    if (isSubstitute) {
+      _substituteSelectedDate = value;
+    } else {
+      _exchangeSelectedDate = value;
+    }
+  }
+
+  DateTime? get _selectedWorkerDate =>
+      isSubstitute ? _substituteSelectedWorkerDate : _exchangeSelectedWorkerDate;
+
+  set _selectedWorkerDate(DateTime? value) {
+    if (isSubstitute) {
+      _substituteSelectedWorkerDate = value;
+    } else {
+      _exchangeSelectedWorkerDate = value;
+    }
+  }
+
+  String? get _selectedWorker =>
+      isSubstitute ? _substituteSelectedWorker : _exchangeSelectedWorker;
+
+  set _selectedWorker(String? value) {
+    if (isSubstitute) {
+      _substituteSelectedWorker = value;
+    } else {
+      _exchangeSelectedWorker = value;
+    }
+  }
+
+  String? get _selectedReason =>
+      isSubstitute ? _substituteSelectedReason : _exchangeSelectedReason;
+
+  set _selectedReason(String? value) {
+    if (isSubstitute) {
+      _substituteSelectedReason = value;
+    } else {
+      _exchangeSelectedReason = value;
+    }
+  }
+
+  String? get _selectedEtc =>
+      isSubstitute ? _substituteSelectedEtc : _exchangeSelectedEtc;
+
+  set _selectedEtc(String? value) {
+    if (isSubstitute) {
+      _substituteSelectedEtc = value;
+    } else {
+      _exchangeSelectedEtc = value;
+    }
+  }
 
   bool get canSubmit {
     final hasSchedule = _selectedDate != null;
@@ -72,6 +141,19 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
         hasWorker &&
         hasReason &&
         hasEtc;
+  }
+
+  bool get _workerConfirmed =>
+      isSubstitute
+          ? _substituteWorkerConfirmed
+          : _exchangeWorkerConfirmed;
+
+  set _workerConfirmed(bool value) {
+    if (isSubstitute) {
+      _substituteWorkerConfirmed = value;
+    } else {
+      _exchangeWorkerConfirmed = value;
+    }
   }
 
   /// 내 근무
@@ -174,7 +256,6 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
 
     final mondayNextWeek = getNextMonday();
 
-    _selectedDate = null; // 처음에는 선택 안 함
 
     _focusedMonth = DateTime(
       mondayNextWeek.year,
