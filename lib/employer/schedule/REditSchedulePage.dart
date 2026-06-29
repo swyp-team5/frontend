@@ -6,7 +6,7 @@ import 'Month/RWorkingDetailEditPage.dart';
 
 class RScheduleEditPage extends StatefulWidget {
   final DateTime selectedDate;
-  final Map<String, List<RScheduleWorker>> schedules;
+  final Map<String, List<RScheduleShift>> schedules;
 
   const RScheduleEditPage({
     super.key,
@@ -25,7 +25,6 @@ class _RScheduleEditPageState extends State<RScheduleEditPage> {
   late final DateTime nextMonday;
   late final DateTime nextSunday;
 
-  @override
   @override
   void initState() {
     super.initState();
@@ -68,9 +67,9 @@ class _RScheduleEditPageState extends State<RScheduleEditPage> {
 
   @override
   Widget build(BuildContext context) {
-    final workers =
+    final List<RScheduleShift> shifts =
     selectedDay == null
-        ? <RScheduleWorker>[]
+        ? <RScheduleShift>[]
         : widget.schedules[dateKey(selectedDay!)] ?? [];
 
     return Scaffold(
@@ -243,18 +242,7 @@ class _RScheduleEditPageState extends State<RScheduleEditPage> {
               )
                   : Builder(
                 builder: (_) {
-                  final groupedSchedules =
-                  <String, List<RScheduleWorker>>{};
-
-                  for (final worker in workers) {
-                    final key =
-                        "${worker.role}_${worker.startTime}_${worker.endTime}";
-
-                    groupedSchedules.putIfAbsent(key, () => []);
-                    groupedSchedules[key]!.add(worker);
-                  }
-
-                  final groups = groupedSchedules.values.toList();
+                  final groups = shifts;
 
                   const weekNames = [
                     "월", "화", "수", "목", "금", "토", "일",];
@@ -274,11 +262,10 @@ class _RScheduleEditPageState extends State<RScheduleEditPage> {
 
                       const SizedBox(height: 30),
 
-                      ...groups.map((group) {
-                        final first = group.first;
+                      ...groups.map((shift) {
 
                         final names =
-                        group.map((e) => e.name).join(" · ");
+                        shift.workers.map((e) => e.name).join(" · ");
 
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 30),
@@ -290,7 +277,7 @@ class _RScheduleEditPageState extends State<RScheduleEditPage> {
                                 width: 5,
                                 height: 50,
                                 decoration: BoxDecoration(
-                                  color: roleColor(first.role),
+                                  color: roleColor(shift.role),
                                   borderRadius:
                                   BorderRadius.circular(999),
                                 ),
@@ -304,8 +291,8 @@ class _RScheduleEditPageState extends State<RScheduleEditPage> {
                                   CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      "${first.role} "
-                                          "${first.startTime} - ${first.endTime}",
+                                      "${shift.role} "
+                                          "${shift.startTime} - ${shift.endTime}",
                                       style: const TextStyle(
                                         fontSize: 13,
                                         color: Color(0xFF505050),
@@ -331,12 +318,14 @@ class _RScheduleEditPageState extends State<RScheduleEditPage> {
                                     context,
                                     MaterialPageRoute(
                                       builder: (_) => RWorkingDetailEditPage(
-                                        role: first.role,
-                                        startTime: first.startTime,
-                                        endTime: first.endTime,
-                                        breakTime: first.breakTime,
+                                        role: shift.role,
+                                        startTime: shift.startTime,
+                                        endTime: shift.endTime,
+                                        breakTime: shift.breakTime,
                                         date: selectedDay!, // 선택한 날짜 전달
-                                        workerNames: group.map((e) => e.name).toList(),
+                                        workerNames: shift.workers
+                                            .map((e) => e.name)
+                                            .toList(),
                                       ),
                                     ),
                                   );
@@ -347,9 +336,7 @@ class _RScheduleEditPageState extends State<RScheduleEditPage> {
                                       final newKey = dateKey(result.date);
 
                                       // 기존 날짜에서 그룹 제거
-                                      widget.schedules[oldKey]?.removeWhere(
-                                            (worker) => group.contains(worker),
-                                      );
+                                      widget.schedules[oldKey]?.remove(shift);
 
                                       // 기존 날짜가 비어있으면 삭제
                                       if (widget.schedules[oldKey]?.isEmpty ?? false) {
@@ -360,17 +347,18 @@ class _RScheduleEditPageState extends State<RScheduleEditPage> {
                                       widget.schedules.putIfAbsent(newKey, () => []);
 
                                       // 수정된 그룹 생성
-                                      final updatedWorkers = result.workers.map((name) {
-                                        return RScheduleWorker(
-                                          name: name,
-                                          role: result.role,
-                                          startTime: result.startTime,
-                                          endTime: result.endTime,
-                                          breakTime: result.breakTime,
-                                        );
-                                      }).toList();
+                                      final updatedShift = RScheduleShift(
+                                        role: result.role,
+                                        startTime: result.startTime,
+                                        endTime: result.endTime,
+                                        breakTime: result.breakTime,
+                                        required: shift.required,
+                                        workers: result.workers
+                                            .map((name) => RScheduleWorker(name: name))
+                                            .toList(),
+                                      );
 
-                                      widget.schedules[newKey]!.addAll(updatedWorkers);
+                                      widget.schedules[newKey]!.add(updatedShift);
 
                                       selectedDay = result.date;
                                       focusedDay = result.date;

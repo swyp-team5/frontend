@@ -6,8 +6,8 @@ import 'RMonthAllSchedulePage.dart';
 
 class RMonthAllScheduleBottomSheet extends StatefulWidget {
   final DateTime date;
-  final List<RScheduleWorker> workers;
-  final Map<String, List<RScheduleWorker>> schedules;
+  final List<RScheduleShift> workers;
+  final Map<String, List<RScheduleShift>> schedules;
 
   const RMonthAllScheduleBottomSheet({
     super.key,
@@ -57,17 +57,7 @@ class _RMonthAllScheduleBottomSheetState
 
   @override
   Widget build(BuildContext context) {
-    final groupedSchedules = <String, List<RScheduleWorker>>{};
-
-    for (final worker in widget.workers) {
-      final key =
-          "${worker.role}_${worker.startTime}_${worker.endTime}";
-
-      groupedSchedules.putIfAbsent(key, () => []);
-      groupedSchedules[key]!.add(worker);
-    }
-
-    final groups = groupedSchedules.values.toList();
+    final groups = widget.workers;
 
     return Container(
       height: widget.workers.isEmpty ? 250 : 450,
@@ -165,10 +155,7 @@ class _RMonthAllScheduleBottomSheetState
               separatorBuilder: (_, __) =>
               const SizedBox(height: 20),
               itemBuilder: (_, index) {
-                final group = groups[index];
-                final first = group.first;
-
-                final names = group.map((e) => e.name).join(" · ");
+                final shift = groups[index];
 
                 return Row(
                   crossAxisAlignment:
@@ -178,7 +165,7 @@ class _RMonthAllScheduleBottomSheetState
                       width: 5,
                       height: 58,
                       decoration: BoxDecoration(
-                        color: _workerColor(first),
+                        color: _workerColor(shift),
                         borderRadius:
                         BorderRadius.circular(999),
                       ),
@@ -192,19 +179,37 @@ class _RMonthAllScheduleBottomSheetState
                         CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "${first.role} ${first.startTime} - ${first.endTime}",
+                            "${shift.role} ${shift.startTime} - ${shift.endTime}",
                             style: const TextStyle(
                               fontSize: 14,
                               color: Color(0xFF767676),
                             ),
                           ),
                           const SizedBox(height: 6),
-                          Text(
-                            names,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.black,
+                          RichText(
+                            text: TextSpan(
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: shift.workers
+                                      .map((e) => e.name)
+                                      .join(" · "),
+                                ),
+
+                                if (shift.shortage)
+                                  TextSpan(
+                                    text: " · 근무자 부족 ${shift.shortageCount}명",
+                                    style: const TextStyle(
+                                      color: Color(0xFF767676),
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
                         ],
@@ -222,17 +227,16 @@ class _RMonthAllScheduleBottomSheetState
                         await Navigator.push<WorkingEditResult>(
                           context,
                           MaterialPageRoute(
-                            builder: (_) =>
-                                RWorkingDetailEditPage(
-                                  role: first.role,
-                                  startTime: first.startTime,
-                                  endTime: first.endTime,
-                                  breakTime: first.breakTime,
-                                  date: widget.date,
-                                  workerNames: group
-                                      .map((e) => e.name)
-                                      .toList(),
-                                ),
+                            builder: (_) => RWorkingDetailEditPage(
+                              role: shift.role,
+                              startTime: shift.startTime,
+                              endTime: shift.endTime,
+                              breakTime: shift.breakTime,
+                              date: widget.date,
+                              workerNames: shift.workers
+                                  .map((e) => e.name)
+                                  .toList(),
+                            ),
                           ),
                         );
 
@@ -241,9 +245,7 @@ class _RMonthAllScheduleBottomSheetState
                             final oldKey = dateKey(widget.date);
                             final newKey = dateKey(result.date);
 
-                            widget.schedules[oldKey]?.removeWhere(
-                                  (worker) => group.contains(worker),
-                            );
+                            widget.schedules[oldKey]?.remove(shift);
 
                             if (widget.schedules[oldKey]?.isEmpty ?? false) {
                               widget.schedules.remove(oldKey);
@@ -251,17 +253,18 @@ class _RMonthAllScheduleBottomSheetState
 
                             widget.schedules.putIfAbsent(newKey, () => []);
 
-                            final updatedWorkers = result.workers.map((name) {
-                              return RScheduleWorker(
-                                name: name,
-                                role: result.role,
-                                startTime: result.startTime,
-                                endTime: result.endTime,
-                                breakTime: result.breakTime,
-                              );
-                            }).toList();
+                            final updatedShift = RScheduleShift(
+                              role: result.role,
+                              startTime: result.startTime,
+                              endTime: result.endTime,
+                              breakTime: result.breakTime,
+                              required: shift.required, // 기존 필요인원 유지
+                              workers: result.workers
+                                  .map((e) => RScheduleWorker(name: e))
+                                  .toList(),
+                            );
 
-                            widget.schedules[newKey]!.addAll(updatedWorkers);
+                            widget.schedules[newKey]!.add(updatedShift);
                           });
                         }
                       },
@@ -287,24 +290,24 @@ class _RMonthAllScheduleBottomSheetState
                       backgroundColor: Colors.transparent,
                       builder: (_) {
                         return RDeleteWorkingBottomSheet(
-                          works: groups.map((group) {
-                            final first = group.first;
-
+                          works: groups.map((shift) {
                             return DeleteWorkItem(
-                              role: first.role,
-                              startTime: first.startTime,
-                              endTime: first.endTime,
-                              workers: group.map((e) => e.name).toList(),
+                              role: shift.role,
+                              startTime: shift.startTime,
+                              endTime: shift.endTime,
+                              workers: shift.workers
+                                  .map((e) => e.name)
+                                  .toList(),
                             );
                           }).toList(),
 
                           onDelete: (selected) {
                             setState(() {
                               for (final index in selected.reversed) {
-                                final group = groups[index];
+                                final shift = groups[index];
 
                                 widget.schedules[dateKey(widget.date)]
-                                    ?.removeWhere((worker) => group.contains(worker));
+                                    ?.remove(shift);
                               }
                             });
 
@@ -340,19 +343,24 @@ class _RMonthAllScheduleBottomSheetState
     );
   }
 
-  Color _workerColor(RScheduleWorker worker) {
-    switch (worker.role) {
+  Color _workerColor(RScheduleShift shift) {
+    // 부족하면 빨간색
+    if (shift.shortage) {
+      return const Color(0xFFFF5D5D);
+    }
+
+    switch (shift.role) {
       case "오픈":
-        return const Color(0xFFE6F3FF);
+        return const Color(0xFFBFE1FF);
 
       case "미들":
-        return const Color(0xFFEEEBFF);
+        return const Color(0xFFD8D1FE);
 
       case "마감":
-        return const Color(0xFFDCFED8);
+        return const Color(0xFFACFBC1);
 
       default:
-        return const Color(0xFFE6F3FF);
+        return const Color(0xFFBDBDBD);
     }
   }
 }

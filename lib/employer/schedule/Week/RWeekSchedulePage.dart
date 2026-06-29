@@ -9,7 +9,7 @@ class RWeekSchedulePage extends StatelessWidget {
   final ValueChanged<DateTime> onDateChanged;
 
   /// yyyy-MM-dd -> 근무목록
-  final Map<String, List<RScheduleWorker>> schedules;
+  final Map<String, List<RScheduleShift>> schedules;
 
   /// 휴무일
   final Set<String> holidays;

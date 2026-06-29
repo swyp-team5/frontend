@@ -33,43 +33,165 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
 
 
   /// API 연동 전 더미 데이터
-  final Map<String, List<RScheduleWorker>> allSchedules = {
+  final Map<String, List<RScheduleShift>> allSchedules = {
     "2026-06-23": [
-      RScheduleWorker(name: "김지연", startTime: "09:00", endTime: "11:00", role: "오픈",),
-      RScheduleWorker(name: "이다빈", startTime: "09:00", endTime: "11:00", role: "오픈",),
-      RScheduleWorker(name: "박춘식", startTime: "12:00", endTime: "16:00", role: "미들",),
-      RScheduleWorker(name: "홍길동", startTime: "16:00", endTime: "20:00", role: "마감",),
-      RScheduleWorker(name: "최민수", startTime: "16:00", endTime: "20:00", role: "마감",),
+      RScheduleShift(
+        startTime: "09:00",
+        endTime: "11:00",
+        role: "오픈",
+        required: 2,
+        workers: const [
+          RScheduleWorker(name: "김지연"),
+          RScheduleWorker(name: "이다빈"),
+        ],
+      ),
+      RScheduleShift(
+        startTime: "12:00",
+        endTime: "16:00",
+        role: "미들",
+        required: 1,
+        workers: const [
+          RScheduleWorker(name: "박춘식"),
+        ],
+      ),
+      RScheduleShift(
+        startTime: "16:00",
+        endTime: "20:00",
+        role: "마감",
+        required: 2,
+        workers: const [
+          RScheduleWorker(name: "홍길동"),
+          RScheduleWorker(name: "최민수"),
+        ],
+      ),
     ],
 
     "2026-06-24": [
-      RScheduleWorker(name: "이다빈", startTime: "10:00", endTime: "13:00", role: "오픈",),
-      RScheduleWorker(name: "박춘식", startTime: "12:00", endTime: "16:00", role: "미들",),
-      RScheduleWorker(name: "서지훈", startTime: "12:00", endTime: "16:00", role: "미들",),
+      RScheduleShift(
+        startTime: "10:00",
+        endTime: "13:00",
+        role: "오픈",
+        required: 1,
+        workers: const [
+          RScheduleWorker(name: "이다빈"),
+        ],
+      ),
+      RScheduleShift(
+        startTime: "12:00",
+        endTime: "16:00",
+        role: "미들",
+        required: 2,
+        workers: const [
+          RScheduleWorker(name: "박춘식"),
+          RScheduleWorker(name: "서지훈"),
+        ],
+      ),
     ],
 
     "2026-06-25": [
-      RScheduleWorker(name: "이다빈", startTime: "10:00", endTime: "14:00", role: "오픈",),
-      RScheduleWorker(name: "김지연", startTime: "10:00", endTime: "14:00", role: "오픈",),
-      RScheduleWorker(name: "박춘식", startTime: "14:00", endTime: "16:00", role: "미들",),
-      RScheduleWorker(name: "강민석", startTime: "14:00", endTime: "16:00", role: "미들",),
-      RScheduleWorker(name: "서지훈", startTime: "14:00", endTime: "16:00", role: "미들",),
-      RScheduleWorker(name: "정은우", startTime: "16:00", endTime: "20:00", role: "마감",),
+      RScheduleShift(
+        startTime: "10:00",
+        endTime: "14:00",
+        role: "오픈",
+        required: 2,
+        workers: const [
+          RScheduleWorker(name: "이다빈"),
+          RScheduleWorker(name: "김지연"),
+        ],
+      ),
+      RScheduleShift(
+        startTime: "14:00",
+        endTime: "16:00",
+        role: "미들",
+        required: 3,
+        workers: const [
+          RScheduleWorker(name: "박춘식"),
+          RScheduleWorker(name: "강민석"),
+          RScheduleWorker(name: "서지훈"),
+        ],
+      ),
+      RScheduleShift(
+        startTime: "16:00",
+        endTime: "20:00",
+        role: "마감",
+        required: 1,
+        workers: const [
+          RScheduleWorker(name: "정은우"),
+        ],
+      ),
     ],
 
     "2026-06-30": [
-      RScheduleWorker(name: "이다빈", startTime: "10:00", endTime: "14:00", role: "오픈",),
-      RScheduleWorker(name: "김지연", startTime: "10:00", endTime: "14:00", role: "오픈",),
-      RScheduleWorker(name: "박춘식", startTime: "14:00", endTime: "16:00", role: "미들",),
-      RScheduleWorker(name: "강민석", startTime: "14:00", endTime: "16:00", role: "미들",),
-      RScheduleWorker(name: "서지훈", startTime: "14:00", endTime: "16:00", role: "미들",),
-      RScheduleWorker(name: "정은우", startTime: "16:00", endTime: "20:00", role: "마감",),
+      RScheduleShift(
+        startTime: "10:00",
+        endTime: "14:00",
+        role: "오픈",
+        required: 2,
+        workers: const [
+          RScheduleWorker(name: "이다빈"),
+          RScheduleWorker(name: "김지연"),
+        ],
+      ),
+      RScheduleShift(
+        startTime: "14:00",
+        endTime: "16:00",
+        role: "미들",
+        required: 3,
+        workers: const [
+          RScheduleWorker(name: "박춘식"),
+          RScheduleWorker(name: "강민석"),
+          RScheduleWorker(name: "서지훈"),
+        ],
+      ),
+      RScheduleShift(
+        startTime: "16:00",
+        endTime: "20:00",
+        role: "마감",
+        required: 1,
+        workers: const [
+          RScheduleWorker(name: "정은우"),
+        ],
+      ),
+    ],
+
+    "2026-07-01": [
+      // 오픈 1명 부족 (필요 3명 / 실제 2명)
+      RScheduleShift(
+        startTime: "10:00",
+        endTime: "14:00",
+        role: "오픈",
+        required: 3,
+        workers: const [
+          RScheduleWorker(name: "이다빈"),
+          RScheduleWorker(name: "김지연"),
+        ],
+      ),
+      RScheduleShift(
+        startTime: "14:00",
+        endTime: "16:00",
+        role: "미들",
+        required: 3,
+        workers: const [
+          RScheduleWorker(name: "박춘식"),
+          RScheduleWorker(name: "강민석"),
+          RScheduleWorker(name: "서지훈"),
+        ],
+      ),
+      RScheduleShift(
+        startTime: "16:00",
+        endTime: "20:00",
+        role: "마감",
+        required: 1,
+        workers: const [
+          RScheduleWorker(name: "정은우"),
+        ],
+      ),
     ],
   };
 
   /// 휴무일 더미 데이터
   final Set<String> holidays = {
-    "2026-06-22",
+    "2026-06-22", "2026-06-29",
   };
 
 
@@ -208,17 +330,18 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
 
                                   allSchedules.putIfAbsent(key, () => []);
 
-                                  for (final worker in schedule.workers) {
-                                    allSchedules[key]!.add(
-                                      RScheduleWorker(
-                                        name: worker,
-                                        startTime: schedule.startTime,
-                                        endTime: schedule.endTime,
-                                        role: schedule.workName,
-                                        breakTime: schedule.breakTime,
-                                      ),
-                                    );
-                                  }
+                                  allSchedules[key]!.add(
+                                    RScheduleShift(
+                                      startTime: schedule.startTime,
+                                      endTime: schedule.endTime,
+                                      role: schedule.workName,
+                                      breakTime: schedule.breakTime,
+                                      required: schedule.workers.length,
+                                      workers: schedule.workers
+                                          .map((name) => RScheduleWorker(name: name))
+                                          .toList(),
+                                    ),
+                                  );
                                 }
                               });
                             }

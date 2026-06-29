@@ -7,7 +7,7 @@ class RWeekGrid extends StatelessWidget {
   final List<DateTime> weekDates;
 
   /// yyyy-MM-dd -> 근무 목록
-  final Map<String, List<RScheduleWorker>> schedules;
+  final Map<String, List<RScheduleShift>> schedules;
 
   /// 휴무일
   final Set<String> holidays;
@@ -44,8 +44,8 @@ class RWeekGrid extends StatelessWidget {
     int min = 23;
 
     for (final day in schedules.values) {
-      for (final worker in day) {
-        final hour = _hour(worker.startTime);
+      for (final shift in day) {
+        final hour = _hour(shift.startTime);
 
         if (hour < min) {
           min = hour;
@@ -60,8 +60,8 @@ class RWeekGrid extends StatelessWidget {
     int max = 0;
 
     for (final day in schedules.values) {
-      for (final worker in day) {
-        final hour = _hour(worker.endTime);
+      for (final shift in day) {
+        final hour = _hour(shift.endTime);
 
         if (hour > max) {
           max = hour;
@@ -126,7 +126,7 @@ class RWeekGrid extends StatelessWidget {
                   final date = weekDates[dayIndex];
                   final key = _dateKey(date);
 
-                  final workers = schedules[key] ?? [];
+                  final shifts = schedules[key] ?? [];
 
                   final isHoliday = holidays.contains(key);
 
@@ -196,24 +196,26 @@ class RWeekGrid extends StatelessWidget {
                           //       );
                           //     },
                           //   ),
-                          if (!isHoliday && workers.isNotEmpty)
+                          if (!isHoliday && shifts.isNotEmpty)
                             ...(() {
-                              /// role별 그룹
-                              final Map<String, List<RScheduleWorker>> roleGroups = {};
 
-                              for (final worker in workers) {
-                                roleGroups.putIfAbsent(worker.role, () => []);
-                                roleGroups[worker.role]!.add(worker);
+                              /// 역할별 그룹핑
+                              final Map<String, List<RScheduleShift>> grouped = {};
+
+                              for (final shift in shifts) {
+                                grouped.putIfAbsent(shift.role, () => []);
+                                grouped[shift.role]!.add(shift);
                               }
 
-                              return roleGroups.entries.map((entry) {
-                                final roleWorkers = entry.value;
+                              return grouped.entries.map((entry) {
 
-                                final start = roleWorkers
+                                final roleShifts = entry.value;
+
+                                final start = roleShifts
                                     .map((e) => _timeToPosition(e.startTime, startHour))
                                     .reduce((a, b) => a < b ? a : b);
 
-                                final end = roleWorkers
+                                final end = roleShifts
                                     .map((e) => _timeToPosition(e.endTime, startHour))
                                     .reduce((a, b) => a > b ? a : b);
 
@@ -223,10 +225,11 @@ class RWeekGrid extends StatelessWidget {
                                   right: 0,
                                   height: (end - start) * halfHourHeight,
                                   child: RWeekScheduleCard(
-                                    workers: roleWorkers,
+                                    shifts: roleShifts,
                                   ),
                                 );
                               }).toList();
+
                             })(),
                         ],
                       ),

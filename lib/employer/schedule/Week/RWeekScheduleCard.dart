@@ -1,26 +1,22 @@
 import 'package:flutter/material.dart';
 import '../Month/RMonthAllSchedulePage.dart';
 
-
 class RWeekScheduleCard extends StatelessWidget {
-  final List<RScheduleWorker> workers;
+  final List<RScheduleShift> shifts;
 
   const RWeekScheduleCard({
     super.key,
-    required this.workers,
+    required this.shifts,
   });
 
   Color _backgroundColor(String role) {
     switch (role) {
       case "오픈":
         return const Color(0xFFE6F3FF);
-
       case "미들":
         return const Color(0xFFEEEBFF);
-
       case "마감":
         return const Color(0xFFDCFED8);
-
       default:
         return Colors.grey.shade200;
     }
@@ -30,13 +26,10 @@ class RWeekScheduleCard extends StatelessWidget {
     switch (role) {
       case "오픈":
         return const Color(0xFF0063BF);
-
       case "미들":
         return const Color(0xFF7D67FD);
-
       case "마감":
         return const Color(0xFF007360);
-
       default:
         return Colors.black87;
     }
@@ -44,68 +37,72 @@ class RWeekScheduleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (workers.isEmpty) {
+    if (shifts.isEmpty) {
       return const SizedBox();
     }
 
-    /// 가장 빠른 시작시간
-    workers.sort((a, b) => a.startTime.compareTo(b.startTime));
-
-    final first = workers.first;
+    final first = shifts.first;
 
     final role = first.role;
 
-    final last = workers.reduce(
-          (a, b) =>
-      a.endTime.compareTo(b.endTime) > 0 ? a : b,
-    );
+    final hasShortage = shifts.any((e) => e.shortage);
 
-    final names = workers.map((e) => e.name).join("\n");
+    final shortageCount =
+    shifts.fold<int>(0, (sum, e) => sum + e.shortageCount);
+
+    final names = shifts
+        .expand((e) => e.workers)
+        .map((e) => e.name)
+        .join("\n");
 
     return Container(
       width: double.infinity,
       height: double.infinity,
-      margin: EdgeInsets.zero,
-      padding: EdgeInsets.zero,
-      decoration: BoxDecoration(
-        color: _backgroundColor(role),
-      ),
+      color: hasShortage
+          ? const Color(0xFFFF4646)
+          : _backgroundColor(role),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // 시간을 표시하고 싶으면 주석 해제
-            /*
-        Text(
-          "${first.startTime}\n~\n${last.endTime}",
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 9,
-            fontWeight: FontWeight.w600,
-            color: _textColor(first.role),
-          ),
-        ),
 
-        const SizedBox(height: 6),
-        */
-
-            Expanded(
-              child: Center(
-                child: Text(
-                  names,
-                  textAlign: TextAlign.center,
-                  maxLines: 10,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 11,
-                    //height: 1.2,
-                    fontWeight: FontWeight.w500,
-                    color: _textColor(role),
-                  ),
-                ),
+            /// 근무자 이름
+            Text(
+              names,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: hasShortage
+                    ? Colors.white
+                    : _textColor(role),
               ),
             ),
+
+            /// 부족 인원 표시
+            if (hasShortage) ...[
+              const SizedBox(height: 10),
+
+              const Text(
+                "인원",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+
+              Text(
+                "${shortageCount}명 부족",
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ],
         ),
       ),

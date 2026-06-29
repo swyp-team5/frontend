@@ -3,19 +3,35 @@ import 'package:flutter/material.dart';
 import 'RMonthAllScheduleBottomSheet.dart';
 
 class RScheduleWorker {
-  String name;
+  final String name;
+
+  const RScheduleWorker({
+    required this.name,
+  });
+}
+
+class RScheduleShift {
   String startTime;
   String endTime;
   String role;
   String breakTime;
+  final int required;  // 필요한 인원
+  final List<RScheduleWorker> workers;  // 실제 근무 가능한 직원
 
-  RScheduleWorker({
-    required this.name,
+  RScheduleShift({
     required this.startTime,
     required this.endTime,
     required this.role,
     this.breakTime = "없음",
+    required this.required,
+    required this.workers,
   });
+
+  int get assigned => workers.length;
+
+  bool get shortage => assigned < required;
+
+  int get shortageCount => required - assigned;
 }
 
 class RMonthAllSchedulePage extends StatefulWidget {
@@ -23,7 +39,7 @@ class RMonthAllSchedulePage extends StatefulWidget {
   final ValueChanged<DateTime> onDateChanged;
 
   /// API 응답
-  final Map<String, List<RScheduleWorker>> schedules;
+  final Map<String, List<RScheduleShift>> schedules;
 
   const RMonthAllSchedulePage({
     super.key,
@@ -147,6 +163,8 @@ class _RMonthAllSchedulePageState
 
                     final workers = widget.schedules[_dateKey(date)] ?? [];
 
+                    final hasShortage = workers.any((shift) => shift.shortage);
+
                     return GestureDetector(
                       onTap: () async {
 
@@ -171,12 +189,20 @@ class _RMonthAllSchedulePageState
                           top: 8, left: 4, right: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: isSelected
+                          color: hasShortage
+                              ? const Color(0x33FF2115)
+                              : isSelected
                               ? const Color(0xFFF2F8FF)
                               : Colors.white,
-                          border: Border(
+
+                          border: hasShortage
+                              ? Border.all(
+                            color: const Color(0xFFFF2115),
+                            width: 1,
+                          )
+                              : Border(
                             top: BorderSide(
-                              color: const Color(0xFFE9E9EE,),
+                              color: const Color(0xFFE9E9EE),
                               width: row == 0 ? 0 : 1,
                             ),
                           ),
@@ -221,7 +247,7 @@ class _RMonthAllSchedulePageState
 }
 
 class _WorkerScheduleArea extends StatelessWidget {
-  final List<RScheduleWorker> workers;
+  final List<RScheduleShift> workers;
 
   const _WorkerScheduleArea({
     required this.workers,
@@ -233,25 +259,37 @@ class _WorkerScheduleArea extends StatelessWidget {
       return const SizedBox();
     }
 
+    final allWorkers = <MapEntry<RScheduleWorker, String>>[];
+
+    for (final shift in workers) {
+      for (final worker in shift.workers) {
+        allWorkers.add(
+          MapEntry(worker, shift.role),
+        );
+      }
+    }
+
     final visibleWorkers =
-    workers.length >= 5
-        ? workers.take(3).toList()
-        : workers;
+    allWorkers.length >= 5
+        ? allWorkers.take(3).toList()
+        : allWorkers;
 
     final remainCount =
-    workers.length >= 5
-        ? workers.length - 3
+    allWorkers.length >= 5
+        ? allWorkers.length - 3
         : 0;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (final worker in visibleWorkers)
+        for (final item in visibleWorkers)
           Padding(
             padding: const EdgeInsets.only(bottom: 1),
-            child: _WorkerChip(worker: worker),
+            child: _WorkerChip(
+              worker: item.key,
+              role: item.value,
+            ),
           ),
-
         if (remainCount > 0)
           Text(
             "+$remainCount",
@@ -268,13 +306,15 @@ class _WorkerScheduleArea extends StatelessWidget {
 
 class _WorkerChip extends StatelessWidget {
   final RScheduleWorker worker;
+  final String role;
 
   const _WorkerChip({
     required this.worker,
+    required this.role,
   });
 
   Color get backgroundColor {
-    switch (worker.role) {
+    switch (role) {
       case "오픈":
         return const Color(0xFFE6F3FF);
 
@@ -290,7 +330,7 @@ class _WorkerChip extends StatelessWidget {
   }
 
   Color get textColor {
-    switch (worker.role) {
+    switch (role) {
       case "오픈":
         return const Color(0xFF0063BF);
 
@@ -310,12 +350,12 @@ class _WorkerChip extends StatelessWidget {
     return Container(
       height: 18,
       padding: const EdgeInsets.symmetric(
-          horizontal: 6, vertical: 1
+        horizontal: 6,
+        vertical: 1,
       ),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius:
-        BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(8),
       ),
       alignment: Alignment.center,
       child: Text(
