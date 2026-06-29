@@ -49,8 +49,8 @@ class _EHomePageState extends State<EHomePage> {
 
   /// TODO-null이면 실제 로직 사용
   /// 매주 스케줄(다음주 스케줄 제출 요청)
-  static const HomeCardType? debugCardType =
-      HomeCardType.weeklySchedule;
+  // static const HomeCardType? debugCardType =
+  //     HomeCardType.weeklySchedule;
 
   /// 스케줄 완성
   // static const HomeCardType? debugCardType =
@@ -65,8 +65,8 @@ class _EHomePageState extends State<EHomePage> {
   //     HomeCardType.shiftRequest;
 
   /// 대타근무 요청
-  // static const HomeCardType? debugCardType =
-  //     HomeCardType.substituteRequest;
+  static const HomeCardType? debugCardType =
+      HomeCardType.substituteRequest;
 
   /// 사장님 근무 요청
   // static const HomeCardType? debugCardType =

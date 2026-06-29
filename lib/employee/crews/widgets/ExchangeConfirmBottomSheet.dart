@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../common/employee/EShiftApplicationComplete.dart';
+import '../../../common/employee/EExchangeApplicationComplete.dart';
 
 class ExchangeConfirmBottomSheet extends StatelessWidget {
   const ExchangeConfirmBottomSheet({
@@ -257,7 +257,7 @@ class ExchangeConfirmBottomSheet extends StatelessWidget {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const EShiftApplicationComplete(),
+                            builder: (_) => const EExchangeApplicationComplete(),
                           ),
                         );
                       },

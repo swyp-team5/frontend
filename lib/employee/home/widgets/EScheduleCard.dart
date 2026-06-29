@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../EHomePage.dart';
+import '../application/ExchangeRequest.dart';
+import '../application/SubstituteRequest.dart';
 
 class EScheduleCard extends StatelessWidget {
   final HomeCardType type;
@@ -256,9 +258,40 @@ class EScheduleCard extends StatelessWidget {
 
                   Padding(
                     padding: const EdgeInsets.only(left: 5),
-                    child: InkWell(
-                      onTap: onDetailTap,
+                    child: TextButton(
+                      onPressed: () {
+                        switch (type) {
+                          case HomeCardType.shiftRequest:
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const ExchangeRequest(),
+                              ),
+                            );
+                            break;
+
+                          case HomeCardType.substituteRequest:
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const SubstituteRequest(),
+                              ),
+                            );
+                            break;
+
+                          default:
+                            onDetailTap?.call();
+                        }
+                      },
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.zero,
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        alignment: Alignment.centerLeft,
+                        foregroundColor: detailColor,
+                      ),
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             "자세히 보기",

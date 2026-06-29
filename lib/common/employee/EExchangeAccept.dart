@@ -1,8 +1,8 @@
 import 'package:chack_chack/employee/home/EHomePage.dart';
 import 'package:flutter/material.dart';
 
-class EShiftApplicationComplete extends StatelessWidget {
-  const EShiftApplicationComplete({
+class EExchangeAccept extends StatelessWidget {
+  const EExchangeAccept({
     super.key,
   });
 
@@ -22,13 +22,13 @@ class EShiftApplicationComplete extends StatelessWidget {
                 width: 200,
                 height: 200,
                 child: Image.asset(
-                  "assets/images/shift_complete.png",
+                  "assets/images/accept.png",
                   fit: BoxFit.contain,
                 ),
               ),
 
               const Text(
-                "교대 신청이\n완료되었어요!",
+                "교대 신청이\n수락되었어요!",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 24,
@@ -41,7 +41,7 @@ class EShiftApplicationComplete extends StatelessWidget {
               const SizedBox(height: 20),
 
               const Text(
-                "상대 근무자가 요청을 수락하면\n사장님께 근무 변경 승인 요청이 전송돼요",
+                "사장님께 근무 변경 요청이 전송되어\n최종 수락 시 스케줄이 변동돼요",
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 15,

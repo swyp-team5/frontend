@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../../common/employee/EShiftApplicationComplete.dart';
-import '../../../common/employee/ESubstituteApplicationComplete.dart';
+import '../../../common/employee/ESubstitueAccept.dart';
 
 class SubstituteConfirmBottomSheet extends StatelessWidget {
   const SubstituteConfirmBottomSheet({
@@ -274,7 +273,7 @@ class SubstituteConfirmBottomSheet extends StatelessWidget {
                         Navigator.pushReplacement(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const ESubstituteApplicationComplete(),
+                            builder: (_) => const ESubstituteAccept(),
                           ),
                         );
                       },
