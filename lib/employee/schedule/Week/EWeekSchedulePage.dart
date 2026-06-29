@@ -12,7 +12,7 @@ class EWeekSchedulePage extends StatelessWidget {
   final Map<String, List<MySchedule>> monthSchedules;
 
   /// 전체 스케줄
-  final Map<String, List<ScheduleWorker>> allSchedules;
+  final Map<String, List<ScheduleShift>> allSchedules;
 
   /// 휴무일
   final Set<String> holidays;

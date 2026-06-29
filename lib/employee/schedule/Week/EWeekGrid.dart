@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../Month/AllSchedule/EMonthAllSchedulePage.dart';
+import '../Month/MySchedule/EMonthMyScheduleBottomSheet.dart';
+import 'EWeekAllScheduleCard.dart';
 import 'EWeekScheduleCard.dart';
 
 class EWeekGrid extends StatelessWidget {
@@ -200,42 +203,76 @@ class EWeekGrid extends StatelessWidget {
                           //   ),
                           if (!isHoliday && workers.isNotEmpty)
                             ...(() {
-                              final Map<String, List<dynamic>> grouped = {};
+                              if (isAllView) {
+                                /// =========================
+                                /// 전체보기
+                                /// =========================
+                                final Map<String, List<ScheduleShift>> grouped = {};
 
-                              // role별 그룹핑
-                              for (final worker in workers) {
-                                grouped.putIfAbsent(worker.role, () => []);
-                                grouped[worker.role]!.add(worker);
+                                for (final shift in workers.cast<ScheduleShift>()) {
+                                  grouped.putIfAbsent(shift.role, () => []);
+                                  grouped[shift.role]!.add(shift);
+                                }
+
+                                return grouped.entries.map((entry) {
+                                  final roleWorkers = entry.value;
+
+                                  final start = roleWorkers
+                                      .map((e) => _timeToPosition(
+                                    e.startTime,
+                                    startHour,
+                                  ))
+                                      .reduce((a, b) => a < b ? a : b);
+
+                                  final end = roleWorkers
+                                      .map((e) => _timeToPosition(
+                                    e.endTime,
+                                    startHour,
+                                  ))
+                                      .reduce((a, b) => a > b ? a : b);
+
+                                  return Positioned(
+                                    top: start * halfHourHeight,
+                                    left: 0,
+                                    right: 0,
+                                    height: (end - start) * halfHourHeight,
+                                    child: EWeekAllScheduleCard(
+                                      workers: roleWorkers,
+                                    ),
+                                  );
+                                }).toList();
                               }
 
-                              return grouped.entries.map((entry) {
-                                final roleWorkers = entry.value;
+                              /// =========================
+                              /// 개인보기
+                              /// =========================
+                              final myWorkers = workers.cast<MySchedule>();
 
-                                final start = roleWorkers
-                                    .map((e) => _timeToPosition(
-                                  e.startTime,
-                                  startHour,
-                                ))
-                                    .reduce((a, b) => a < b ? a : b);
+                              final start = myWorkers
+                                  .map((e) => _timeToPosition(
+                                e.startTime,
+                                startHour,
+                              ))
+                                  .reduce((a, b) => a < b ? a : b);
 
-                                final end = roleWorkers
-                                    .map((e) => _timeToPosition(
-                                  e.endTime,
-                                  startHour,
-                                ))
-                                    .reduce((a, b) => a > b ? a : b);
+                              final end = myWorkers
+                                  .map((e) => _timeToPosition(
+                                e.endTime,
+                                startHour,
+                              ))
+                                  .reduce((a, b) => a > b ? a : b);
 
-                                return Positioned(
+                              return [
+                                Positioned(
                                   top: start * halfHourHeight,
                                   left: 0,
                                   right: 0,
                                   height: (end - start) * halfHourHeight,
                                   child: EWeekScheduleCard(
-                                    workers: roleWorkers,
-                                    isAllView: isAllView,
+                                    workers: myWorkers,
                                   ),
-                                );
-                              }).toList();
+                                ),
+                              ];
                             })(),
                         ],
                       ),

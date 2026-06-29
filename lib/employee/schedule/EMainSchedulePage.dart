@@ -50,30 +50,114 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
     "2026-06-23": [
       MySchedule(name: "이다빈", startTime: "12:00", endTime: "16:00", role: "미들")
     ],
+    "2026-07-01": [
+      MySchedule(name: "이다빈", startTime: "12:00", endTime: "16:00", role: "미들")
+    ],
   };
 
-  final Map<String, List<ScheduleWorker>> allSchedules = {
+  Map<String, List<ScheduleShift>> allSchedules = {
     "2026-06-23": [
-      ScheduleWorker(name: "김지연", startTime: "09:00", endTime: "12:00", role: "오픈"),
-      ScheduleWorker(name: "이다빈", startTime: "09:00", endTime: "12:00", role: "오픈"),
-      ScheduleWorker(name: "박춘식", startTime: "12:00", endTime: "16:00", role: "미들"),
-      ScheduleWorker(name: "홍길동", startTime: "12:00", endTime: "16:00", role: "미들"),
-      ScheduleWorker(name: "최민수", startTime: "16:00", endTime: "20:00", role: "마감"),
+      ScheduleShift(
+        role: "오픈",
+        startTime: "09:00",
+        endTime: "12:00",
+        required: 2,
+        workers: const [
+          ScheduleWorker(name: "김지연"),
+          ScheduleWorker(name: "이다빈"),
+        ],
+      ),
+      ScheduleShift(
+        role: "미들",
+        startTime: "12:00",
+        endTime: "16:00",
+        required: 2,
+        workers: const [
+          ScheduleWorker(name: "박춘식"),
+          ScheduleWorker(name: "홍길동"),
+        ],
+      ),
+      ScheduleShift(
+        role: "마감",
+        startTime: "16:00",
+        endTime: "20:00",
+        required: 1,
+        workers: const [
+          ScheduleWorker(name: "최민수"),
+        ],
+      ),
     ],
 
     "2026-06-25": [
-      ScheduleWorker(name: "이다빈", startTime: "09:00", endTime: "12:00", role: "오픈"),
-      ScheduleWorker(name: "김지연", startTime: "09:00", endTime: "12:00", role: "오픈"),
-      ScheduleWorker(name: "박춘식", startTime: "12:00", endTime: "16:00", role: "미들"),
-      ScheduleWorker(name: "강민석", startTime: "12:00", endTime: "16:00", role: "미들"),
-      ScheduleWorker(name: "서지훈", startTime: "16:00", endTime: "19:00", role: "마감"),
-      ScheduleWorker(name: "정은우", startTime: "16:00", endTime: "20:00", role: "마감"),
+      ScheduleShift(
+        role: "오픈",
+        startTime: "09:00",
+        endTime: "12:00",
+        required: 2,
+        workers: const [
+          ScheduleWorker(name: "이다빈"),
+          ScheduleWorker(name: "김지연"),
+        ],
+      ),
+      ScheduleShift(
+        role: "미들",
+        startTime: "12:00",
+        endTime: "16:00",
+        required: 2,
+        workers: const [
+          ScheduleWorker(name: "박춘식"),
+          ScheduleWorker(name: "강민석"),
+        ],
+      ),
+      ScheduleShift(
+        role: "마감",
+        startTime: "16:00",
+        endTime: "20:00",
+        required: 2,
+        workers: const [
+          ScheduleWorker(name: "서지훈"),
+          ScheduleWorker(name: "정은우"),
+        ],
+      ),
+    ],
+
+    // 7월 1일 - 오픈 인원 부족
+    "2026-07-01": [
+      ScheduleShift(
+        role: "오픈",
+        startTime: "09:00",
+        endTime: "12:00",
+        required: 2,
+        workers: const [
+          ScheduleWorker(name: "이다빈"), // 1명만 배정 → 1명 부족
+        ],
+      ),
+      ScheduleShift(
+        role: "미들",
+        startTime: "12:00",
+        endTime: "16:00",
+        required: 2,
+        workers: const [
+          ScheduleWorker(name: "박춘식"),
+          ScheduleWorker(name: "강민석"),
+        ],
+      ),
+      ScheduleShift(
+        role: "마감",
+        startTime: "16:00",
+        endTime: "20:00",
+        required: 2,
+        workers: const [
+          ScheduleWorker(name: "서지훈"),
+          ScheduleWorker(name: "정은우"),
+        ],
+      ),
     ],
   };
 
   /// 휴무일 더미 데이터
   final Set<String> holidays = {
-    "2026-06-22",
+    "2026-06-22", "2026-06-29",
   };
 
   bool isAllViewSelected = false;

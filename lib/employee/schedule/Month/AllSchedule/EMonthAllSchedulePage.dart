@@ -4,16 +4,32 @@ import 'EMonthAllScheduleBottomSheet.dart';
 
 class ScheduleWorker {
   final String name;
-  final String startTime;
-  final String endTime;
-  final String role;
 
   const ScheduleWorker({
     required this.name,
+  });
+}
+
+class ScheduleShift {
+  final String startTime;
+  final String endTime;
+  final String role;
+  final int required; // 필요한 인원
+  final List<ScheduleWorker> workers; // 실제 근무 가능한 직원
+
+  const ScheduleShift({
     required this.startTime,
     required this.endTime,
     required this.role,
+    required this.required,
+    required this.workers,
   });
+
+  int get assigned => workers.length;
+
+  bool get shortage => assigned < required;
+
+  int get shortageCount => required - assigned;
 }
 
 class EMonthAllSchedulePage extends StatelessWidget {
@@ -21,7 +37,7 @@ class EMonthAllSchedulePage extends StatelessWidget {
   final ValueChanged<DateTime> onDateChanged;
 
   /// API 응답
-  final Map<String, List<ScheduleWorker>> schedules;
+  final Map<String, List<ScheduleShift>> schedules;
 
   final Set<String> holidays;
 
@@ -138,8 +154,9 @@ class EMonthAllSchedulePage extends StatelessWidget {
                                 date.month == selectedDate.month &&
                                 date.day == selectedDate.day;
 
-                        final workers =
-                            schedules[_dateKey(date)] ?? [];
+                        final workers = schedules[_dateKey(date)] ?? [];
+
+                        final hasShortage = workers.any((shift) => shift.shortage);
 
                         return GestureDetector(
                           onTap: () {
@@ -158,15 +175,24 @@ class EMonthAllSchedulePage extends StatelessWidget {
                           child: Container(
                             height: cellHeight,
                             padding: const EdgeInsets.only(
-                              top: 8, left: 4, right: 4,
+                              top: 8,
+                              left: 4,
+                              right: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: isSelected
+                              color: hasShortage
+                                  ? const Color(0x33FF2115)
+                                  : isSelected
                                   ? const Color(0xFFF2F8FF)
                                   : Colors.white,
-                              border: Border(
+                              border: hasShortage
+                                  ? Border.all(
+                                color: const Color(0xFFFF2115),
+                                width: 1,
+                              )
+                                  : Border(
                                 top: BorderSide(
-                                  color: const Color(0xFFE9E9EE,),
+                                  color: const Color(0xFFE9E9EE),
                                   width: row == 0 ? 0 : 1,
                                 ),
                               ),
@@ -182,11 +208,10 @@ class EMonthAllSchedulePage extends StatelessWidget {
                                         ? const Color(0xFF1976FF)
                                         : isCurrentMonth
                                         ? Colors.black
-                                        : const Color(0xFFC8C8D2),),
+                                        : const Color(0xFFC8C8D2),
+                                  ),
                                 ),
-
-                                const SizedBox(height: 4,),
-
+                                const SizedBox(height: 4),
                                 if (isCurrentMonth)
                                   Expanded(
                                     child: _WorkerScheduleArea(
@@ -211,7 +236,7 @@ class EMonthAllSchedulePage extends StatelessWidget {
 }
 
 class _WorkerScheduleArea extends StatelessWidget {
-  final List<ScheduleWorker> workers;
+  final List<ScheduleShift> workers;
 
   const _WorkerScheduleArea({
     required this.workers,
@@ -223,23 +248,36 @@ class _WorkerScheduleArea extends StatelessWidget {
       return const SizedBox();
     }
 
+    final allWorkers = <MapEntry<ScheduleWorker, String>>[];
+
+    for (final shift in workers) {
+      for (final worker in shift.workers) {
+        allWorkers.add(
+          MapEntry(worker, shift.role),
+        );
+      }
+    }
+
     final visibleWorkers =
-    workers.length >= 5
-        ? workers.take(3).toList()
-        : workers;
+    allWorkers.length >= 5
+        ? allWorkers.take(3).toList()
+        : allWorkers;
 
     final remainCount =
-    workers.length >= 5
-        ? workers.length - 3
+    allWorkers.length >= 5
+        ? allWorkers.length - 3
         : 0;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (final worker in visibleWorkers)
+        for (final item in visibleWorkers)
           Padding(
             padding: const EdgeInsets.only(bottom: 1),
-            child: _WorkerChip(worker: worker),
+            child: _WorkerChip(
+              worker: item.key,
+              role: item.value,
+            ),
           ),
 
         if (remainCount > 0)
@@ -258,37 +296,42 @@ class _WorkerScheduleArea extends StatelessWidget {
 
 class _WorkerChip extends StatelessWidget {
   final ScheduleWorker worker;
+  final String role;
 
   const _WorkerChip({
     required this.worker,
+    required this.role,
   });
 
-  int get colorIndex =>
-      worker.name.hashCode.abs() % 3;
-
   Color get backgroundColor {
-    switch (colorIndex) {
-      case 0:
+    switch (role) {
+      case "오픈":
         return const Color(0xFFE6F3FF);
 
-      case 1:
+      case "미들":
         return const Color(0xFFEEEBFF);
 
-      default:
+      case "마감":
         return const Color(0xFFDCFED8);
+
+      default:
+        return Colors.grey.shade200;
     }
   }
 
   Color get textColor {
-    switch (colorIndex) {
-      case 0:
+    switch (role) {
+      case "오픈":
         return const Color(0xFF0063BF);
 
-      case 1:
+      case "미들":
         return const Color(0xFF7D67FD);
 
-      default:
+      case "마감":
         return const Color(0xFF007360);
+
+      default:
+        return Colors.black87;
     }
   }
 
@@ -296,13 +339,10 @@ class _WorkerChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 18,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 6, vertical: 1
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 6),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius:
-        BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(8),
       ),
       alignment: Alignment.center,
       child: Text(

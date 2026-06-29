@@ -4,7 +4,7 @@ import 'EMonthAllSchedulePage.dart';
 
 class EMonthAllScheduleBottomSheet extends StatelessWidget {
   final DateTime date;
-  final List<ScheduleWorker> workers;
+  final List<ScheduleShift> workers;
 
   const EMonthAllScheduleBottomSheet({
     super.key,
@@ -130,18 +130,17 @@ class EMonthAllScheduleBottomSheet extends StatelessWidget {
               separatorBuilder: (_, __) =>
               const SizedBox(height: 16),
               itemBuilder: (_, index) {
-                final worker = workers[index];
+                final shift = workers[index];
 
                 return Row(
-                  crossAxisAlignment:
-                  CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      width: 5, height: 54,
+                      width: 5,
+                      height: 54,
                       decoration: BoxDecoration(
-                        color: _workerColor(worker),
-                        borderRadius:
-                        BorderRadius.circular(999),
+                        color: _workerColor(shift),
+                        borderRadius: BorderRadius.circular(999),
                       ),
                     ),
 
@@ -149,24 +148,57 @@ class EMonthAllScheduleBottomSheet extends StatelessWidget {
 
                     Expanded(
                       child: Column(
-                        crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            worker.name,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                            ),
+                          Row(
+                            children: [
+                              Text(
+                                shift.role,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w400,
+                                  color: Color(0xFF767676),
+                                ),
+                              ),
+
+                              const SizedBox(width: 8),
+
+                              Text(
+                                "${shift.startTime} - ${shift.endTime}",
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  color: Color(0xFF505050),
+                                ),
+                              ),
+                            ],
                           ),
 
                           const SizedBox(height: 4),
 
-                          Text(
-                            "${worker.startTime} - ${worker.endTime}",
-                            style: const TextStyle(
-                              fontSize: 13,
-                              color: Color(0xFF505050,),
+                          RichText(
+                            text: TextSpan(
+                              style: const TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.black,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: shift.workers
+                                      .map((e) => e.name)
+                                      .join(" · "),
+                                ),
+
+                                if (shift.shortage)
+                                  TextSpan(
+                                    text: " · 근무자 부족 ${shift.shortageCount}명",
+                                    style: const TextStyle(
+                                      color: Color(0xFF767676),
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                              ],
                             ),
                           ),
                         ],
@@ -182,16 +214,23 @@ class EMonthAllScheduleBottomSheet extends StatelessWidget {
     );
   }
 
-  Color _workerColor(ScheduleWorker worker) {
-    switch (worker.name.hashCode.abs() % 3) {
-      case 0:
-        return const Color(0xFFE6F3FF);
+  Color _workerColor(ScheduleShift shift) {
+    if (shift.shortage) {
+      return const Color(0xFFFF5D5D);
+    }
 
-      case 1:
-        return const Color(0xFFEEEBFF);
+    switch (shift.role) {
+      case "오픈":
+        return const Color(0xFFBFE1FF);
+
+      case "미들":
+        return const Color(0xFFD8D1FE);
+
+      case "마감":
+        return const Color(0xFFACFBC1);
 
       default:
-        return const Color(0xFFDCFED8);
+        return const Color(0xFFBDBDBD);
     }
   }
 }
