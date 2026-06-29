@@ -1,3 +1,9 @@
+import 'package:chack_chack/employee/crews/widgets/ApplicationCalendar.dart';
+import 'package:chack_chack/employee/crews/widgets/ApplicationForm.dart';
+import 'package:chack_chack/employee/crews/widgets/ConfirmBottomSheet.dart';
+import 'package:chack_chack/employee/crews/widgets/ReasonBottomSheet.dart';
+import 'package:chack_chack/employee/crews/widgets/WorkerInfoCard.dart';
+import 'package:chack_chack/employee/crews/widgets/WorkerSelect.dart';
 import 'package:flutter/material.dart';
 
 class MyWorkSchedule {
@@ -46,6 +52,27 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
   bool _workerConfirmed = false;
 
   bool showWorkerInfo = false;
+
+  String? _selectedReason;
+  String? _selectedEtc;
+
+  bool get canSubmit {
+    final hasSchedule = _selectedDate != null;
+
+    final hasWorker =
+        _workerConfirmed && _selectedWorker != null && _selectedWorkerDate != null;
+
+    final hasReason = _selectedReason != null;
+
+    // 기타를 선택했으면 내용도 입력해야 함
+    final hasEtc = _selectedReason != "기타" ||
+        (_selectedEtc != null && _selectedEtc!.trim().isNotEmpty);
+
+    return hasSchedule &&
+        hasWorker &&
+        hasReason &&
+        hasEtc;
+  }
 
   /// 내 근무
   final List<MyWorkSchedule> mySchedules = [
@@ -166,23 +193,22 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
 
   bool isSelectable(DateTime day) {
 
-    // ===== 처음(내 근무 선택 단계) =====
+    // ✅ 근무자 확정 이후에는 아무 날짜도 선택 불가
+    if (_workerConfirmed) {
+      return false;
+    }
+
+    // 처음 (내 근무 선택)
     if (!_workerMode) {
-
-      // 다음주가 아니면 비활성
       if (!isNextWeek(day)) return false;
-
-      // 다음주 내 근무일은 항상 선택 가능
       return isMyWorkDay(day);
     }
 
-    // ===== 근무자 선택 이후 =====
-
+    // 근무자 선택 단계
     if (_selectedWorker == null) {
       return false;
     }
 
-    // 선택한 근무자의 근무만 선택 가능
     return isSelectedWorkerWorkDay(day);
   }
 
@@ -327,189 +353,6 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
     }
   }
 
-  Widget _buildWorkerSelect() {
-
-    final workers = ["윤서준", "김유진"];
-
-    return Column(
-
-      children: [
-
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 20,
-            vertical: 20,
-          ),
-          child: Row(
-
-            children: [
-
-              const Text(
-                "교대 희망 상대를 선택하세요",
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF505050),
-                ),
-              ),
-
-            ],
-          ),
-        ),
-
-        Expanded(
-
-          child: GridView.builder(
-
-            padding: const EdgeInsets.symmetric(
-              horizontal: 20,
-            ),
-
-            itemCount: workers.length,
-
-            gridDelegate:
-            const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 2.7,
-            ),
-
-            itemBuilder: (_, index) {
-
-              final workerName = workers[index];
-
-              final selected =
-                  workerName == _selectedWorker;
-
-              return GestureDetector(
-
-                onTap: () {
-
-                  setState(() {
-                    _selectedWorker = workerName;
-                  });
-
-                },
-
-                child: Container(
-
-                  decoration: BoxDecoration(
-
-                    color: selected
-                        ? const Color(0xffE6F3FF)
-                        : Colors.white,
-
-                    borderRadius:
-                    BorderRadius.circular(16),
-
-                    border: Border.all(
-                      color: selected
-                          ? const Color(0xFF0084FF)
-                          : Colors.transparent,
-                    ),
-
-                  ),
-
-                  child: Row(
-
-                    children: [
-
-                      const SizedBox(width: 12),
-
-                      Container(
-                        width: 48, height: 48,
-
-                        decoration: BoxDecoration(
-                          color: Color(0xFFE0E2E5),
-                          borderRadius:
-                          BorderRadius.circular(8),
-                        ),
-
-                      ),
-
-                      const SizedBox(width: 12),
-
-                      Expanded(
-
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              "동료",
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                                color: Color(0xFF999999),
-                              ),
-                            ),
-
-                            Text(
-                              workerName,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 16,
-                              ),
-
-                            ),
-
-                            // Text(
-                            //   "${worker.role} (${worker.startTime}~${worker.endTime})",
-                            //   style: const TextStyle(
-                            //     fontSize: 13,
-                            //     color: Colors.grey,
-                            //   ),
-                            // ),
-
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-
-        Padding(
-
-          padding: const EdgeInsets.all(20),
-
-          child: SizedBox(
-
-            width: double.infinity,
-            height: 54,
-
-            child: ElevatedButton(
-
-              onPressed: _selectedWorker == null
-                  ? null
-                  : () {
-                setState(() {
-                  showWorkerSelect = false;
-                  showWorkerInfo = true;
-                });
-              },
-
-              style: ElevatedButton.styleFrom(
-                backgroundColor:
-                const Color(0xff79B5F3),
-              ),
-
-              child: const Text(
-                "근무자 선택",
-              ),
-
-            ),
-          ),
-        ),
-
-      ],
-    );
-  }
-
 
   @override
   Widget build(BuildContext context) {
@@ -562,222 +405,47 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
 
                   const SizedBox(height: 28),
 
-                  /// 월 이동
-                  Row(
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _focusedMonth = DateTime(
-                              _focusedMonth.year,
-                              _focusedMonth.month - 1,
-                            );
-                          });
-                        },
-                        child: Container(
-                          width: 30,
-                          height: 30,
-                          decoration: const BoxDecoration(
-                            color: Color(0xffF4F4F8),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.chevron_left,
-                            color: Color(0xff999999),
-                          ),
-                        ),
-                      ),
+                  ApplicationCalendar(
+                    focusedMonth: _focusedMonth,
+                    days: days,
 
-                      Expanded(
-                        child: Center(
-                          child: Text(
-                            "${_focusedMonth.year}년 ${_focusedMonth.month}월",
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ),
+                    selectedDate: _selectedDate,
+                    selectedWorkerDate: _selectedWorkerDate,
 
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _focusedMonth = DateTime(
-                              _focusedMonth.year,
-                              _focusedMonth.month + 1,
-                            );
-                          });
-                        },
-                        child: Container(
-                          width: 30,
-                          height: 30,
-                          decoration: const BoxDecoration(
-                            color: Color(0xffF4F4F8),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.chevron_right,
-                            color: Color(0xff999999),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                    workerMode: _workerMode,
+                    showWorkerSelect: showWorkerSelect,
 
-                  const SizedBox(height: 20),
+                    isMyWorkDay: isMyWorkDay,
+                    isSelectedWorkerWorkDay: isSelectedWorkerWorkDay,
+                    isSelectable: isSelectable,
+                    isNextWeek: isNextWeek,
 
-                  /// 요일
-                  Row(
-                    children: List.generate(
-                      7,
-                          (i) {
-                        const weeks = ["일", "월", "화", "수", "목", "금", "토"];
-
-                        return Expanded(
-                          child: Center(
-                            child: Text(
-                              weeks[i],
-                              style: const TextStyle(
-                                color: Color(0xffA7A7A7),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
+                    onPrevMonth: () {
+                      setState(() {
+                        _focusedMonth = DateTime(
+                          _focusedMonth.year,
+                          _focusedMonth.month - 1,
                         );
-                      },
-                    ),
-                  ),
+                      });
+                    },
 
-                  const SizedBox(height: 10),
+                    onNextMonth: () {
+                      setState(() {
+                        _focusedMonth = DateTime(
+                          _focusedMonth.year,
+                          _focusedMonth.month + 1,
+                        );
+                      });
+                    },
 
-                  /// 달력
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: 42,
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 7,
-                      childAspectRatio: 1,
-                    ),
-                    itemBuilder: (_, index) {
-
-                      final day = days[index];
-
-                      final isCurrent = day.month == _focusedMonth.month;
-
-                      final isMySelectedDay =
-                          _selectedDate != null &&
-                              day.year == _selectedDate!.year &&
-                              day.month == _selectedDate!.month &&
-                              day.day == _selectedDate!.day;
-
-                      final isWorkerSelectedDay =
-                          _selectedWorkerDate != null &&
-                              day.year == _selectedWorkerDate!.year &&
-                              day.month == _selectedWorkerDate!.month &&
-                              day.day == _selectedWorkerDate!.day;
-
-                      final myWorkDay = isMyWorkDay(day);
-
-                      final selectedWorkerWorkDay =
-                      isSelectedWorkerWorkDay(day);
-
-                      final selectable = isSelectable(day);
-
-                      return GestureDetector(
-
-                        onTap: selectable
-                            ? () {
-                          setState(() {
-
-                            if (_workerMode) {
-                              _selectedWorkerDate = day;
-                            } else {
-                              _selectedDate = day;
-                            }
-
-                          });
+                    onSelectDay: (day) {
+                      setState(() {
+                        if (_workerMode) {
+                          _selectedWorkerDate = day;
+                        } else {
+                          _selectedDate = day;
                         }
-                            : null,
-
-                        child: Center(
-
-                          child: Container(
-
-                            width: 48,
-                            height: 48,
-
-                            alignment: Alignment.center,
-
-                            decoration: BoxDecoration(
-
-                              color: _workerMode
-                                  ? (
-                                  selectedWorkerWorkDay
-                                      ? (
-                                      isWorkerSelectedDay
-                                          ? const Color(0xff27C840) // 선택한 날짜
-                                          : showWorkerSelect
-                                          ? const Color(0xffD9F6C5) // 근무자 선택 화면에서만 연두
-                                          : Colors.transparent // 버튼 누르면 연두 제거
-                                  )
-                                      : (
-                                      isMySelectedDay
-                                          ? const Color(0xff0084FF) // 회색 → 파란색
-                                          : Colors.transparent
-                                  )
-                              )
-                                  : (
-                                  isMySelectedDay
-                                      ? const Color(0xff0084FF)
-                                      : (myWorkDay && isNextWeek(day))
-                                      ? const Color(0xffE6F3FF)
-                                      : Colors.transparent
-                              ),
-
-                              borderRadius: BorderRadius.circular(10),
-
-                            ),
-
-                            child: Text(
-
-                              "${day.day}",
-
-                              style: TextStyle(
-
-                                fontSize: 16,
-
-                                fontWeight: FontWeight.w400,
-
-                                color: !isCurrent
-                                    ? const Color(0xffD1D1DD)
-
-                                // 🔵 내가 선택한 날짜
-                                    : isMySelectedDay
-                                    ? Colors.white
-
-                                // 🟢 상대가 선택한 날짜
-                                    : isWorkerSelectedDay
-                                    ? Colors.white
-
-                                // 선택 가능한 나머지 날짜
-                                    : selectable
-                                    ? const Color(0xff8F8F8F)
-
-                                // 비활성 날짜
-                                    : const Color(0xffBDBDBD),
-
-                              ),
-
-                            ),
-
-                          ),
-
-                        ),
-
-                      );
-
+                      });
                     },
                   ),
                 ],
@@ -856,269 +524,214 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
             ),
 
             Expanded(
-                child: showWorkerSelect
-                    ? _buildWorkerSelect()
-                    : showWorkerInfo
-                    ? _buildWorkerInfo()
-                    : Padding(
-                  padding: EdgeInsets.zero,
-                  child: Column(
+              child: showWorkerSelect
+                  ? WorkerSelect(
+                workers: const ["윤서준", "김유진"],
+                selectedWorker: _selectedWorker,
+
+                onWorkerSelected: (worker) {
+                  setState(() {
+                    _selectedWorker = worker;
+                  });
+                },
+
+                onConfirm: () {
+                  setState(() {
+                    showWorkerSelect = false;
+                    showWorkerInfo = true;
+                  });
+                },
+              )
+                  : showWorkerInfo
+                  ? _buildWorkerInfo()
+                  : ApplicationForm(
+                isSubstitute: isSubstitute,
+
+                scheduleTile: _MenuTile(
+                  title: isSubstitute ? "대타 신청 날짜" : "교대 신청 날짜",
+
+                  trailing: Text(
+                    selectedSchedule == null
+                        ? "선택 안함"
+                        : "${selectedSchedule.date.month}월 "
+                        "${selectedSchedule.date.day}일 "
+                        "${selectedSchedule.startTime} - ${selectedSchedule.endTime}",
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: selectedSchedule == null
+                          ? const Color(0xff8F8F8F)
+                          : Colors.black,
+                      fontSize: 16,
+                      fontWeight: selectedSchedule == null
+                          ? FontWeight.w400
+                          : FontWeight.w500,
+                    ),
+                  ),
+
+                  onTap: () {},
+                ),
+
+                workerTile: _MenuTile(
+                  title: isSubstitute ? "대타 근무자" : "교대 상대 근무자",
+
+                  trailing: _workerConfirmed &&
+                      selectedWorkerSchedule != null
+                      ? Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Expanded(
-                        child: ListView(
-                          children: [
-                            const SizedBox(height: 8),
-
-                            _MenuTile(
-                              title: isSubstitute ? "대타 신청 날짜" : "교대 신청 날짜",
-
-                              trailing: Text(
-                                selectedSchedule == null
-                                    ? "선택 안함"
-                                    : "${selectedSchedule.date.month}월 "
-                                    "${selectedSchedule.date.day}일 "
-                                    "${selectedSchedule.startTime} - ${selectedSchedule.endTime}",
-                                textAlign: TextAlign.right,
-                                style: TextStyle(
-                                  color: selectedSchedule == null
-                                      ? const Color(0xff8F8F8F)
-                                      : Colors.black,
-                                  fontSize: 16,
-                                  fontWeight: selectedSchedule == null
-                                      ? FontWeight.w400
-                                      : FontWeight.w500,
-                                ),
-                              ),
-
-                              onTap: () {},
-                            ),
-
-                            _MenuTile(
-                              title: isSubstitute ? "대타 근무자" : "교대 상대 근무자",
-
-                              trailing: _workerConfirmed && selectedWorkerSchedule != null
-                                  ? Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    selectedWorkerSchedule.name,
-                                    textAlign: TextAlign.right,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    "${selectedWorkerSchedule.date.month}월 "
-                                        "${selectedWorkerSchedule.date.day}일 "
-                                        "${selectedWorkerSchedule.startTime} - "
-                                        "${selectedWorkerSchedule.endTime}",
-                                    textAlign: TextAlign.right,
-                                    style: const TextStyle(
-                                      fontSize: 13,
-                                      color: Color(0xff8F8F8F),
-                                    ),
-                                  ),
-                                ],
-                              )
-                                  : const Text(
-                                "선택 안함",
-                                style: TextStyle(
-                                  color: Color(0xff8F8F8F),
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ),
-
-                              hasArrow: true,
-
-                              onTap: () {
-                                if (_selectedDate == null) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text("먼저 날짜를 선택해주세요."),
-                                    ),
-                                  );
-                                  return;
-                                }
-
-                                if (getWorkersForSelectedDate().isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text("해당 날짜에 근무자가 없습니다."),
-                                    ),
-                                  );
-                                  return;
-                                }
-
-                                setState(() {
-                                  showWorkerSelect = true;
-                                  _workerMode = true;
-                                });
-                              },
-                            ),
-
-                            _MenuTile(
-                              title: isSubstitute
-                                  ? "대타 사유"
-                                  : "교대 사유",
-                              value: "선택 안함",
-                              hasArrow: true,
-                              onTap: () {},
-                            ),
-                          ],
+                      Text(
+                        selectedWorkerSchedule.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 20,
-                        ),
-                        child: SizedBox(
-                          width: double.infinity,
-                          height: 54,
-                          child: ElevatedButton(
-                            onPressed: null,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                              const Color(0xff79B5F3),
-                              disabledBackgroundColor:
-                              const Color(0xff79B5F3),
-                              elevation: 0,
-                              shape: RoundedRectangleBorder(
-                                borderRadius:
-                                BorderRadius.circular(14),
-                              ),
-                            ),
-                            child: const Text(
-                              "신청하기",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 18,
-                              ),
-                            ),
-                          ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "${selectedWorkerSchedule.date.month}월 "
+                            "${selectedWorkerSchedule.date.day}일 "
+                            "${selectedWorkerSchedule.startTime} - "
+                            "${selectedWorkerSchedule.endTime}",
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xff8F8F8F),
                         ),
                       ),
                     ],
+                  )
+                      : const Text(
+                    "선택 안함",
+                    style: TextStyle(
+                      color: Color(0xff8F8F8F),
+                      fontSize: 16,
+                    ),
                   ),
+
+                  hasArrow: true,
+
+                  onTap: () {
+                    if (_selectedDate == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("먼저 날짜를 선택해주세요."),
+                        ),
+                      );
+                      return;
+                    }
+
+                    if (getWorkersForSelectedDate().isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("해당 날짜에 근무자가 없습니다."),
+                        ),
+                      );
+                      return;
+                    }
+
+                    setState(() {
+                      showWorkerSelect = true;
+                      _workerMode = true;
+                    });
+                  },
                 ),
 
+                reasonTile: _MenuTile(
+                  title: isSubstitute ? "대타 사유" : "교대 사유",
+
+                  trailing: Text(
+                    _selectedReason == null
+                        ? "선택 안함"
+                        : _selectedReason == "기타" &&
+                        (_selectedEtc?.isNotEmpty ?? false)
+                        ? "기타 / $_selectedEtc"
+                        : _selectedReason!,
+                    textAlign: TextAlign.right,
+                    style: TextStyle(
+                      color: _selectedReason == null
+                          ? const Color(0xff8F8F8F)
+                          : Colors.black,
+                      fontSize: 16,
+                      fontWeight: _selectedReason == null
+                          ? FontWeight.w400
+                          : FontWeight.w500,
+                    ),
+                  ),
+
+                  hasArrow: true,
+
+                  onTap: () async {
+                    final result = await showModalBottomSheet<Map<String, String?>>(
+                      context: context,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => ReasonBottomSheet(
+                        initialReason: _selectedReason,
+                        initialEtc: _selectedEtc,
+                      ),
+                    );
+
+                    if (result != null) {
+                      setState(() {
+                        _selectedReason = result["reason"];
+                        _selectedEtc = result["etc"];
+                      });
+                    }
+                  },
+                ),
+
+                onSubmit: canSubmit
+                    ? () {
+                  showModalBottomSheet(
+                    context: context,
+                    backgroundColor: Colors.transparent,
+                    isScrollControlled: true,
+                    builder: (_) => ConfirmApplicationBottomSheet(
+                      myName: "최세중(나)",
+                      workerName: selectedWorkerSchedule!.name,
+                      myDate:
+                      "${selectedSchedule!.date.month}월 ${selectedSchedule.date.day}일",
+                      workerDate:
+                      "${selectedWorkerSchedule.date.month}월 ${selectedWorkerSchedule.date.day}일",
+                      myTime:
+                      "${selectedSchedule.startTime} - ${selectedSchedule.endTime}",
+                      workerTime:
+                      "${selectedWorkerSchedule.startTime} - ${selectedWorkerSchedule.endTime}",
+                      reason: _selectedReason == "기타"
+                          ? "기타 / $_selectedEtc"
+                          : _selectedReason!,
+                      onConfirm: () {
+                        Navigator.pop(context);
+
+                        // TODO : 신청 API 호출
+                      },
+                    ),
+                  );
+                }
+                    : null,
+              ),
             )
           ],
         ),
       ),
     );
   }
+
+
   Widget _buildWorkerInfo() {
     final schedule = getSelectedWorkerSchedule();
 
     return Column(
       children: [
-        const SizedBox(height: 20),
+        const SizedBox(height: 40),
 
-        /// 카드 UI
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF2F2F2), // 회색 배경
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: schedule == null
-                ? Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "${_selectedWorker ?? ""}님의 근무 정보",
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  "날짜를 선택해주세요.",
-                  style: TextStyle(
-                    color: Color(0xff8F8F8F),
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            )
-                : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-
-                /// 제목
-                Text(
-                  "${_selectedWorker ?? ""}님의 근무 정보",
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                /// 날짜
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      "날짜",
-                      style: TextStyle(
-                        color: Color(0xff8F8F8F),
-                        fontSize: 15,
-                      ),
-                    ),
-                    Text(
-                      "${schedule.date.year}년 ${schedule.date.month}월 ${schedule.date.day}일",
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 14),
-
-                /// 근무시간
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      "근무시간",
-                      style: TextStyle(
-                        color: Color(0xff8F8F8F),
-                        fontSize: 15,
-                      ),
-                    ),
-                    Text(
-                      "${schedule.startTime} - ${schedule.endTime}",
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+        WorkerInfoCard(
+          workerName: _selectedWorker,
+          schedule: schedule,
         ),
 
         const Spacer(),
 
-        /// 버튼
         Padding(
           padding: const EdgeInsets.symmetric(
             horizontal: 14,
@@ -1136,7 +749,7 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF0084FF),
-                foregroundColor: Colors.white, // 텍스트 색
+                foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -1186,21 +799,12 @@ class _MenuTile extends StatelessWidget {
   Widget build(BuildContext context) {
 
     return InkWell(
-
       onTap: onTap,
-
       child: Container(
-
         height: 72,
-
-        padding: const EdgeInsets.symmetric(
-          horizontal: 20,
-        ),
-
+        padding: const EdgeInsets.symmetric(horizontal: 20,),
         child: Row(
-
           children: [
-
             Expanded(
               child: Text(
                 title,
@@ -1229,7 +833,6 @@ class _MenuTile extends StatelessWidget {
                   color: Color(0xffBDBDBD),
                 ),
               ),
-
           ],
         ),
       ),
