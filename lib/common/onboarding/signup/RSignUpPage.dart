@@ -1,5 +1,7 @@
-import 'package:chack_chack/employer/signup/RSignUp1.dart';
+
 import 'package:flutter/material.dart';
+
+import 'RSignUp1.dart';
 
 class RSignUpPage extends StatelessWidget {
 

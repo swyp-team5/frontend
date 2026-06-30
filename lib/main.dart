@@ -1,4 +1,5 @@
 import 'package:chack_chack/common/FirstPage.dart';
+import 'package:chack_chack/common/onboarding/OnboardingPage.dart';
 import 'package:chack_chack/employer/home/RHomePage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -27,7 +28,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: FirstPage(),
+      home: OnboardingPage(),
     );
   }
 }

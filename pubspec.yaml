@@ -58,5 +58,14 @@ flutter:
     - assets/images/shift_complete.png
     - assets/images/substitute_complete.png
 
+    - assets/images/onboarding/onboarding1.png
+    - assets/images/onboarding/onboarding2.png
+    - assets/images/onboarding/onboarding3.png
+    - assets/images/onboarding/onboarding4.png
+
+    - assets/images/logo/kakaotalk.png
+    - assets/images/logo/google.png
+    - assets/images/logo/apple.png
+
 
   uses-material-design: true
