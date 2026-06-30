@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../employee/home/EHomePage.dart';
+import '../employer/RSignUpPage.dart';
 import 'Agree1BottomSheet.dart';
 import 'Agree2BottomSheet.dart';
 import 'Agree3BottomSheet.dart';
@@ -281,13 +283,21 @@ class _AgreementPageState extends State<AgreementPage> {
                   onPressed: requiredAgree
                       ? () {
                     if (widget.role == UserRole.owner) {
-                      // 사장님 → 매장 설정 페이지
-                      Navigator.pushReplacementNamed(
-                          context, "/storeSetup");
+                      // 사장님 -> RSignUp
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const RSignUpPage(),
+                        ),
+                      );
                     } else {
-                      // 직원 → 홈
-                      Navigator.pushReplacementNamed(
-                          context, "/home");
+                      // 직원 -> EHomePage
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const EHomePage(),
+                        ),
+                      );
                     }
                   }
                       : null,

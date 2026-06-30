@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import '../../../employer/home/RHomePage.dart';
+import '../../../../employer/home/RHomePage.dart';
 import 'AddressSearchPage.dart';
 
-class RSignUp2 extends StatefulWidget {
-  const RSignUp2({super.key});
+class RSignUp3 extends StatefulWidget {
+  const RSignUp3({super.key});
 
   @override
-  State<RSignUp2> createState() => _RSignUp2State();
+  State<RSignUp3> createState() => _RSignUp2State();
 }
 
-class _RSignUp2State extends State<RSignUp2> {
+class _RSignUp2State extends State<RSignUp3> {
   final TextEditingController zonecodeController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
   final TextEditingController detailAddressController = TextEditingController();
@@ -25,44 +25,42 @@ class _RSignUp2State extends State<RSignUp2> {
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 15,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 30),
+              const SizedBox(height: 24),
 
-              /// 뒤로가기
               GestureDetector(
-                onTap: () {
-                  Navigator.pop(context);
-                },
+                onTap: () => Navigator.pop(context),
                 child: const Icon(
                   Icons.arrow_back_ios_new,
-                  size: 24,
-                  color: Colors.black,
+                  size: 22,
                 ),
               ),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 64),
 
               const Text(
-                '매장 주소를\n입력해주세요',
+                "매장 주소를\n입력해주세요",
                 style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                  height: 1.2,
+                  fontSize: 24,
+                  fontWeight: FontWeight.w600,
+                  height: 1.5,
                 ),
               ),
 
-              const SizedBox(height: 40),
+              const SizedBox(height: 48),
 
               const Text(
                 '매장 주소',
                 style: TextStyle(
                   color: Colors.black,
                   fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
 
@@ -76,11 +74,20 @@ class _RSignUp2State extends State<RSignUp2> {
                       child: TextField(
                         controller: zonecodeController,
                         readOnly: true,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black,
+                        ),
                         decoration: const InputDecoration(
                           hintText: '우편번호',
+                          hintStyle: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: Color(0xFF505050),
+                          ),
                           border: InputBorder.none,
                           contentPadding: EdgeInsets.symmetric(horizontal: 16),
-                          hintStyle: TextStyle(color: Color(0xFFAEB0B6)),
                         ),
                       ),
                     ),
@@ -132,11 +139,20 @@ class _RSignUp2State extends State<RSignUp2> {
                 child: TextField(
                   controller: addressController,
                   readOnly: true,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
                   decoration: const InputDecoration(
                     hintText: '주소',
+                    hintStyle: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF505050),
+                    ),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(horizontal: 16),
-                    hintStyle: TextStyle(color: Color(0xFFAEB0B6)),
                   ),
                 ),
               ),
@@ -150,11 +166,20 @@ class _RSignUp2State extends State<RSignUp2> {
                   onChanged: (_) {
                     setState(() {});
                   },
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black,
+                  ),
                   decoration: const InputDecoration(
                     hintText: '상세 주소',
+                    hintStyle: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF505050),
+                    ),
                     border: InputBorder.none,
                     contentPadding: EdgeInsets.symmetric(horizontal: 16),
-                    hintStyle: TextStyle(color: Color(0xFFAEB0B6)),
                   ),
                 ),
               ),
@@ -299,16 +324,16 @@ class _RSignUp2State extends State<RSignUp2> {
                         onPressed: isPrivacyChecked
                             ? () {
 
-                                Navigator.push(
-                                  context,
+                          Navigator.push(
+                            context,
 
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                    const RHomePage(),
-                                  ),
-                                );
-                                // 회원가입 완료 로직 추가 가능
-                              }
+                            MaterialPageRoute(
+                              builder: (_) =>
+                              const RHomePage(),
+                            ),
+                          );
+                          // 회원가입 완료 로직 추가 가능
+                        }
                             : null,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.black,

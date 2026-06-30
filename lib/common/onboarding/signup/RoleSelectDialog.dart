@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
-import 'AgreementPage.dart';
+import 'agreement/AgreementPage.dart';
 
 class RoleSelectDialog extends StatelessWidget {
   const RoleSelectDialog({super.key});

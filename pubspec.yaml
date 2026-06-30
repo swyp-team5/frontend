@@ -66,6 +66,6 @@ flutter:
     - assets/images/logo/kakaotalk.png
     - assets/images/logo/google.png
     - assets/images/logo/apple.png
-
+    - assets/images/logo/chackchack.png
 
   uses-material-design: true
