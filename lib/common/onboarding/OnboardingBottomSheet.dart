@@ -1,3 +1,4 @@
+import 'package:chack_chack/common/onboarding/signup/CommonSignUpPage.dart';
 import 'package:flutter/material.dart';
 
 class OnboardingBottomSheet extends StatelessWidget {
@@ -195,7 +196,12 @@ class OnboardingBottomSheet extends StatelessWidget {
                   ),
                   GestureDetector(
                     onTap: () {
-                      // TODO : 로그인
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const CommonSignUpPage(),
+                        ),
+                      );
                     },
                     child: const Text(
                       "바로 시작하기",
