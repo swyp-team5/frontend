@@ -35,6 +35,23 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+        <!-- 카카오 로그인 -->
+        <activity
+            android:name="com.kakao.sdk.flutter.AuthCodeCustomTabsActivity"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+
+                <!-- 네이티브 앱 키 입력 -->
+                <data
+                    android:scheme="kakao05952ada0dceff8e149cd664e5459465"
+                    android:host="oauth"/>
+            </intent-filter>
+        </activity>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

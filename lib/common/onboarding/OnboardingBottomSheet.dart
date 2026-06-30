@@ -1,8 +1,23 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:chack_chack/common/onboarding/signup/CommonSignUpPage.dart';
 import 'package:flutter/material.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
+
+import 'package:google_sign_in/google_sign_in.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+
+import '../../api/auth_sociallLogin_api.dart';
+import '../../service/social_login_service.dart';
+import '../login/KakaoLoginService.dart';
+
 
 class OnboardingBottomSheet extends StatelessWidget {
   const OnboardingBottomSheet({super.key});
+
 
   @override
   Widget build(BuildContext context) {
@@ -65,8 +80,29 @@ class OnboardingBottomSheet extends StatelessWidget {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton.icon(
-                  onPressed: () {
-                    // TODO : 카카오 로그인
+                  onPressed: () async {
+                    try {
+                      final result = await KakaoLoginService.login();
+
+                      debugPrint(result.toString());
+
+                      if (context.mounted) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const CommonSignUpPage(),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      debugPrint(e.toString());
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text("카카오 로그인 실패\n$e"),
+                        ),
+                      );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xffFFEB3B),
@@ -101,9 +137,20 @@ class OnboardingBottomSheet extends StatelessWidget {
                 width: double.infinity,
                 height: 56,
                 child: OutlinedButton(
-                  onPressed: () {
-                    // TODO : Google 로그인
-                  },
+                    onPressed: () async {
+                      try {
+                        final result = await SocialLoginService.googleLogin();
+
+                        print(result);
+
+                        // TODO
+                        // 토큰 저장
+                        // 홈 이동
+
+                      } catch (e) {
+                        debugPrint(e.toString());
+                      }
+                    },
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(
                       color: Color(0xffE5E5E5),
@@ -144,9 +191,16 @@ class OnboardingBottomSheet extends StatelessWidget {
                 width: double.infinity,
                 height: 56,
                 child: OutlinedButton(
-                  onPressed: () {
-                    // TODO : Apple 로그인
-                  },
+                    onPressed: () async {
+                      try {
+                        final result = await SocialLoginService.appleLogin();
+
+                        print(result);
+
+                      } catch (e) {
+                        debugPrint(e.toString());
+                      }
+                    },
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(
                       color: Color(0xffE5E5E5),
