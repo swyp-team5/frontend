@@ -18,7 +18,7 @@ class RSignUpPage extends StatelessWidget {
             //----------------------------------
 
             Padding(
-              padding: const EdgeInsets.only(left: 12, top: 12),
+              padding: const EdgeInsets.only(left: 10, top: 30),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: IconButton(

@@ -274,11 +274,14 @@ class _RSignUp2State extends State<RSignUp3> {
                       ),
                     ),
                     const SizedBox(height: 30),
-                    const Text(
-                      '서비스 이용을 위해 동의가 필요해요.',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                    const Center(
+                      child: Text(
+                        '서비스 이용을 위해 동의가 필요해요',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 25),
@@ -290,29 +293,58 @@ class _RSignUp2State extends State<RSignUp3> {
                       },
                       child: Row(
                         children: [
-                          Container(
-                            width: 22,
-                            height: 22,
-                            decoration: BoxDecoration(
-                              color: isPrivacyChecked ? Colors.black : Colors.white,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.black),
-                            ),
-                            child: isPrivacyChecked
-                                ? const Icon(Icons.check, size: 14, color: Colors.white)
-                                : null,
-                          ),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Text(
-                              '[필수] 개인정보보호의무',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
+                          Expanded(
+                            child: InkWell(
+                              onTap: () {
+                                setModalState(() {
+                                  isPrivacyChecked = !isPrivacyChecked;
+                                });
+                              },
+                              child: Row(
+                                children: [
+                                  Container(
+                                    width: 22,
+                                    height: 22,
+                                    decoration: BoxDecoration(
+                                      color: isPrivacyChecked
+                                          ? const Color(0xff0084FF)
+                                          : Colors.white,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: isPrivacyChecked
+                                            ? const Color(0xff0084FF)
+                                            : Colors.black,
+                                      ),
+                                    ),
+                                    child: isPrivacyChecked
+                                        ? const Icon(
+                                      Icons.check,
+                                      size: 14,
+                                      color: Colors.white,
+                                    )
+                                        : null,
+                                  ),
+
+                                  const SizedBox(width: 12),
+
+                                  const Text(
+                                    '[필수] 개인정보보호의무',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
-                          const Icon(Icons.chevron_right),
+
+                          IconButton(
+                            onPressed: () {
+                              // TODO : 개인정보보호의무 상세 약관 페이지 또는 BottomSheet
+                            },
+                            icon: const Icon(Icons.chevron_right),
+                          ),
                         ],
                       ),
                     ),
@@ -336,10 +368,12 @@ class _RSignUp2State extends State<RSignUp3> {
                         }
                             : null,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.black,
-                          disabledBackgroundColor: Colors.grey.shade300,
+                          elevation: 0,
+                          backgroundColor: const Color(0xff0084FF),
+                          disabledBackgroundColor: const Color(0xff80C1FF),
+                          disabledForegroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(8),
                           ),
                         ),
                         child: const Text(
@@ -347,7 +381,7 @@ class _RSignUp2State extends State<RSignUp3> {
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
                       ),
