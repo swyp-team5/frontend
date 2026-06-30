@@ -268,7 +268,7 @@ class _CommonSignUpPageState extends State<CommonSignUpPage> {
                     backgroundColor: const Color(0xff0084FF),
                     disabledBackgroundColor: const Color(0xff80C1FF),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(8),
                     ),
                   ),
                   onPressed: isEnabled

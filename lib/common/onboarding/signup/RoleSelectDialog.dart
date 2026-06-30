@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
+import 'AgreementPage.dart';
+
 class RoleSelectDialog extends StatelessWidget {
   const RoleSelectDialog({super.key});
 
@@ -55,6 +57,14 @@ class RoleSelectDialog extends StatelessWidget {
                 ),
                 onPressed: () {
                   // TODO : 사장님 회원가입 페이지 이동
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const AgreementPage(
+                        role: UserRole.owner,
+                      ),
+                    ),
+                  );
                 },
                 child: const Text(
                   "사장님이에요",
@@ -72,6 +82,14 @@ class RoleSelectDialog extends StatelessWidget {
             TextButton(
               onPressed: () {
                 // TODO : 직원 회원가입 페이지 이동
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const AgreementPage(
+                      role: UserRole.worker,
+                    ),
+                  ),
+                );
               },
               style: TextButton.styleFrom(
                 padding: EdgeInsets.zero,
