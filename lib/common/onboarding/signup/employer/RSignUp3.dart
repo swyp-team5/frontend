@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../employer/home/RHomePage.dart';
+import '../../providers/signup_provider.dart';
 import 'AddressSearchPage.dart';
 
-class RSignUp3 extends StatefulWidget {
+class RSignUp3 extends ConsumerStatefulWidget {
   const RSignUp3({super.key});
 
   @override
-  State<RSignUp3> createState() => _RSignUp2State();
+  ConsumerState<RSignUp3> createState() => _RSignUp3State();
 }
 
-class _RSignUp2State extends State<RSignUp3> {
+class _RSignUp3State extends ConsumerState<RSignUp3> {
   final TextEditingController zonecodeController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
   final TextEditingController detailAddressController = TextEditingController();
@@ -194,6 +196,16 @@ class _RSignUp2State extends State<RSignUp3> {
                 child: ElevatedButton(
                   onPressed: isFormValid
                       ? () {
+                    final notifier = ref.read(signupProvider.notifier);
+
+                    notifier.setRoadAddress(
+                      addressController.text.trim(),
+                    );
+
+                    notifier.setDetailAddress(
+                      detailAddressController.text.trim(),
+                    );
+
                     _showPrivacyAgreement();
                   }
                       : null,
@@ -354,17 +366,33 @@ class _RSignUp2State extends State<RSignUp3> {
                       height: 56,
                       child: ElevatedButton(
                         onPressed: isPrivacyChecked
-                            ? () {
+                            ? () async {
 
-                          Navigator.push(
-                            context,
+                          final notifier = ref.read(signupProvider.notifier);
 
-                            MaterialPageRoute(
-                              builder: (_) =>
-                              const RHomePage(),
-                            ),
+                          notifier.setTermsAgreement(
+                            5, true,
                           );
-                          // 회원가입 완료 로직 추가 가능
+
+                          final result = await notifier.signUp();
+
+                          if (!mounted) return;
+
+                          if (result) {
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const RHomePage(),
+                              ),
+                                  (route) => false,
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("회원가입에 실패했습니다."),
+                              ),
+                            );
+                          }
                         }
                             : null,
                         style: ElevatedButton.styleFrom(

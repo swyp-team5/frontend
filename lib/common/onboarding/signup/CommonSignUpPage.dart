@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../providers/signup_provider.dart';
 import 'RoleSelectDialog.dart';
 
-class CommonSignUpPage extends StatefulWidget {
+class CommonSignUpPage extends ConsumerStatefulWidget {
   const CommonSignUpPage({super.key});
 
   @override
-  State<CommonSignUpPage> createState() => _CommonSignUpPageState();
+  ConsumerState<CommonSignUpPage> createState() => _CommonSignUpPageState();
 }
 
-class _CommonSignUpPageState extends State<CommonSignUpPage> {
+class _CommonSignUpPageState extends ConsumerState<CommonSignUpPage> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
 
@@ -278,11 +280,18 @@ class _CommonSignUpPageState extends State<CommonSignUpPage> {
                         currentStep = 1;
                       });
                     } else {
+                      // Provider에 저장
+                      ref.read(signupProvider.notifier)
+                        ..setName(_nameController.text.trim())
+                        ..setPhoneNumber(
+                          _phoneController.text.replaceAll('-', ''),
+                        );
+
                       showDialog(
                         context: context,
                         barrierDismissible: true,
                         barrierColor: Colors.black.withOpacity(0.25),
-                        builder: (context) => const RoleSelectDialog(),
+                        builder: (_) => const RoleSelectDialog(),
                       );
                     }
                   }

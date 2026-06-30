@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:chack_chack/common/onboarding/providers/signup_provider.dart';
 import 'package:chack_chack/common/onboarding/signup/CommonSignUpPage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
@@ -13,14 +15,15 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../../api/auth_sociallLogin_api.dart';
 import '../../service/social_login_service.dart';
 import '../login/KakaoLoginService.dart';
+import 'models/signup_request.dart';
 
 
-class OnboardingBottomSheet extends StatelessWidget {
+class OnboardingBottomSheet extends ConsumerWidget {
   const OnboardingBottomSheet({super.key});
 
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -84,18 +87,36 @@ class OnboardingBottomSheet extends StatelessWidget {
                     try {
                       final result = await KakaoLoginService.login();
 
+                      final notifier = ref.read(signupProvider.notifier);
+
+                      // provider 저장
+                      notifier.setProvider(SocialProvider.KAKAO);
+
+                      // accessToken 저장
+                      notifier.setAccessToken(result["accessToken"] as String?);
+
+                      // device 저장
+                      notifier.setDevice(
+                        deviceId: result["deviceId"] ?? "",
+                        platform: result["platform"] ?? "",
+                        appVersion: result["appVersion"] ?? "",
+                      );
+
+                      debugPrint("===== Kakao Login Result =====");
                       debugPrint(result.toString());
 
-                      if (context.mounted) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const CommonSignUpPage(),
-                          ),
-                        );
-                      }
+                      if (!context.mounted) return;
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const CommonSignUpPage(),
+                        ),
+                      );
                     } catch (e) {
                       debugPrint(e.toString());
+
+                      if (!context.mounted) return;
 
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(

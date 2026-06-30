@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../employee/home/EHomePage.dart';
+import '../../providers/signup_provider.dart';
 import '../employer/RSignUpPage.dart';
 import 'Agree1BottomSheet.dart';
 import 'Agree2BottomSheet.dart';
@@ -11,7 +13,7 @@ enum UserRole {
   worker,
 }
 
-class AgreementPage extends StatefulWidget {
+class AgreementPage extends ConsumerStatefulWidget {
   final UserRole role;
 
   const AgreementPage({
@@ -20,10 +22,10 @@ class AgreementPage extends StatefulWidget {
   });
 
   @override
-  State<AgreementPage> createState() => _AgreementPageState();
+  ConsumerState<AgreementPage> createState() => _AgreementPageState();
 }
 
-class _AgreementPageState extends State<AgreementPage> {
+class _AgreementPageState extends ConsumerState<AgreementPage> {
   bool allAgree = false;
 
   bool ageAgree = false;
@@ -282,8 +284,15 @@ class _AgreementPageState extends State<AgreementPage> {
                 child: ElevatedButton(
                   onPressed: requiredAgree
                       ? () {
+
+                    final notifier = ref.read(signupProvider.notifier);
+
+                    notifier.updateTerm(1, ageAgree);
+                    notifier.updateTerm(2, serviceAgree);
+                    notifier.updateTerm(3, privacyAgree);
+                    notifier.updateTerm(4, marketingAgree);
+
                     if (widget.role == UserRole.owner) {
-                      // 사장님 -> RSignUp
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(
@@ -291,7 +300,6 @@ class _AgreementPageState extends State<AgreementPage> {
                         ),
                       );
                     } else {
-                      // 직원 -> EHomePage
                       Navigator.pushReplacement(
                         context,
                         MaterialPageRoute(

@@ -1,13 +1,15 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../providers/signup_provider.dart';
 import 'agreement/AgreementPage.dart';
 
-class RoleSelectDialog extends StatelessWidget {
+class RoleSelectDialog extends ConsumerWidget {
   const RoleSelectDialog({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.symmetric(horizontal: 20),
@@ -57,6 +59,8 @@ class RoleSelectDialog extends StatelessWidget {
                 ),
                 onPressed: () {
                   // TODO : 사장님 회원가입 페이지 이동
+                  ref.read(signupProvider.notifier).setRole(true);
+
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -82,6 +86,8 @@ class RoleSelectDialog extends StatelessWidget {
             TextButton(
               onPressed: () {
                 // TODO : 직원 회원가입 페이지 이동
+                ref.read(signupProvider.notifier).setRole(false);
+
                 Navigator.push(
                   context,
                   MaterialPageRoute(

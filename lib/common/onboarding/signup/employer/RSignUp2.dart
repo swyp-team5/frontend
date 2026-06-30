@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../providers/signup_provider.dart';
 import 'RSignUp3.dart';
 
-class RSignUp2 extends StatefulWidget {
+class RSignUp2 extends ConsumerStatefulWidget {
   const RSignUp2({super.key});
 
   @override
-  State<RSignUp2> createState() => _RSignUp2State();
+  ConsumerState<RSignUp2> createState() => _RSignUp2State();
 }
 
-class _RSignUp2State extends State<RSignUp2> {
+class _RSignUp2State extends ConsumerState<RSignUp2> {
   final TextEditingController _storeNameController =
   TextEditingController();
 
@@ -158,6 +160,12 @@ class _RSignUp2State extends State<RSignUp2> {
                 child: ElevatedButton(
                   onPressed: isEnabled
                       ? () {
+                    ref
+                        .read(signupProvider.notifier)
+                        .setWorkPlaceName(
+                      _storeNameController.text.trim(),
+                    );
+
                     Navigator.push(
                       context,
                       MaterialPageRoute(

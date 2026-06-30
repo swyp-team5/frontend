@@ -1,19 +1,19 @@
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../models/signup_request.dart';
+import '../../providers/signup_provider.dart';
 import 'RSignUp2.dart';
 
-class RSignUp1 extends StatefulWidget {
-
+class RSignUp1 extends ConsumerStatefulWidget {
   const RSignUp1({super.key});
 
   @override
-  State<RSignUp1> createState() =>
-      _RSignUp1State();
+  ConsumerState<RSignUp1> createState() => _RSignUp1State();
 }
 
-class _RSignUp1State
-    extends State<RSignUp1> {
+class _RSignUp1State extends ConsumerState<RSignUp1> {
 
   int? selectedIndex;
 
@@ -121,6 +121,32 @@ class _RSignUp1State
                   onPressed: selectedIndex == null
                       ? null
                       : () {
+                    final notifier = ref.read(signupProvider.notifier);
+
+                    switch (selectedIndex) {
+                      case 0:
+                        notifier.setWorkPlaceSize(WorkPlaceSize.ONE_TO_FOUR);
+                        break;
+
+                      case 1:
+                        notifier.setWorkPlaceSize(WorkPlaceSize.FIVE_TO_NINE);
+                        break;
+
+                      case 2:
+                        notifier.setWorkPlaceSize(WorkPlaceSize.TEN_TO_SEVENTEEN);
+                        break;
+
+                      case 3:
+                        notifier.setWorkPlaceSize(
+                            WorkPlaceSize.EIGHTEEN_TO_TWENTY_THREE);
+                        break;
+
+                      case 4:
+                        notifier.setWorkPlaceSize(
+                            WorkPlaceSize.TWENTY_FOUR_OR_MORE);
+                        break;
+                    }
+
                     Navigator.push(
                       context,
                       MaterialPageRoute(
