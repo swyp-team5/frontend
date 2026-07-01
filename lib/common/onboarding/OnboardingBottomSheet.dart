@@ -95,6 +95,7 @@ class OnboardingBottomSheet extends ConsumerWidget {
                       // accessToken 저장
                       notifier.setAccessToken(result["accessToken"] as String?);
 
+                      notifier.setRefreshToken(result["refreshToken"] as String?,);
                       // device 저장
                       notifier.setDevice(
                         deviceId: result["deviceId"] ?? "",

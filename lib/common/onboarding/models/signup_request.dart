@@ -97,6 +97,7 @@ class SignupRequest {
   String? idToken;
   String? accessToken;
   String? authorizationCode;
+  String? refreshToken;
 
   /// 공통 회원정보
   String? name;

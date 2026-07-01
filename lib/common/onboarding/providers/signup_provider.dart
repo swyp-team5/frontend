@@ -30,6 +30,11 @@ class SignupNotifier extends StateNotifier<SignupRequest> {
     state = state;
   }
 
+  void setRefreshToken(String? token) {
+    state.refreshToken = token;
+    state = state;
+  }
+
   void setAuthorizationCode(String? code) {
     state.authorizationCode = code;
     state = state;

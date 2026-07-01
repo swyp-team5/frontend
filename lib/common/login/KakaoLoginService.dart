@@ -93,7 +93,9 @@ class KakaoLoginService {
 
       return {
         "provider": "KAKAO",
-        "accessToken": token.accessToken,
+        "accessToken": result["accessToken"], // 서버 JWT
+        "refreshToken": result["refreshToken"], // 서버 RefreshToken
+        "member": result["member"],
         "deviceId": deviceId,
         "platform": platform,
         "appVersion": packageInfo.version,
