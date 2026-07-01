@@ -10,6 +10,8 @@ import '../../api/auth_sociallLogin_api.dart';
 class KakaoLoginService {
   static Future<Map<String, dynamic>> login() async {
     try {
+      print("===== 1. Kakao Login Start =====");
+
       OAuthToken token;
 
       if (await isKakaoTalkInstalled()) {
@@ -22,21 +24,53 @@ class KakaoLoginService {
         token = await UserApi.instance.loginWithKakaoAccount();
       }
 
-      final packageInfo = await PackageInfo.fromPlatform();
-      final deviceInfo = DeviceInfoPlugin();
+      print("===== 2. Kakao Token Success =====");
+      print(token.accessToken);
 
-      String deviceId;
-      String platform;
+      final packageInfo = await PackageInfo.fromPlatform();
+
+      print("===== 3. PackageInfo Success =====");
+      print(packageInfo.version);
+
+      String deviceId = "";
+      String platform = Platform.isAndroid ? "ANDROID" : "IOS";
 
       if (Platform.isAndroid) {
-        final info = await deviceInfo.androidInfo;
-        deviceId = info.id;
-        platform = "ANDROID";
+        try {
+          print("===== 4. DeviceInfo Start =====");
+
+          final deviceInfo = DeviceInfoPlugin();
+          final info = await deviceInfo.androidInfo;
+
+          print("===== 5. DeviceInfo Success =====");
+
+          print("id = ${info.id}");
+          print("model = ${info.model}");
+          print("sdk = ${info.version.sdkInt}");
+
+          deviceId = info.id ?? "";
+        } catch (e, s) {
+          print("===== DeviceInfo Error =====");
+          print(e);
+          print(s);
+
+          /// device_info_plus가 죽으면 임시 UUID 사용
+          deviceId = "emulator-device";
+        }
       } else {
-        final info = await deviceInfo.iosInfo;
-        deviceId = info.identifierForVendor ?? "";
-        platform = "IOS";
+        try {
+          final deviceInfo = DeviceInfoPlugin();
+          final info = await deviceInfo.iosInfo;
+
+          deviceId = info.identifierForVendor ?? "";
+        } catch (_) {
+          deviceId = "ios-device";
+        }
       }
+
+      print("===== 6. Device =====");
+      print(deviceId);
+      print(platform);
 
       final response = await AuthSocialLoginApi.socialLogin(
         provider: "KAKAO",
@@ -46,13 +80,17 @@ class KakaoLoginService {
         appVersion: packageInfo.version,
       );
 
+      print("===== 7. Status =====");
+      print(response.statusCode);
+
+      print("===== 8. Body =====");
+      print(response.body);
+
       final result = jsonDecode(response.body);
 
-      if (response.statusCode != 200) {
-        throw Exception(result["message"]);
-      }
+      print("===== 9. Parsed =====");
+      print(result);
 
-      /// 로그인 성공 후 필요한 값도 같이 반환
       return {
         "provider": "KAKAO",
         "accessToken": token.accessToken,
@@ -60,8 +98,11 @@ class KakaoLoginService {
         "platform": platform,
         "appVersion": packageInfo.version,
       };
-    } catch (e) {
-      throw Exception("카카오 로그인 오류 : $e");
+    } catch (e, stack) {
+      print("===== LOGIN ERROR =====");
+      print(e);
+      print(stack);
+      rethrow;
     }
   }
 }

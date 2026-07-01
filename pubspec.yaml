@@ -30,7 +30,7 @@ dependencies:
 
   http: ^1.2.1
   google_sign_in: ^6.1.5
-  device_info_plus: ^10.1.0
+  device_info_plus: ^11.5.0
   package_info_plus: ^8.0.0
 
   kakao_flutter_sdk_user: ^1.9.5
