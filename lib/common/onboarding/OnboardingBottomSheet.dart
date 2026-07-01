@@ -14,6 +14,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../api/auth_sociallLogin_api.dart';
 import '../../service/social_login_service.dart';
+import '../auth/server_token_manager.dart';
 import '../login/KakaoLoginService.dart';
 import 'models/signup_request.dart';
 
@@ -83,49 +84,59 @@ class OnboardingBottomSheet extends ConsumerWidget {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton.icon(
-                  onPressed: () async {
-                    try {
-                      final result = await KakaoLoginService.login();
+                    onPressed: () async {
+                      try {
+                        final result = await KakaoLoginService.login();
 
-                      final notifier = ref.read(signupProvider.notifier);
+                        await ServerTokenManager.saveTokens(
+                          accessToken: result["accessToken"],
+                          refreshToken: result["refreshToken"],
+                        );
 
-                      // provider 저장
-                      notifier.setProvider(SocialProvider.KAKAO);
+                        final notifier = ref.read(signupProvider.notifier);
 
-                      // accessToken 저장
-                      notifier.setAccessToken(result["accessToken"] as String?);
+                        print(identityHashCode(notifier));
 
-                      notifier.setRefreshToken(result["refreshToken"] as String?,);
-                      // device 저장
-                      notifier.setDevice(
-                        deviceId: result["deviceId"] ?? "",
-                        platform: result["platform"] ?? "",
-                        appVersion: result["appVersion"] ?? "",
-                      );
+                        notifier.setProvider(SocialProvider.KAKAO);
 
-                      debugPrint("===== Kakao Login Result =====");
-                      debugPrint(result.toString());
+                        // ✅ 서버 JWT 저장
+                        notifier.setAccessToken(result["accessToken"]);
 
-                      if (!context.mounted) return;
+                        print("===== Provider Save =====");
+                        print(result["accessToken"]);
 
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const CommonSignUpPage(),
-                        ),
-                      );
-                    } catch (e) {
-                      debugPrint(e.toString());
+                        // ✅ RefreshToken 저장
+                        notifier.setRefreshToken(result["refreshToken"]);
 
-                      if (!context.mounted) return;
+                        // ✅ device 저장
+                        notifier.setDevice(
+                          deviceId: result["deviceId"],
+                          platform: result["platform"],
+                          appVersion: result["appVersion"],
+                        );
 
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("카카오 로그인 실패\n$e"),
-                        ),
-                      );
-                    }
-                  },
+                        debugPrint("===== Kakao Login Success =====");
+                        debugPrint(result.toString());
+
+                        if (!context.mounted) return;
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const CommonSignUpPage(),
+                          ),
+                        );
+
+                      } catch (e) {
+                        debugPrint(e.toString());
+
+                        if (!context.mounted) return;
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text("카카오 로그인 실패\n$e")),
+                        );
+                      }
+                    },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xffFFEB3B),
                     elevation: 0,

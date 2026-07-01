@@ -198,6 +198,8 @@ class _RSignUp3State extends ConsumerState<RSignUp3> {
                       ? () {
                     final notifier = ref.read(signupProvider.notifier);
 
+                    print(identityHashCode(notifier));
+
                     notifier.setRoadAddress(
                       addressController.text.trim(),
                     );

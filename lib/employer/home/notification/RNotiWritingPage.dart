@@ -4,12 +4,19 @@ import 'package:intl/intl.dart';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:photo_manager/photo_manager.dart';
+import '../../../common/auth/server_token_manager.dart';
+import '../../../common/onboarding/providers/signup_provider.dart';
 import '../../../common/widgets/BottomNavBar.dart';
 import '../../crews/RCrewPage.dart';
 import '../../mypage/RMyPage.dart';
 import '../RHomePage.dart';
 import 'RNotificationProvider.dart';
 import 'RNotificationModel.dart';
+import 'package:dio/dio.dart';
+import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
+
+import 'api/notice_api.dart';
+import 'api/notice_upload_service.dart';
 
 class RNotiWritingPage extends ConsumerStatefulWidget {
   const RNotiWritingPage({super.key});
@@ -24,26 +31,111 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
 
   File? selectedImage;
 
+  late final Dio dio;
+  late final NoticeUploadService uploadService;
+
   Future<void> _registerNotice() async {
+    try {
+      final accessToken = await ServerTokenManager.getAccessToken();
 
-    final newNotice = RNotificationModel(
-      title: titleController.text,
-      content: contentController.text,
-      writer: '김다빈',
-      date: DateFormat('M월 d일 HH:mm')
-          .format(DateTime.now()),
-      imagePath: selectedImage?.path,
-      reactions: [],
-    );
+      print(accessToken);
 
-    await ref
-        .read(RNotificationProvider.notifier)
-        .addNotice(newNotice);
+      if (accessToken == null) {
+        throw Exception("로그인이 필요합니다.");
+      }
 
-    if (!mounted) return;
+      debugPrint("ACCESS TOKEN = $accessToken");
 
-    Navigator.pop(context); // 바텀시트 닫기
-    Navigator.pop(context); // 작성페이지 닫기
+      if (titleController.text.trim().isEmpty) {
+        throw Exception("제목을 입력해주세요.");
+      }
+
+      if (contentController.text.trim().isEmpty) {
+        throw Exception("내용을 입력해주세요.");
+      }
+
+      List<String> imageObjectKeys = [];
+
+      //---------------------------------------------------
+      // 1. 이미지가 있으면
+      //---------------------------------------------------
+
+      if (selectedImage != null) {
+        debugPrint("Bearer $accessToken");
+        final uploadInfo = await uploadService.getUploadUrl(
+          workPlaceId: 1,
+          token: accessToken,
+          file: selectedImage!,
+        );
+
+        debugPrint(uploadInfo.toString());
+
+        //--------------------------------------------
+        // 2. S3 업로드
+        //--------------------------------------------
+
+        await uploadService.uploadImageToS3(
+          uploadInfo: uploadInfo,
+          file: selectedImage!,
+        );
+
+        //--------------------------------------------
+        // 3. objectKey 저장
+        //--------------------------------------------
+
+        imageObjectKeys.add(uploadInfo["objectKey"]);
+      }
+
+      //---------------------------------------------------
+      // 4. 공지 등록
+      //---------------------------------------------------
+
+      final noticeApi = NoticeApi(dio);
+
+      final response = await noticeApi.createNotice(
+        workPlaceId: 1,
+        accessToken: accessToken,
+        title: titleController.text.trim(),
+        content: contentController.text.trim(),
+        representative: true,
+        imageObjectKeys: imageObjectKeys,
+      );
+
+      debugPrint("========== NOTICE ==========");
+      debugPrint(response.data.toString());
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("공지가 등록되었습니다."),
+        ),
+      );
+
+      Navigator.pop(context);
+      Navigator.pop(context);
+    } on DioException catch (e) {
+      debugPrint(e.response?.statusCode.toString());
+      debugPrint(e.response?.data.toString());
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.response?.data.toString() ?? "등록 실패",
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+        ),
+      );
+    }
   }
 
   Future<void> _showGalleryBottomSheet() async {
@@ -421,6 +513,18 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
         );
       },
     );
+  }
+  late NoticeApi noticeApi;
+
+  @override
+  void initState() {
+    super.initState();
+
+    dio = Dio();
+    dio.options.baseUrl = "https://chackchack.shop";
+
+    noticeApi = NoticeApi(dio);
+    uploadService = NoticeUploadService(dio);
   }
 
   @override

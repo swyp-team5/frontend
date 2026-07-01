@@ -9,7 +9,9 @@ StateNotifierProvider<SignupNotifier, SignupRequest>(
 );
 
 class SignupNotifier extends StateNotifier<SignupRequest> {
-  SignupNotifier() : super(SignupRequest());
+  SignupNotifier() : super(SignupRequest()) {
+    print("SignupNotifier 생성됨 : ${identityHashCode(this)}");
+  }
 
   //----------------------------------------
   // 소셜 로그인
@@ -161,16 +163,24 @@ class SignupNotifier extends StateNotifier<SignupRequest> {
   //----------------------------------------
 
   Future<bool> signUp() async {
+    print("========== CURRENT STATE ==========");
+    print(state.provider);
+    print(state.accessToken);
+    print(state.refreshToken);
+    print(state.name);
+    print(state.phoneNumber);
+    print(state.device.deviceId);
+    print(state.device.platform);
+    print(state.device.appVersion);
+    print(state.toJson());
+    print("===================================");
+
     try {
       final response = state.isEmployer
           ? await SignupApi.ownerSignup(state)
           : await SignupApi.workerSignup(state);
 
-      print("========== SIGN UP ==========");
-      print("REQUEST : ${state.toJson()}");
-      print("STATUS  : ${response.statusCode}");
-      print("BODY    : ${response.body}");
-      print("=============================");
+      print(response.body);
 
       return response.statusCode == 200 ||
           response.statusCode == 201;
