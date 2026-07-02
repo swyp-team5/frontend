@@ -8,6 +8,8 @@ import 'package:chack_chack/employer/home/widgets/RNoticeWriteCard.dart';
 import 'package:chack_chack/employer/home/widgets/RScheduleCard.dart';
 import 'package:chack_chack/employer/home/widgets/RTodayWorkCard.dart';
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
+import '../../common/auth/server_token_manager.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
 import '../crews/RCrewPage.dart';
@@ -33,10 +35,95 @@ class RHomePage extends StatefulWidget {
 class _RHomePageState extends State<RHomePage> {
   bool isCardVisible = true;
 
+  List<Map<String, dynamic>> stores = [];
+
+  int? selectedWorkPlaceId;
+  String selectedStoreName = "";
+
   /// 카드에서 사용할 남은 일수
   int get daysLeft {
     final now = DateTime.now();
     return 8 - now.weekday;
+  }
+
+  void _showStoreBottomSheet(BuildContext context) {
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return SafeArea(
+          child: Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(24),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+
+                Container(
+                  width: 48,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD9D9D9),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                const Text(
+                  "매장 선택",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                ...stores.map((store) {
+                  final selected =
+                      store["workPlaceId"] == selectedWorkPlaceId;
+
+                  return ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      store["name"],
+                      style: TextStyle(
+                        fontWeight:
+                        selected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                    trailing: selected
+                        ? const Icon(
+                      Icons.check,
+                      color: Color(0xFF0084FF),
+                    )
+                        : null,
+                    onTap: () {
+                      setState(() {
+                        selectedWorkPlaceId = store["workPlaceId"];
+                        selectedStoreName = store["name"];
+                      });
+
+                      Navigator.pop(context);
+
+                      // TODO
+                      // 선택된 workPlaceId 기준으로
+                      // 공지 / 스케줄 / 출퇴근 API 다시 호출
+                    },
+                  );
+                }).toList(),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   //==========================================================
@@ -197,6 +284,70 @@ class _RHomePageState extends State<RHomePage> {
     );
   }
 
+  Future<void> _loadWorkPlaces() async {
+    try {
+
+      final token = await ServerTokenManager.getAccessToken();
+
+      debugPrint("HOME TOKEN = $token");
+
+      if (token == null || token.isEmpty) {
+        debugPrint("토큰 없음");
+        return;
+      }
+
+      final dio = Dio();
+
+      final response = await dio.get(
+        "https://chackchack.shop/api/work-places/me",
+        options: Options(
+          headers: {
+            "Authorization": "Bearer $token",
+          },
+        ),
+      );
+
+      final List list = response.data["workPlaces"];
+
+      setState(() {
+        stores = List<Map<String, dynamic>>.from(list);
+
+        if (stores.isNotEmpty) {
+          selectedWorkPlaceId = stores.first["workPlaceId"];
+          selectedStoreName = stores.first["name"];
+        }
+      });
+
+    } on DioException catch (e) {
+
+      debugPrint("status = ${e.response?.statusCode}");
+      debugPrint("body = ${e.response?.data}");
+
+    } catch (e) {
+
+      debugPrint(e.toString());
+
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _init();
+  }
+
+  Future<void> _init() async {
+    final access = await ServerTokenManager.getAccessToken();
+    final refresh = await ServerTokenManager.getRefreshToken();
+
+    debugPrint("===============");
+    debugPrint("ACCESS = $access");
+    debugPrint("REFRESH = $refresh");
+    debugPrint("===============");
+
+    await _loadWorkPlaces();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -240,8 +391,10 @@ class _RHomePageState extends State<RHomePage> {
             children: [
               /// Header
               RHomeHeader(
-                storeName: "매장명",
-                onStoreTap: () {},
+                storeName: selectedStoreName,
+                onStoreTap: () {
+                  _showStoreBottomSheet(context);
+                },
                 onNotificationTap: () {
                   Navigator.push(
                     context,

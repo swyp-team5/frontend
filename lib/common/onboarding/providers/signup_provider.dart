@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/signup_api.dart';
@@ -162,31 +164,20 @@ class SignupNotifier extends StateNotifier<SignupRequest> {
   // 회원가입
   //----------------------------------------
 
-  Future<bool> signUp() async {
-    print("========== CURRENT STATE ==========");
-    print(state.provider);
-    print(state.accessToken);
-    print(state.refreshToken);
-    print(state.name);
-    print(state.phoneNumber);
-    print(state.device.deviceId);
-    print(state.device.platform);
-    print(state.device.appVersion);
-    print(state.toJson());
-    print("===================================");
-
+  Future<Map<String, dynamic>?> signUp() async {
     try {
       final response = state.isEmployer
           ? await SignupApi.ownerSignup(state)
           : await SignupApi.workerSignup(state);
 
-      print(response.body);
+      if (response.statusCode == 200 ||
+          response.statusCode == 201) {
+        return jsonDecode(response.body);
+      }
 
-      return response.statusCode == 200 ||
-          response.statusCode == 201;
+      return null;
     } catch (e) {
-      print(e);
-      return false;
+      return null;
     }
   }
 

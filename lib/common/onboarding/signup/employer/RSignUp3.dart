@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../employer/home/RHomePage.dart';
+import '../../../auth/server_token_manager.dart';
 import '../../providers/signup_provider.dart';
 import 'AddressSearchPage.dart';
 
@@ -380,7 +381,13 @@ class _RSignUp3State extends ConsumerState<RSignUp3> {
 
                           if (!mounted) return;
 
-                          if (result) {
+                          if (result != null) {
+
+                            await ServerTokenManager.saveTokens(
+                              accessToken: result["accessToken"],
+                              refreshToken: result["refreshToken"],
+                            );
+
                             Navigator.pushAndRemoveUntil(
                               context,
                               MaterialPageRoute(
@@ -388,6 +395,7 @@ class _RSignUp3State extends ConsumerState<RSignUp3> {
                               ),
                                   (route) => false,
                             );
+
                           } else {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(

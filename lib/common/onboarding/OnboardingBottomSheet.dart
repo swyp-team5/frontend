@@ -170,56 +170,56 @@ class OnboardingBottomSheet extends ConsumerWidget {
                 height: 56,
                 child: OutlinedButton(
                     onPressed: () async {
-                      try {
-                        final result = await KakaoLoginService.login();
-
-                        debugPrint("===== Kakao Login Success =====");
-                        debugPrint(result.toString());
-
-                        // 서버 JWT 저장
-                        await ServerTokenManager.saveTokens(
-                          accessToken: result["serverAccessToken"],
-                          refreshToken: result["serverRefreshToken"],
-                        );
-
-                        final notifier = ref.read(signupProvider.notifier);
-
-                        notifier.setProvider(SocialProvider.KAKAO);
-
-                        // Provider에도 서버 JWT 저장
-                        notifier.setAccessToken(result["serverAccessToken"]);
-                        notifier.setRefreshToken(result["serverRefreshToken"]);
-
-                        notifier.setDevice(
-                          deviceId: result["deviceId"],
-                          platform: result["platform"],
-                          appVersion: result["appVersion"],
-                        );
-
-                        // 저장 확인
-                        final token = await ServerTokenManager.getAccessToken();
-                        debugPrint("===== SAVED TOKEN =====");
-                        debugPrint(token);
-
-                        if (!context.mounted) return;
-
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const CommonSignUpPage(),
-                          ),
-                        );
-                      } catch (e) {
-                        debugPrint(e.toString());
-
-                        if (!context.mounted) return;
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text("카카오 로그인 실패\n$e"),
-                          ),
-                        );
-                      }
+                      // try {
+                      //   final result = await KakaoLoginService.login();
+                      //
+                      //   debugPrint("===== Kakao Login Success =====");
+                      //   debugPrint(result.toString());
+                      //
+                      //   // 서버 JWT 저장
+                      //   await ServerTokenManager.saveTokens(
+                      //     accessToken: result["serverAccessToken"],
+                      //     refreshToken: result["serverRefreshToken"],
+                      //   );
+                      //
+                      //   final notifier = ref.read(signupProvider.notifier);
+                      //
+                      //   notifier.setProvider(SocialProvider.KAKAO);
+                      //
+                      //   // Provider에도 서버 JWT 저장
+                      //   notifier.setAccessToken(result["serverAccessToken"]);
+                      //   notifier.setRefreshToken(result["serverRefreshToken"]);
+                      //
+                      //   notifier.setDevice(
+                      //     deviceId: result["deviceId"],
+                      //     platform: result["platform"],
+                      //     appVersion: result["appVersion"],
+                      //   );
+                      //
+                      //   // 저장 확인
+                      //   final token = await ServerTokenManager.getAccessToken();
+                      //   debugPrint("===== SAVED TOKEN =====");
+                      //   debugPrint(token);
+                      //
+                      //   if (!context.mounted) return;
+                      //
+                      //   Navigator.push(
+                      //     context,
+                      //     MaterialPageRoute(
+                      //       builder: (_) => const CommonSignUpPage(),
+                      //     ),
+                      //   );
+                      // } catch (e) {
+                      //   debugPrint(e.toString());
+                      //
+                      //   if (!context.mounted) return;
+                      //
+                      //   ScaffoldMessenger.of(context).showSnackBar(
+                      //     SnackBar(
+                      //       content: Text("카카오 로그인 실패\n$e"),
+                      //     ),
+                      //   );
+                      // }
                     },
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
