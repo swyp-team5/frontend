@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ServerTokenManager {
@@ -9,48 +11,86 @@ class ServerTokenManager {
     required String refreshToken,
   }) async {
     final prefs = await SharedPreferences.getInstance();
-
     await prefs.setString(_accessTokenKey, accessToken);
     await prefs.setString(_refreshTokenKey, refreshToken);
-
-    await prefs.reload(); // 🔥 중요 (flush 보장)
-
-    final check = prefs.getString(_accessTokenKey);
-    print("===== SAVE CHECK =====");
-    print(check);
   }
 
-  static Future<String> getAccessToken() async {
+  static Future<String?> getAccessToken() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.reload(); // 🔥 중요
-
-    final token = prefs.getString(_accessTokenKey);
-
-    print("===== TOKEN LOAD =====");
-    print(token);
-
-    if (token == null || token.isEmpty) {
-      throw Exception("로그인 토큰 없음 (재로그인 필요)");
-    }
-
-    return token;
+    return prefs.getString(_accessTokenKey);
   }
 
-  static Future<String> getRefreshToken() async {
+  static Future<String?> getRefreshToken() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.reload();
-
-    final token = prefs.getString(_refreshTokenKey);
-
-    if (token == null || token.isEmpty) {
-      throw Exception("refresh token 없음");
-    }
-
-    return token;
+    return prefs.getString(_refreshTokenKey);
   }
 
   static Future<void> clear() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
+  }
+
+  /// JWT의 exp(초)를 파싱해서 만료 여부 확인
+  static bool isExpired(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return true;
+
+      final payload = utf8.decode(
+        base64Url.decode(base64Url.normalize(parts[1])),
+      );
+      final Map<String, dynamic> data = jsonDecode(payload);
+      final exp = data['exp'] as int?;
+      if (exp == null) return true;
+
+      final expDate = DateTime.fromMillisecondsSinceEpoch(exp * 1000);
+      // 만료 10초 전이면 미리 만료로 취급 (여유 버퍼)
+      return DateTime.now().isAfter(
+        expDate.subtract(const Duration(seconds: 10)),
+      );
+    } catch (_) {
+      return true;
+    }
+  }
+
+  /// 유효한 accessToken 반환. 만료됐으면 자동으로 refresh 시도.
+  static Future<String?> getValidAccessToken() async {
+    final access = await getAccessToken();
+    if (access == null) return null;
+
+    if (!isExpired(access)) return access;
+
+    // 만료됐으면 refresh 시도
+    return refreshAccessToken();
+  }
+
+  /// refreshToken으로 새 accessToken 발급
+  static Future<String?> refreshAccessToken() async {
+    final refreshToken = await getRefreshToken();
+    if (refreshToken == null) return null;
+
+    try {
+      // 인터셉터 없는 별도 Dio 인스턴스 사용 (무한루프 방지)
+      final refreshDio = Dio();
+
+      final response = await refreshDio.post(
+        "https://chackchack.shop/api/auth/reissue", // TODO: 실제 엔드포인트로 수정
+        data: {"refreshToken": refreshToken},
+      );
+
+      final newAccessToken = response.data["accessToken"];
+      final newRefreshToken = response.data["refreshToken"] ?? refreshToken;
+
+      await saveTokens(
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+      );
+
+      return newAccessToken;
+    } catch (e) {
+      // refresh도 실패 → 재로그인 필요
+      await clear();
+      return null;
+    }
   }
 }

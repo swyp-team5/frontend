@@ -9,77 +9,75 @@ import '../../api/auth_sociallLogin_api.dart';
 
 class KakaoLoginService {
   static Future<Map<String, dynamic>> login() async {
-    OAuthToken token;
+    OAuthToken kakaoToken;
 
+    // -----------------------------
+    // 카카오 로그인
+    // -----------------------------
     if (await isKakaoTalkInstalled()) {
       try {
-        token = await UserApi.instance.loginWithKakaoTalk();
+        kakaoToken = await UserApi.instance.loginWithKakaoTalk();
       } catch (_) {
-        token = await UserApi.instance.loginWithKakaoAccount();
+        kakaoToken = await UserApi.instance.loginWithKakaoAccount();
       }
     } else {
-      token = await UserApi.instance.loginWithKakaoAccount();
+      kakaoToken = await UserApi.instance.loginWithKakaoAccount();
     }
 
+    // -----------------------------
+    // 디바이스 정보
+    // -----------------------------
     final packageInfo = await PackageInfo.fromPlatform();
 
     String deviceId = "";
     final platform = Platform.isAndroid ? "ANDROID" : "IOS";
 
     if (Platform.isAndroid) {
-      try {
-        final info = await DeviceInfoPlugin().androidInfo;
-        deviceId = info.id;
-      } catch (_) {
-        deviceId = "emulator-device";
-      }
+      final info = await DeviceInfoPlugin().androidInfo;
+      deviceId = info.id;
     } else {
-      try {
-        final info = await DeviceInfoPlugin().iosInfo;
-        deviceId = info.identifierForVendor ?? "ios-device";
-      } catch (_) {
-        deviceId = "ios-device";
-      }
+      final info = await DeviceInfoPlugin().iosInfo;
+      deviceId = info.identifierForVendor ?? "ios-device";
     }
 
+    // -----------------------------
+    // 서버 로그인
+    // -----------------------------
     final response = await AuthSocialLoginApi.socialLogin(
       provider: "KAKAO",
-      accessToken: token.accessToken,
+      accessToken: kakaoToken.accessToken,
       deviceId: deviceId,
       platform: platform,
       appVersion: packageInfo.version,
     );
 
+    print("========== SERVER LOGIN ==========");
+    print("STATUS : ${response.statusCode}");
+    print("BODY : ${response.body}");
+
+    final result = jsonDecode(response.body);
+
     if (response.statusCode != 200) {
-      throw Exception(response.body);
-    }
-
-    final body = jsonDecode(response.body);
-
-    print(body);
-
-    //------------------------------------------------
-    // 서버 응답 구조 대응
-    //------------------------------------------------
-
-    final data = body["data"] ?? body;
-
-    final accessToken = data["accessToken"];
-    final refreshToken = data["refreshToken"];
-    final member = data["member"];
-
-    if (accessToken == null) {
-      throw Exception("서버에서 accessToken을 받지 못했습니다.");
+      throw Exception(result["message"] ?? "서버 로그인 실패");
     }
 
     return {
       "provider": "KAKAO",
-      "accessToken": accessToken,
-      "refreshToken": refreshToken,
-      "member": member,
+
+      // 서버 JWT
+      "serverAccessToken": result["accessToken"],
+      "serverRefreshToken": result["refreshToken"],
+
+      // 카카오 토큰
+      "kakaoAccessToken": kakaoToken.accessToken,
+
+      // 기기정보
       "deviceId": deviceId,
       "platform": platform,
       "appVersion": packageInfo.version,
+
+      // 회원정보
+      "member": result["member"],
     };
   }
 }

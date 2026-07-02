@@ -66,6 +66,7 @@ flutter:
     - assets/images/automatic_schedule_creation.png
     - assets/images/shift_complete.png
     - assets/images/substitute_complete.png
+    - assets/images/profile.png
 
     - assets/images/onboarding/onboarding1.png
     - assets/images/onboarding/onboarding2.png

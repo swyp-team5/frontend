@@ -40,7 +40,7 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
 
       print(accessToken);
 
-      if (accessToken == null) {
+      if (accessToken == null || accessToken.isEmpty) {
         throw Exception("로그인이 필요합니다.");
       }
 

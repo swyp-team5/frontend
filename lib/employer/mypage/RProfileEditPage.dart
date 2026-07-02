@@ -1,12 +1,13 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 
 import 'dart:typed_data';
 import 'package:photo_manager/photo_manager.dart';
 
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../common/auth/server_token_manager.dart';
+import 'api/profile_api.dart';
+import 'package:dio/dio.dart';
 
 class RProfileEditPage extends StatefulWidget {
 
@@ -17,22 +18,72 @@ class RProfileEditPage extends StatefulWidget {
 }
 
 class _RProfileEditPageState extends State<RProfileEditPage> {
+  String? profileImageUrl;
 
-  // 키 값을 'EMPLOYER_'로 명확히 구분
-  static const String RkeyProfileImage = "EMPLOYER_profileImage";
-  static const String RkeyName = "EMPLOYER_name";
-  static const String RkeyPhone = "EMPLOYER_phone";
-  static const String RkeyStorePhone = "EMPLOYER_storePhone";
-
-  File? profileImage;
-
-  final ImagePicker picker = ImagePicker();
+  late final Dio dio;
+  late final ProfileApi profileApi;
 
   final TextEditingController nameController = TextEditingController();
 
   final TextEditingController phoneController = TextEditingController();
 
-  final TextEditingController storePhoneController = TextEditingController();
+
+  Future<void> updateProfileImage(File file) async {
+    try {
+      final token =
+      await ServerTokenManager.getAccessToken();
+
+      if (token == null) {
+        throw Exception("로그인이 필요합니다.");
+      }
+
+      final uploadInfo =
+      await profileApi.getUploadUrl(
+        token: token,
+        file: file,
+      );
+
+      final uploadUrl = uploadInfo["uploadUrl"];
+      final objectKey = uploadInfo["objectKey"];
+
+      final headers = Map<String, String>.from(
+        uploadInfo["headers"],
+      );
+
+      final bytes = await file.readAsBytes();
+
+      await profileApi.uploadToS3(
+        uploadUrl: uploadUrl,
+        headers: headers,
+        bytes: bytes,
+      );
+
+      await profileApi.updateProfileImage(
+        token: token,
+        objectKey: objectKey,
+      );
+
+      final profile =
+      await profileApi.getMyProfile(
+        token: token,
+      );
+
+      profileImageUrl =
+      profile["profileImage"]?["imageUrl"];
+
+      if (!mounted) return;
+
+      setState(() {});
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("프로필 이미지가 변경되었습니다."),
+        ),
+      );
+    } catch (e) {
+      debugPrint(e.toString());
+    }
+  }
 
   /// 프로필 이미지 선택
   Future<void> _showGalleryBottomSheet() async {
@@ -210,9 +261,8 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
                           await selectedAsset!.originFile;
 
                           if (file != null) {
-                            setState(() {
-                              profileImage = file;
-                            });
+
+                            await updateProfileImage(file);
 
                             if (mounted) {
                               Navigator.pop(context);
@@ -252,6 +302,24 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
   @override
   void initState() {
     super.initState();
+
+    dio = Dio();
+    dio.options.baseUrl = "https://chackchack.shop";
+
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          debugPrint("========== REQUEST ==========");
+          debugPrint("${options.method} ${options.uri}");
+          debugPrint("Headers : ${options.headers}");
+          debugPrint("Body : ${options.data}");
+          handler.next(options);
+        },
+      ),
+    );
+
+    profileApi = ProfileApi(dio);
+
     _loadProfile();
   }
 
@@ -259,39 +327,100 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
   void dispose() {
     nameController.dispose();
     phoneController.dispose();
-    storePhoneController.dispose();
     super.dispose();
   }
 
   Future<void> _loadProfile() async {
-    final prefs = await SharedPreferences.getInstance();
-    final imagePath = prefs.getString(RkeyProfileImage);
-    if (imagePath != null && File(imagePath).existsSync()) {
-      profileImage = File(imagePath);
+    try {
+      final token = await ServerTokenManager.getAccessToken();
+
+      debugPrint("GET TOKEN = $token");
+
+      if (token == null) return;
+
+      final data = await profileApi.getMyProfile(
+        token: token,
+      );
+
+      debugPrint("GET SUCCESS");
+      debugPrint(data.toString());
+
+      nameController.text = data["name"] ?? "";
+      phoneController.text = data["phoneNumber"] ?? "";
+      profileImageUrl = data["profileImage"]?["imageUrl"];
+
+      setState(() {});
+    } on DioException catch (e) {
+      debugPrint("========== GET ERROR ==========");
+      debugPrint("StatusCode : ${e.response?.statusCode}");
+      debugPrint("Response : ${e.response?.data}");
+      debugPrint("Message : ${e.message}");
+    } catch (e) {
+      debugPrint(e.toString());
     }
-    // 기본값도 사장님에 맞게 설정 가능
-    nameController.text = prefs.getString(RkeyName) ?? "집게사장";
-    phoneController.text = prefs.getString(RkeyPhone) ?? "010-XXXX-XXXX";
-    storePhoneController.text = prefs.getString(RkeyStorePhone) ?? "02-XXXX-XXXX";
-    setState(() {});
   }
 
   Future<void> _saveProfile() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (profileImage != null) await prefs.setString(RkeyProfileImage, profileImage!.path);
-    await prefs.setString(RkeyName, nameController.text);
-    await prefs.setString(RkeyPhone, phoneController.text);
-    await prefs.setString(RkeyStorePhone, storePhoneController.text);
+    try {
+      final token = await ServerTokenManager.getAccessToken();
 
-    if (!mounted) return;
+      if (token == null) {
+        throw Exception("로그인이 필요합니다.");
+      }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("저장되었습니다."),
-      ),
-    );
+      // 프로필 수정
+      await profileApi.updateProfile(
+        token: token,
+        name: nameController.text.trim(),
+        phoneNumber: phoneController.text.trim(),
+      );
 
-    Navigator.pop(context, true);
+      // 서버에서 최신 정보 다시 조회
+      final profile = await profileApi.getMyProfile(
+        token: token,
+      );
+
+      nameController.text = profile["name"] ?? "";
+      phoneController.text = profile["phoneNumber"] ?? "";
+      profileImageUrl = profile["profileImage"]?["imageUrl"];
+
+      if (!mounted) return;
+
+      setState(() {});
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("프로필이 수정되었습니다."),
+        ),
+      );
+
+      Navigator.pop(context, true);
+    } on DioException catch (e) {
+      debugPrint("========== DIO ERROR ==========");
+      debugPrint("StatusCode : ${e.response?.statusCode}");
+      debugPrint("Response : ${e.response?.data}");
+      debugPrint("Message : ${e.message}");
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.response?.data.toString() ?? "서버 오류",
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint(e.toString());
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+        ),
+      );
+    }
   }
 
   Future<void> _showEditBottomSheet({
@@ -542,12 +671,18 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
                           decoration: BoxDecoration(
                             color: const Color(0xFFA5A5AF),
                             borderRadius: BorderRadius.circular(24),
-                            image: profileImage != null
-                                ? DecorationImage(
-                              image: FileImage(profileImage!),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(24),
+                            child: profileImageUrl != null
+                                ? Image.network(
+                              profileImageUrl!,
                               fit: BoxFit.cover,
                             )
-                                : null,
+                                : Image.asset(
+                              "assets/images/profile.png",
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
 
@@ -604,28 +739,14 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
               const SizedBox(height: 28),
 
               _buildSection(
-                title: "개인 정보",
-                items: [
-                  _ProfileItem(
-                    title: "이름",
-                    value: nameController.text,
-                  ),
-                  _ProfileItem(
-                    title: "휴대폰 번호",
-                    value: phoneController.text,
-                  ),
+                title: "통합 개인 정보",
+                items: const [
+                  _ProfileItem(title: "이름"),
+                  _ProfileItem(title: "휴대폰 번호"),
                 ],
               ),
 
-              _buildSection(
-                title: "매장 정보",
-                items: [
-                  _ProfileItem(
-                    title: "매장 전화번호",
-                    value: storePhoneController.text,
-                  ),
-                ],
-              ),
+              _buildStoreSetting(),
               const SizedBox(height: 30),
             ],
           ),
@@ -681,9 +802,7 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
                     final controller =
                     items[i].title == "이름"
                         ? nameController
-                        : items[i].title == "휴대폰 번호"
-                        ? phoneController
-                        : storePhoneController;
+                        : phoneController;
 
                     _showEditBottomSheet(
                       title: items[i].title,
@@ -695,9 +814,7 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
                       Text(
                         items[i].title == "이름"
                             ? nameController.text
-                            : items[i].title == "휴대폰 번호"
-                            ? phoneController.text
-                            : storePhoneController.text,
+                            : phoneController.text,
                         style: const TextStyle(
                           fontSize: 16,
                           color: Color(0xFF999999),
@@ -727,56 +844,69 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
     );
   }
 
-  Widget buildItem({
-    required String title,
-    required String value,
-    bool divider = true,
-  }) {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
+
+  Widget _buildStoreSetting() {
+    return Container(
+      margin: const EdgeInsets.symmetric(
+        horizontal: 22,
+        vertical: 10,
+      ),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 20,
+        vertical: 20,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "매장설정",
+            style: TextStyle(
+              fontSize: 16,
+              color: Color(0xFF999999),
+              fontWeight: FontWeight.w700,
             ),
-            const Spacer(),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 18,
-                color: Color(0xff9B9B9B),
-              ),
-            ),
-            const SizedBox(width: 6),
-            const Icon(
-              Icons.chevron_right,
-              color: Color(0xffB5B5BC),
-            ),
-          ],
-        ),
-        if (divider)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 18),
-            child: Divider(height: 1),
           ),
-      ],
+
+          const SizedBox(height: 36),
+
+          InkWell(
+            onTap: () {
+              // TODO : 매장 설정 페이지 이동
+              // Navigator.push(...)
+            },
+            child: const Row(
+              children: [
+                Text(
+                  "매장 설정",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                Spacer(),
+                Icon(
+                  Icons.chevron_right,
+                  color: Color(0xFF999999),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _ProfileItem {
-
   final String title;
-  final String value;
   final bool isArrow;
 
-  _ProfileItem({
+  const _ProfileItem({
     required this.title,
-    required this.value,
     this.isArrow = true,
   });
 }
