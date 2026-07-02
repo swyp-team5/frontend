@@ -85,6 +85,50 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
     }
   }
 
+  Future<void> deleteProfileImage() async {
+    try {
+      final token = await ServerTokenManager.getAccessToken();
+
+      if (token == null) {
+        throw Exception("로그인이 필요합니다.");
+      }
+
+      await profileApi.deleteProfileImage(
+        token: token,
+      );
+
+      final profile = await profileApi.getMyProfile(
+        token: token,
+      );
+
+      profileImageUrl = profile["profileImage"]?["imageUrl"];
+
+      if (!mounted) return;
+
+      setState(() {});
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("프로필 이미지가 삭제되었습니다."),
+        ),
+      );
+    } on DioException catch (e) {
+      debugPrint(e.response?.data.toString());
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.response?.data.toString() ?? "삭제 실패",
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint(e.toString());
+    }
+  }
+
   /// 프로필 이미지 선택
   Future<void> _showGalleryBottomSheet() async {
     final PermissionState ps =
@@ -665,6 +709,7 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
                     Stack(
                       clipBehavior: Clip.none,
                       children: [
+
                         Container(
                           width: 80,
                           height: 80,
@@ -686,6 +731,55 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
                           ),
                         ),
 
+                        // 삭제 버튼 (X)
+                        if (profileImageUrl != null)
+                          Positioned(
+                            top: -6,
+                            right: -6,
+                            child: InkWell(
+                              onTap: () async {
+                                final result = await showDialog<bool>(
+                                  context: context,
+                                  builder: (_) => AlertDialog(
+                                    title: const Text("프로필 이미지 삭제"),
+                                    content: const Text("프로필 이미지를 삭제하시겠습니까?"),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context, false),
+                                        child: const Text("취소"),
+                                      ),
+                                      TextButton(
+                                        onPressed: () =>
+                                            Navigator.pop(context, true),
+                                        child: const Text("삭제"),
+                                      ),
+                                    ],
+                                  ),
+                                );
+
+                                if (result == true) {
+                                  await deleteProfileImage();
+                                }
+                              },
+                              child: Container(
+                                width: 26,
+                                height: 26,
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white),
+                                ),
+                                child: const Icon(
+                                  Icons.close,
+                                  size: 16,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                          ),
+
+                        // 카메라 버튼
                         Positioned(
                           right: -2,
                           bottom: -2,
@@ -695,11 +789,9 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
                               width: 34,
                               height: 34,
                               decoration: BoxDecoration(
-                                color: Color(0xFFF1F1F5),
+                                color: const Color(0xFFF1F1F5),
                                 shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: Colors.white,
-                                ),
+                                border: Border.all(color: Colors.white),
                               ),
                               child: const Icon(
                                 Icons.photo_camera,

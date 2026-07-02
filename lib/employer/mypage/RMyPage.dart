@@ -8,6 +8,10 @@ import '../../../common/widgets/BottomNavBar.dart';
 import '../crews/RCrewPage.dart';
 import '../schedule/RMainSchedulePage.dart';
 
+import '../../../common/auth/server_token_manager.dart';
+import 'package:dio/dio.dart';
+import 'api/profile_api.dart';
+
 class RMyPage extends StatefulWidget {
 
   const RMyPage({super.key});
@@ -18,28 +22,27 @@ class RMyPage extends StatefulWidget {
 
 class _RMyPageState extends State<RMyPage> {
 
+  final ProfileApi profileApi = ProfileApi(
+    Dio(
+      BaseOptions(
+        baseUrl: "https://chackchack.shop",
+      ),
+    ),
+  );
+
   String profileName = "김사장";
 
-  /// 현재는 더미 사용자 ID
-  /// API 연결 시: response.user.id 사용
   final String userId = "owner_1";
 
-  /// 사용자별 저장 키
   String get RstorePreferenceKey => "R_selected_store_$userId";
 
-  /// 현재는 더미 데이터
-  /// API 연결 시:
-  // final List<StoreModel> stores = response.data;
   final List<String> stores = [
-    "매장명1", "매장명2"
+    "매장명1",
+    "매장명2",
   ];
 
   String RselectedStore = "매장명1";
   String RtempSelectedStore = "매장명1";
-
-  /// API 연결 시:
-  // selectedStore = response.currentStore.name;
-  // tempSelectedStore = selectedStore;
 
 
   void _RshowStoreBottomSheet(BuildContext context) {
@@ -235,6 +238,7 @@ class _RMyPageState extends State<RMyPage> {
   @override
   void initState() {
     super.initState();
+
     _loadSelectedStore();
     _loadProfileName();
   }
@@ -253,12 +257,29 @@ class _RMyPageState extends State<RMyPage> {
   }
 
   Future<void> _loadProfileName() async {
-    final prefs = await SharedPreferences.getInstance();
+    try {
+      final token = await ServerTokenManager.getAccessToken();
 
-    setState(() {
-      profileName =
-          prefs.getString("EMPLOYER_name") ?? "김사장";
-    });
+      if (token == null || token.isEmpty) {
+        debugPrint("토큰 없음");
+        return;
+      }
+
+      final response = await profileApi.getMyProfile(
+        token: token,
+      );
+
+      debugPrint("===== PROFILE RESPONSE =====");
+      debugPrint(response.toString());
+
+      if (!mounted) return;
+
+      setState(() {
+        profileName = response["name"]?.toString() ?? "이름 없음";
+      });
+    } catch (e) {
+      debugPrint("프로필 조회 실패 : $e");
+    }
   }
 
   @override

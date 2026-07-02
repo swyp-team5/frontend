@@ -59,9 +59,6 @@ class ProfileApi {
   Future<Map<String, dynamic>> getMyProfile({
     required String token,
   }) async {
-
-    debugPrint("GET TOKEN = $token");
-
     final response = await dio.get(
       "/api/members/me/profile",
       options: Options(
@@ -70,8 +67,6 @@ class ProfileApi {
         },
       ),
     );
-
-    debugPrint(response.requestOptions.headers.toString());
 
     return response.data;
   }
@@ -118,5 +113,18 @@ class ProfileApi {
     );
 
     debugPrint(response.data.toString());
+  }
+
+  Future<void> deleteProfileImage({
+    required String token,
+  }) async {
+    await dio.delete(
+      "/api/members/me/profile-image",
+      options: Options(
+        headers: {
+          "Authorization": "Bearer $token",
+        },
+      ),
+    );
   }
 }
