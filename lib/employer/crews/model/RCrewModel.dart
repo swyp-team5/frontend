@@ -1,27 +1,40 @@
 class RCrewModel {
-  final String role;
+  final int crewId;
+  final int memberId;
+
   final String name;
-  List<String> tags;
-  final bool showArrow;
+  final String phoneNumber;
+  final String? profileImageUrl;
+
+  final String crewRole;
+  final String joinStatus;
+  final String crewStatus;
+
+  final DateTime createdAt;
 
   RCrewModel({
-    required this.role,
+    required this.crewId,
+    required this.memberId,
     required this.name,
-    this.tags = const [],
-    this.showArrow = true,
+    required this.phoneNumber,
+    required this.profileImageUrl,
+    required this.crewRole,
+    required this.joinStatus,
+    required this.crewStatus,
+    required this.createdAt,
   });
-
-  Map<String, dynamic> toJson() => {
-    "role": role,
-    "name": name,
-    "tags": tags,
-  };
 
   factory RCrewModel.fromJson(Map<String, dynamic> json) {
     return RCrewModel(
-      role: json["role"],
+      crewId: json["crewId"],
+      memberId: json["memberId"],
       name: json["name"],
-      tags: List<String>.from(json["tags"]),
+      phoneNumber: json["phoneNumber"],
+      profileImageUrl: json["profileImageUrl"],
+      crewRole: json["crewRole"],
+      joinStatus: json["joinStatus"],
+      crewStatus: json["crewStatus"],
+      createdAt: DateTime.parse(json["createdAt"]),
     );
   }
 }

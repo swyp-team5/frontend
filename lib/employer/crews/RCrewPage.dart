@@ -13,6 +13,9 @@ import 'model/RCrewModel.dart';
 
 import 'widgets/RCrewCard.dart';
 
+import '../../common/auth/server_token_manager.dart';
+import 'package:dio/dio.dart';
+
 class RCrewPage extends StatefulWidget {
   const RCrewPage({super.key});
 
@@ -23,34 +26,6 @@ class RCrewPage extends StatefulWidget {
 class _RCrewPageState extends State<RCrewPage> {
 
   List<RCrewModel> crews = [];
-
-  final List<RCrewModel> defaultCrews = [
-    RCrewModel(
-      role: "근무자",
-      name: "박지연",
-      tags: ["주방", "100만 볼트"],
-    ),
-    RCrewModel(
-      role: "근무자",
-      name: "파이리",
-      tags: ["주방", "불뽑기"],
-    ),
-    RCrewModel(
-      role: "근무자",
-      name: "꼬부기",
-      tags: ["카운터", "물대포"],
-    ),
-    RCrewModel(
-      role: "근무자",
-      name: "버터플",
-      tags: ["카운터", "주방"],
-    ),
-    RCrewModel(
-      role: "근무자",
-      name: "꼬부기",
-      tags: ["야도란", "주방"],
-    ),
-  ];
 
   void _showInviteBottomSheet(BuildContext context) {
     showModalBottomSheet(
@@ -260,36 +235,60 @@ class _RCrewPageState extends State<RCrewPage> {
   }
 
   Future<void> _loadCrews() async {
-    final prefs = await SharedPreferences.getInstance();
+    const int workPlaceId = 1;
 
-    final jsonString = prefs.getString("r_crews");
+    try {
+      final token = await ServerTokenManager.getValidAccessToken();
 
-    if (jsonString == null) {
-      crews = List.from(defaultCrews);
-      await _saveCrews();
-    } else {
-      final List list = jsonDecode(jsonString);
+      if (token == null) {
+        debugPrint("AccessToken이 없습니다.");
+        return;
+      }
 
-      crews =
-          list.map((e) => RCrewModel.fromJson(e)).toList();
+      final dio = Dio();
+
+      final response = await dio.get(
+        "https://chackchack.shop/api/work-places/$workPlaceId/crews",
+        options: Options(
+          headers: {
+            "Authorization": "Bearer $token",
+          },
+        ),
+      );
+
+      final List list = response.data["crews"];
+
+      setState(() {
+        crews = list
+            .map((e) => RCrewModel.fromJson(e))
+            .toList();
+      });
+    } on DioException catch (e) {
+      debugPrint("크루 조회 실패");
+      debugPrint("statusCode : ${e.response?.statusCode}");
+      debugPrint("response : ${e.response?.data}");
+
+      setState(() {
+        crews = [];
+      });
+    } catch (e) {
+      debugPrint(e.toString());
+
+      setState(() {
+        crews = [];
+      });
     }
-
-    setState(() {});
-  }
-
-  Future<void> _saveCrews() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    final jsonString = jsonEncode(
-      crews.map((e) => e.toJson()).toList(),
-    );
-
-    await prefs.setString("r_crews", jsonString);
   }
 
 
   @override
   Widget build(BuildContext context) {
+
+    final owner =
+    crews.where((e) => e.crewRole == "OWNER").toList();
+
+    final workers =
+    crews.where((e) => e.crewRole == "WORKER").toList();
 
     return Scaffold(
       backgroundColor:
@@ -342,26 +341,24 @@ class _RCrewPageState extends State<RCrewPage> {
               ),
 
               const SizedBox(height: 24),
-
-              /// 본인이 사장님일 경우
-              Text(
-                "나",
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 14,
+              if (owner.isNotEmpty) ...[
+                Text(
+                  "나",
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 14,
+                  ),
                 ),
-              ),
 
-              const SizedBox(height: 14),
+                const SizedBox(height: 14),
 
-              _RCrewTile(
-                role: "사장님",
-                name: "손흥민",
-                tags: const [],
-                showArrow: false,
-              ),
+                RCrewCard(
+                  crew: owner.first,
+                  showArrow: false,
+                ),
 
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
+              ],
 
               /// 근무자 수
               Row(
@@ -376,7 +373,7 @@ class _RCrewPageState extends State<RCrewPage> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    "${crews.length}",
+                    "${workers.length}",
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -388,34 +385,59 @@ class _RCrewPageState extends State<RCrewPage> {
 
               const SizedBox(height: 16),
 
-              Column(
-                children: crews.asMap().entries.map((entry) {
-                  final index = entry.key;
-                  final crew = entry.value;
+              if (crews.isNotEmpty)
+                Column(
+                  children: workers.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final crew = entry.value;
 
-                  return RCrewCard(
-                    crew: crew,
-                    onTap: () async {
-                      final updatedCrew = await Navigator.push<RCrewModel>(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => RCrewDetailPage(
-                            crew: crew,
+                    return RCrewCard(
+                      crew: crew,
+                      // onTap: () async {
+                      //   final updatedCrew =
+                      //   await Navigator.push<RCrewModel>(
+                      //     context,
+                      //     MaterialPageRoute(
+                      //       builder: (_) => RCrewDetailPage(
+                      //         crew: crew,
+                      //       ),
+                      //     ),
+                      //   );
+                      //
+                      //   if (updatedCrew != null) {
+                      //     setState(() {
+                      //       crews[index] = updatedCrew;
+                      //     });
+                      //   }
+                      // },
+                    );
+                  }).toList(),
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 60),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        const Text(
+                          "아직 등록된 근무자가 없습니다.",
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Color(0xFF767676),
                           ),
                         ),
-                      );
-
-                      if (updatedCrew != null) {
-                        setState(() {
-                          crews[index] = updatedCrew;
-                        });
-
-                        await _saveCrews();
-                      }
-                    },
-                  );
-                }).toList(),
-              ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          "우측 상단의 초대 버튼으로\n근무자를 초대해보세요.",
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Color(0xFF9A9A9A),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -439,13 +461,11 @@ Widget _RCrewTile({
           width: 60,
           height: 60,
           decoration: BoxDecoration(
-            color: const Color(0xFFD4DCE3),
             borderRadius: BorderRadius.circular(14),
-          ),
-          child: const Icon(
-            Icons.person,
-            color: Color(0xFF7A8795),
-            size: 38,
+            image: const DecorationImage(
+              image: AssetImage("assets/images/profile.png"),
+              fit: BoxFit.cover,
+            ),
           ),
         ),
 
@@ -471,34 +491,6 @@ Widget _RCrewTile({
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              if (tags.isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 6,
-                  children: tags
-                      .map(
-                        (tag) => Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFD8EBFF),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        tag,
-                        style: const TextStyle(
-                          color: Color(0xFF0B6FD8),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  )
-                      .toList(),
-                ),
-              ],
             ],
           ),
         ),
