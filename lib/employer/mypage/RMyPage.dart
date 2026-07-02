@@ -30,7 +30,7 @@ class _RMyPageState extends State<RMyPage> {
     ),
   );
 
-  String profileName = "김사장";
+  String profileName = "";
 
   final String userId = "owner_1";
 

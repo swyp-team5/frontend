@@ -828,7 +828,7 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
               ),
 
               /// 개인 정보
-              const SizedBox(height: 28),
+              const SizedBox(height: 30),
 
               _buildSection(
                 title: "통합 개인 정보",

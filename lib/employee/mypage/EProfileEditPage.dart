@@ -7,19 +7,15 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:typed_data';
 import 'package:photo_manager/photo_manager.dart';
 
-import 'package:shared_preferences/shared_preferences.dart';
-
+import '../../employer/mypage/api/profile_api.dart';
 import '../crews/widgets/ETagChip.dart';
+
+import '../../../common/auth/server_token_manager.dart';
+import 'package:dio/dio.dart';
 
 class EProfileEditPage extends StatefulWidget {
 
   const EProfileEditPage({super.key});
-
-  // 키 값을 'EMPLOYEE_'로 명확히 구분
-  static const String EkeyProfileImage = "EMPLOYEE_profileImage";
-  static const String EkeyName = "EMPLOYEE_name";
-  static const String EkeyPhone = "EMPLOYEE_phone";
-  static const String EkeyStorePhone = "EMPLOYEE_storePhone";
 
   @override
   State<EProfileEditPage> createState() => _EProfileEditPageState();
@@ -27,9 +23,12 @@ class EProfileEditPage extends StatefulWidget {
 
 class _EProfileEditPageState extends State<EProfileEditPage> {
 
+  late final Dio dio;
+  late final ProfileApi profileApi;
+
   bool isEditMode = false;
 
-  File? profileImage;
+  String? profileImageUrl;
 
   final ImagePicker picker = ImagePicker();
 
@@ -38,6 +37,62 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
   final TextEditingController phoneController = TextEditingController();
 
   final TextEditingController storePhoneController = TextEditingController();
+
+  Future<void> updateProfileImage(File file) async {
+    try {
+      final token =
+      await ServerTokenManager.getAccessToken();
+
+      if (token == null) {
+        throw Exception("로그인이 필요합니다.");
+      }
+
+      final uploadInfo =
+      await profileApi.getUploadUrl(
+        token: token,
+        file: file,
+      );
+
+      final uploadUrl = uploadInfo["uploadUrl"];
+      final objectKey = uploadInfo["objectKey"];
+
+      final headers =
+      Map<String, String>.from(uploadInfo["headers"]);
+
+      final bytes = await file.readAsBytes();
+
+      await profileApi.uploadToS3(
+        uploadUrl: uploadUrl,
+        headers: headers,
+        bytes: bytes,
+      );
+
+      await profileApi.updateProfileImage(
+        token: token,
+        objectKey: objectKey,
+      );
+
+      final profile =
+      await profileApi.getMyProfile(
+        token: token,
+      );
+
+      profileImageUrl =
+      profile["profileImage"]?["imageUrl"];
+
+      if (!mounted) return;
+
+      setState(() {});
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("프로필 이미지가 변경되었습니다."),
+        ),
+      );
+    } catch (e) {
+      debugPrint(e.toString());
+    }
+  }
 
   /// 프로필 이미지 선택
   Future<void> _showGalleryBottomSheet() async {
@@ -215,9 +270,8 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
                           await selectedAsset!.originFile;
 
                           if (file != null) {
-                            setState(() {
-                              profileImage = file;
-                            });
+
+                            await updateProfileImage(file);
 
                             if (mounted) {
                               Navigator.pop(context);
@@ -257,6 +311,12 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
   @override
   void initState() {
     super.initState();
+
+    dio = Dio();
+    dio.options.baseUrl = "https://chackchack.shop";
+
+    profileApi = ProfileApi(dio);
+
     _loadProfile();
   }
 
@@ -269,43 +329,96 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
   }
 
   Future<void> _loadProfile() async {
-    final prefs = await SharedPreferences.getInstance();
-    final imagePath = prefs.getString(EProfileEditPage.EkeyProfileImage);
-    if (imagePath != null && File(imagePath).existsSync()) {
-      profileImage = File(imagePath);
+    try {
+      final token = await ServerTokenManager.getAccessToken();
+
+      if (token == null) return;
+
+      final profile =
+      await profileApi.getMyProfile(
+        token: token,
+      );
+
+      nameController.text =
+          profile["name"] ?? "";
+
+      phoneController.text =
+          profile["phoneNumber"] ?? "";
+
+      profileImageUrl =
+      profile["profileImage"]?["imageUrl"];
+
+      if (!mounted) return;
+
+      setState(() {});
+    } on DioException catch (e) {
+      debugPrint(e.toString());
     }
-    // 근무자 기본값 설정
-    nameController.text =
-        prefs.getString(EProfileEditPage.EkeyName) ?? "김세희";
-
-    phoneController.text =
-        prefs.getString(EProfileEditPage.EkeyPhone) ?? "010-1234-5678";
-
-    storePhoneController.text =
-        prefs.getString(EProfileEditPage.EkeyStorePhone) ?? "02-1234-5678";
-    setState(() {});
   }
 
   Future<void> _saveProfile() async {
-    final prefs = await SharedPreferences.getInstance();
-    if (profileImage != null) {
-      await prefs.setString(
-        EProfileEditPage.EkeyProfileImage, profileImage!.path,
+    try {
+      final token = await ServerTokenManager.getAccessToken();
+
+      if (token == null) {
+        throw Exception("로그인이 필요합니다.");
+      }
+
+      await profileApi.updateProfile(
+        token: token,
+        name: nameController.text.trim(),
+        phoneNumber: phoneController.text.trim(),
+      );
+
+      final profile = await profileApi.getMyProfile(
+        token: token,
+      );
+
+      nameController.text =
+          profile["name"] ?? "";
+
+      phoneController.text =
+          profile["phoneNumber"] ?? "";
+
+      profileImageUrl =
+      profile["profileImage"]?["imageUrl"];
+
+      if (!mounted) return;
+
+      setState(() {});
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("프로필이 수정되었습니다."),
+        ),
+      );
+
+      Navigator.pop(context, true);
+    } on DioException catch (e) {
+      debugPrint("========== DIO ERROR ==========");
+      debugPrint("${e.response?.statusCode}");
+      debugPrint("${e.response?.data}");
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.response?.data.toString() ?? "서버 오류",
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint(e.toString());
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+        ),
       );
     }
-    await prefs.setString(EProfileEditPage.EkeyName, nameController.text);
-    await prefs.setString(EProfileEditPage.EkeyPhone, phoneController.text);
-    await prefs.setString(EProfileEditPage.EkeyStorePhone, storePhoneController.text);
-
-    if (!mounted) return;
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("저장되었습니다."),
-      ),
-    );
-
-    Navigator.pop(context, true);
   }
 
   Future<void> _showEditBottomSheet({
@@ -553,42 +666,98 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
                 Stack(
                   clipBehavior: Clip.none,
                   children: [
+
                     Container(
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
                         color: const Color(0xFFA5A5AF),
                         borderRadius: BorderRadius.circular(24),
-                        image: profileImage != null
-                            ? DecorationImage(
-                          image: FileImage(profileImage!),
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(24),
+                        child: profileImageUrl != null
+                            ? Image.network(
+                          profileImageUrl!,
                           fit: BoxFit.cover,
                         )
-                            : null,
+                            : Image.asset(
+                          "assets/images/profile.png",
+                          fit: BoxFit.cover,
+                        ),
                       ),
                     ),
 
-                    if (isEditMode)
+                    // 삭제 버튼 (X)
+                    if (profileImageUrl != null)
                       Positioned(
-                        right: -2,
-                        bottom: -2,
+                        top: -6,
+                        right: -6,
                         child: InkWell(
-                          onTap: _showGalleryBottomSheet,
+                          onTap: () async {
+                            final result = await showDialog<bool>(
+                              context: context,
+                              builder: (_) => AlertDialog(
+                                title: const Text("프로필 이미지 삭제"),
+                                content: const Text("프로필 이미지를 삭제하시겠습니까?"),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, false),
+                                    child: const Text("취소"),
+                                  ),
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(context, true),
+                                    child: const Text("삭제"),
+                                  ),
+                                ],
+                              ),
+                            );
+                            //
+                            // if (result == true) {
+                            //   await deleteProfileImage();
+                            // }
+                          },
                           child: Container(
-                            width: 32,
-                            height: 32,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFF1F1F5),
+                            width: 26,
+                            height: 26,
+                            decoration: BoxDecoration(
+                              color: Colors.red,
                               shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white),
                             ),
                             child: const Icon(
-                              Icons.photo_camera,
-                              size: 18,
-                              color: Color(0xFF767676),
+                              Icons.close,
+                              size: 16,
+                              color: Colors.white,
                             ),
                           ),
                         ),
                       ),
+
+                    // 카메라 버튼
+                    Positioned(
+                      right: -2,
+                      bottom: -2,
+                      child: InkWell(
+                        onTap: _showGalleryBottomSheet,
+                        child: Container(
+                          width: 34,
+                          height: 34,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F1F5),
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white),
+                          ),
+                          child: const Icon(
+                            Icons.photo_camera,
+                            size: 18,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
 
@@ -615,40 +784,10 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-
-                    const SizedBox(width: 8),
-
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Text(
-                        "재직중",
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Color(0xFF00315F),
-                        ),
-                      ),
-                    ),
                   ],
                 ),
 
-                const SizedBox(height: 10),
-
-                Wrap(
-                  spacing: 8,
-                  children: const [
-                    ETagChip(text: "카운터"),
-                    ETagChip(text: "마감불가"),
-                  ],
-                ),
-
-                const SizedBox(height: 26),
+                const SizedBox(height: 30),
 
                 EInfoSectionCard(
                   title: "개인 정보",
@@ -671,161 +810,10 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
                     }
                   },
                 ),
-
-                const SizedBox(height: 16),
-
-                EInfoSectionCard(
-                  title: "소속 정보",
-                  items: const [
-                    ["직급", "근무자"],
-                    ["입사일", "2026년 4월 1일"],
-                    ["재직 상태", "재직중"],
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                EInfoSectionCard(
-                  title: "근무 정보",
-                  items: const [
-                    ["근무 시간", "오전 09:00 - 오후 14:00"],
-                    ["근무 요일", "월, 수, 금"],
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                EInfoSectionCard(
-                  title: "소속 정보",
-                  items: const [
-                    ["총 근무 일수", "16일"],
-                    ["총 근무 시간", "80시간"],
-                  ],
-                ),
-
-                const SizedBox(height: 16),
-
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 18,
-                    vertical: 20,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          "지난달 급여 정보",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                      Icon(Icons.chevron_right),
-                    ],
-                  ),
-                ),
               ],
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  /// 섹션
-  Widget _buildSection({
-    required String title,
-    required List<_ProfileItem> items,
-  }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(
-        horizontal: 22,
-        vertical: 10,
-      ),
-      padding: const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 20,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontSize: 16,
-              color: Color(0xFF999999),
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 36),
-
-          for (int i = 0; i < items.length; i++) ...[
-            Row(
-              children: [
-                Text(
-                  items[i].title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const Spacer(),
-                GestureDetector(
-                  onTap: () {
-                    final controller =
-                    items[i].title == "이름"
-                        ? nameController
-                        : items[i].title == "휴대폰 번호"
-                        ? phoneController
-                        : storePhoneController;
-
-                    _showEditBottomSheet(
-                      title: items[i].title,
-                      controller: controller,
-                    );
-                  },
-                  child: Row(
-                    children: [
-                      Text(
-                        items[i].title == "이름"
-                            ? nameController.text
-                            : items[i].title == "휴대폰 번호"
-                            ? phoneController.text
-                            : storePhoneController.text,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFF999999),
-                        ),
-                      ),
-                      if (items[i].isArrow)
-                        const Padding(
-                          padding: EdgeInsets.only(left: 4),
-                          child: Icon(
-                            Icons.chevron_right,
-                            color: Color(0xFF999999),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            if (i != items.length - 1) ...[
-              const SizedBox(height: 18),
-              const Divider(height: 1, color: Color(0xFFF1F1F5),),
-              const SizedBox(height: 18),
-            ],
-          ],
-        ],
       ),
     );
   }
@@ -869,17 +857,4 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
       ],
     );
   }
-}
-
-class _ProfileItem {
-
-  final String title;
-  final String value;
-  final bool isArrow;
-
-  _ProfileItem({
-    required this.title,
-    required this.value,
-    this.isArrow = true,
-  });
 }

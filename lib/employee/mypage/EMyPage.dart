@@ -4,10 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
+import '../../employer/mypage/api/profile_api.dart';
 import '../crews/ECrewPage.dart';
 import '../home/EHomePage.dart';
 import '../schedule/EMainSchedulePage.dart';
 import 'EProfileEditPage.dart';
+
+import '../../../common/auth/server_token_manager.dart';
+import 'package:dio/dio.dart';
 
 class EMyPage extends StatefulWidget {
 
@@ -19,7 +23,15 @@ class EMyPage extends StatefulWidget {
 
 class _EMyPageState extends State<EMyPage> {
 
-  String profileName = "김알바";
+  final ProfileApi profileApi = ProfileApi(
+    Dio(
+      BaseOptions(
+        baseUrl: "https://chackchack.shop",
+      ),
+    ),
+  );
+
+  String profileName = "";
 
   /// 현재는 더미 사용자 ID
   /// API 연결 시: response.user.id 사용
@@ -254,12 +266,26 @@ class _EMyPageState extends State<EMyPage> {
   }
 
   Future<void> _loadProfileName() async {
-    final prefs = await SharedPreferences.getInstance();
+    try {
+      final token = await ServerTokenManager.getAccessToken();
 
-    setState(() {
-      profileName =
-          prefs.getString(EProfileEditPage.EkeyName) ?? "김알바";
-    });
+      if (token == null || token.isEmpty) {
+        debugPrint("토큰 없음");
+        return;
+      }
+
+      final profile = await profileApi.getMyProfile(
+        token: token,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        profileName = profile["name"] ?? "이름 없음";
+      });
+    } catch (e) {
+      debugPrint("프로필 조회 실패 : $e");
+    }
   }
 
   @override

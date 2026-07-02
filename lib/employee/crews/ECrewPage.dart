@@ -29,10 +29,10 @@ class _ECrewPageState extends State<ECrewPage> {
   Future<void> _loadMyName() async {
     final prefs = await SharedPreferences.getInstance();
 
-    setState(() {
-      myName =
-          prefs.getString(EProfileEditPage.EkeyName) ?? "손흥민";
-    });
+    // setState(() {
+    //   myName =
+    //       prefs.getString(EProfileEditPage.EkeyName) ?? "손흥민";
+    // });
   }
 
   final List<ECrewModel> crews = [
