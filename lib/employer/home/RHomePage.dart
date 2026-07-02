@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:chack_chack/employer/home/notification/RNotificationPage.dart';
 import 'package:chack_chack/employer/home/schedule/RMakingSchedulePage.dart';
 import 'package:chack_chack/employer/home/schedule/RRecentSchedulePage.dart';
@@ -9,6 +11,7 @@ import 'package:chack_chack/employer/home/widgets/RScheduleCard.dart';
 import 'package:chack_chack/employer/home/widgets/RTodayWorkCard.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../common/auth/server_token_manager.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
@@ -196,11 +199,18 @@ class _RHomePageState extends State<RHomePage> {
                       width: double.infinity,
                       height: 56,
                       child: ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
                           final selectedStore = stores.firstWhere(
                                 (e) =>
                             e["workPlaceId"] ==
                                 tempSelectedWorkPlaceId,
+                          );
+
+                          final prefs = await SharedPreferences.getInstance();
+
+                          await prefs.setInt(
+                            "selectedWorkPlaceId",
+                            selectedStore["workPlaceId"],
                           );
 
                           setState(() {
@@ -404,7 +414,6 @@ class _RHomePageState extends State<RHomePage> {
 
   Future<void> _loadWorkPlaces() async {
     try {
-
       final token = await ServerTokenManager.getAccessToken();
 
       debugPrint("HOME TOKEN = $token");
@@ -425,6 +434,12 @@ class _RHomePageState extends State<RHomePage> {
         ),
       );
 
+      // ===== 응답 전체 출력 =====
+      debugPrint("========== /work-places/me ==========");
+      debugPrint("statusCode = ${response.statusCode}");
+      debugPrint(const JsonEncoder.withIndent("  ").convert(response.data));
+      debugPrint("=====================================");
+
       final List list = response.data["workPlaces"];
 
       setState(() {
@@ -433,18 +448,19 @@ class _RHomePageState extends State<RHomePage> {
         if (stores.isNotEmpty) {
           selectedWorkPlaceId = stores.first["workPlaceId"];
           selectedStoreName = stores.first["name"];
+
+          debugPrint("selectedWorkPlaceId = $selectedWorkPlaceId");
+          debugPrint("selectedStoreName = $selectedStoreName");
         }
       });
-
     } on DioException catch (e) {
-
+      debugPrint("===== DioException =====");
       debugPrint("status = ${e.response?.statusCode}");
       debugPrint("body = ${e.response?.data}");
-
-    } catch (e) {
-
+    } catch (e, stackTrace) {
+      debugPrint("===== Exception =====");
       debugPrint(e.toString());
-
+      debugPrint(stackTrace.toString());
     }
   }
 

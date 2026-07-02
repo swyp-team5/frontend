@@ -4,6 +4,7 @@ import 'package:chack_chack/employer/mypage/RMyPage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../mypage/api/profile_api.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
 
@@ -26,6 +27,18 @@ class RCrewPage extends StatefulWidget {
 class _RCrewPageState extends State<RCrewPage> {
 
   List<RCrewModel> crews = [];
+
+  // 사장님(나) 프로필 - crews API와 별개로 독립 조회
+  String ownerName = "사장님";
+  String? ownerProfileImageUrl;
+
+  final ProfileApi profileApi = ProfileApi(
+    Dio(
+      BaseOptions(
+        baseUrl: "https://chackchack.shop",
+      ),
+    ),
+  );
 
   void _showInviteBottomSheet(BuildContext context) {
     showModalBottomSheet(
@@ -232,16 +245,52 @@ class _RCrewPageState extends State<RCrewPage> {
   void initState() {
     super.initState();
     _loadCrews();
+    _loadOwnerProfile();
   }
 
-  Future<void> _loadCrews() async {
-    const int workPlaceId = 1;
-
+  /// 사장님(나) 프로필 조회 - crews API 성공 여부와 무관하게 독립적으로 동작
+  Future<void> _loadOwnerProfile() async {
     try {
       final token = await ServerTokenManager.getValidAccessToken();
 
       if (token == null) {
-        debugPrint("AccessToken이 없습니다.");
+        debugPrint("토큰 없음");
+        return;
+      }
+
+      final profile = await profileApi.getMyProfile(token: token);
+
+      debugPrint("===== OWNER PROFILE =====");
+      debugPrint(profile.toString());
+
+      if (!mounted) return;
+
+      setState(() {
+        ownerName = profile["name"]?.toString() ?? "이름 없음";
+        ownerProfileImageUrl = profile["profileImage"]?["imageUrl"];
+      });
+    } catch (e) {
+      debugPrint("사장님 프로필 조회 실패 : $e");
+    }
+  }
+
+  Future<void> _loadCrews() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      final workPlaceId =
+      prefs.getInt("selectedWorkPlaceId");
+
+      if (workPlaceId == null) {
+        debugPrint("workPlaceId 없음");
+        return;
+      }
+
+      final token =
+      await ServerTokenManager.getValidAccessToken();
+
+      if (token == null) {
+        debugPrint("토큰 없음");
         return;
       }
 
@@ -259,33 +308,18 @@ class _RCrewPageState extends State<RCrewPage> {
       final List list = response.data["crews"];
 
       setState(() {
-        crews = list
-            .map((e) => RCrewModel.fromJson(e))
-            .toList();
+        crews =
+            list.map((e) => RCrewModel.fromJson(e)).toList();
       });
     } on DioException catch (e) {
-      debugPrint("크루 조회 실패");
-      debugPrint("statusCode : ${e.response?.statusCode}");
-      debugPrint("response : ${e.response?.data}");
-
-      setState(() {
-        crews = [];
-      });
-    } catch (e) {
-      debugPrint(e.toString());
-
-      setState(() {
-        crews = [];
-      });
+      debugPrint("status=${e.response?.statusCode}");
+      debugPrint("body=${e.response?.data}");
     }
   }
 
 
   @override
   Widget build(BuildContext context) {
-
-    final owner =
-    crews.where((e) => e.crewRole == "OWNER").toList();
 
     final workers =
     crews.where((e) => e.crewRole == "WORKER").toList();
@@ -341,24 +375,64 @@ class _RCrewPageState extends State<RCrewPage> {
               ),
 
               const SizedBox(height: 24),
-              if (owner.isNotEmpty) ...[
-                Text(
-                  "나",
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 14,
-                  ),
+
+              /// 나
+              Text(
+                "나",
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 14,
                 ),
+              ),
 
-                const SizedBox(height: 14),
+              const SizedBox(height: 14),
 
-                RCrewCard(
-                  crew: owner.first,
-                  showArrow: false,
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
                 ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 28,
+                      backgroundImage: (ownerProfileImageUrl != null &&
+                          ownerProfileImageUrl!.isNotEmpty)
+                          ? NetworkImage(ownerProfileImageUrl!)
+                          : const AssetImage("assets/images/profile.png")
+                      as ImageProvider,
+                    ),
 
-                const SizedBox(height: 20),
-              ],
+                    const SizedBox(width: 16),
+
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "사장님",
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Color(0xFF8E8E93),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            ownerName,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 20),
 
               /// 근무자 수
               Row(

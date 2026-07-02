@@ -18,30 +18,32 @@ class RCrewCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: onTap,
+      onTap: onTap ??
+              () {
+            // Navigator.push(
+            //   context,
+            //   MaterialPageRoute(
+            //     builder: (_) => RCrewDetailPage(crew: crew),
+            //   ),
+            // );
+          },
       borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: const EdgeInsets.only(bottom: 20),
         child: Row(
           children: [
-            /// 프로필
             Container(
               width: 60,
               height: 60,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(14),
-                image: crew.profileImageUrl != null &&
-                    crew.profileImageUrl!.isNotEmpty
-                    ? DecorationImage(
-                  image: NetworkImage(
-                    crew.profileImageUrl!,
-                  ),
-                  fit: BoxFit.cover,
-                )
-                    : const DecorationImage(
-                  image: AssetImage(
-                    "assets/images/profile.png",
-                  ),
+                image: DecorationImage(
+                  image: (crew.profileImageUrl != null &&
+                      crew.profileImageUrl!.isNotEmpty)
+                      ? NetworkImage(crew.profileImageUrl!)
+                      : const AssetImage(
+                      "assets/images/profile.png")
+                  as ImageProvider,
                   fit: BoxFit.cover,
                 ),
               ),
@@ -49,7 +51,6 @@ class RCrewCard extends StatelessWidget {
 
             const SizedBox(width: 14),
 
-            /// 정보
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -73,7 +74,6 @@ class RCrewCard extends StatelessWidget {
               ),
             ),
 
-            /// 화살표 (필요할 때만)
             if (showArrow)
               const Icon(
                 Icons.chevron_right,

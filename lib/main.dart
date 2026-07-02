@@ -1,4 +1,3 @@
-import 'package:chack_chack/common/FirstPage.dart';
 import 'package:chack_chack/common/onboarding/OnboardingPage.dart';
 import 'package:chack_chack/employer/home/RHomePage.dart';
 import 'package:flutter/material.dart';
