@@ -36,13 +36,49 @@ class _RMyPageState extends State<RMyPage> {
 
   String get RstorePreferenceKey => "R_selected_store_$userId";
 
-  final List<String> stores = [
-    "매장명1",
-    "매장명2",
-  ];
+  List<Map<String, dynamic>> stores = [];
 
-  String RselectedStore = "매장명1";
-  String RtempSelectedStore = "매장명1";
+  int? selectedWorkPlaceId;
+
+  String RselectedStore = "";
+  String RtempSelectedStore = "";
+
+  Future<void> _loadWorkPlaces() async {
+    try {
+      final token = await ServerTokenManager.getValidAccessToken();
+
+      if (token == null) {
+        debugPrint("토큰 없음");
+        return;
+      }
+
+      final dio = Dio();
+
+      final response = await dio.get(
+        "https://chackchack.shop/api/work-places/me",
+        options: Options(
+          headers: {
+            "Authorization": "Bearer $token",
+          },
+        ),
+      );
+
+      final List list = response.data["workPlaces"];
+
+      setState(() {
+        stores = List<Map<String, dynamic>>.from(list);
+
+        if (stores.isNotEmpty) {
+          selectedWorkPlaceId = stores.first["workPlaceId"];
+
+          RselectedStore = stores.first["name"];
+          RtempSelectedStore = stores.first["name"];
+        }
+      });
+    } catch (e) {
+      debugPrint(e.toString());
+    }
+  }
 
 
   void _RshowStoreBottomSheet(BuildContext context) {
@@ -125,7 +161,8 @@ class _RMyPageState extends State<RMyPage> {
 
                     /// 매장 목록
                     ...stores.map((store) {
-                      final selected = store == RtempSelectedStore;
+                      final selected =
+                          store["workPlaceId"] == selectedWorkPlaceId;
 
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
@@ -133,7 +170,8 @@ class _RMyPageState extends State<RMyPage> {
                           borderRadius: BorderRadius.circular(18),
                           onTap: () {
                             setModalState(() {
-                              RtempSelectedStore = store;
+                              selectedWorkPlaceId = store["workPlaceId"];
+                              RtempSelectedStore = store["name"];
                             });
                           },
                           child: Container(
@@ -157,7 +195,7 @@ class _RMyPageState extends State<RMyPage> {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    store,
+                                    store["name"],
                                     style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w700,
@@ -198,9 +236,9 @@ class _RMyPageState extends State<RMyPage> {
                           final prefs = await SharedPreferences.getInstance();
 
                           // 선택한 매장 저장
-                          await prefs.setString(
-                            RstorePreferenceKey,
-                            RtempSelectedStore,
+                          await prefs.setInt(
+                            "selected_work_place_id",
+                            selectedWorkPlaceId!,
                           );
 
                           setState(() {
@@ -239,22 +277,10 @@ class _RMyPageState extends State<RMyPage> {
   void initState() {
     super.initState();
 
-    _loadSelectedStore();
+    _loadWorkPlaces();
     _loadProfileName();
   }
 
-  Future<void> _loadSelectedStore() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    final savedStore = prefs.getString(RstorePreferenceKey);
-
-    if (savedStore != null && stores.contains(savedStore)) {
-      setState(() {
-        RselectedStore = savedStore;
-        RtempSelectedStore = savedStore;
-      });
-    }
-  }
 
   Future<void> _loadProfileName() async {
     try {

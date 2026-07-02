@@ -46,81 +46,199 @@ class _RHomePageState extends State<RHomePage> {
     return 8 - now.weekday;
   }
 
-  void _showStoreBottomSheet(BuildContext context) {
+  void _RshowStoreBottomSheet(BuildContext context) {
+    int? tempSelectedWorkPlaceId = selectedWorkPlaceId;
 
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) {
-        return SafeArea(
-          child: Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-
-                Container(
-                  width: 48,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFD9D9D9),
-                    borderRadius: BorderRadius.circular(999),
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return SafeArea(
+              top: false,
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(28),
                   ),
                 ),
-
-                const SizedBox(height: 24),
-
-                const Text(
-                  "매장 선택",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                ...stores.map((store) {
-                  final selected =
-                      store["workPlaceId"] == selectedWorkPlaceId;
-
-                  return ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: Text(
-                      store["name"],
-                      style: TextStyle(
-                        fontWeight:
-                        selected ? FontWeight.bold : FontWeight.normal,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    /// 핸들
+                    Container(
+                      width: 42,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD9D9D9),
+                        borderRadius: BorderRadius.circular(999),
                       ),
                     ),
-                    trailing: selected
-                        ? const Icon(
-                      Icons.check,
-                      color: Color(0xFF0084FF),
-                    )
-                        : null,
-                    onTap: () {
-                      setState(() {
-                        selectedWorkPlaceId = store["workPlaceId"];
-                        selectedStoreName = store["name"];
-                      });
 
-                      Navigator.pop(context);
+                    const SizedBox(height: 22),
 
-                      // TODO
-                      // 선택된 workPlaceId 기준으로
-                      // 공지 / 스케줄 / 출퇴근 API 다시 호출
-                    },
-                  );
-                }).toList(),
-              ],
-            ),
-          ),
+                    /// 제목
+                    SizedBox(
+                      width: double.infinity,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          const Text(
+                            "매장 변경",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+
+                          Positioned(
+                            right: 0,
+                            child: GestureDetector(
+                              onTap: () => Navigator.pop(context),
+                              child: Container(
+                                width: 28,
+                                height: 28,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFF2F2F6),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.close),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    Container(
+                      width: double.infinity,
+                      height: 1,
+                      color: const Color(0xFFE5E5E5),
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    ...stores.map((store) {
+                      final selected =
+                          store["workPlaceId"] == tempSelectedWorkPlaceId;
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(18),
+                          onTap: () {
+                            setModalState(() {
+                              tempSelectedWorkPlaceId =
+                              store["workPlaceId"];
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 22,
+                            ),
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? const Color(0xFFE6F3FF)
+                                  : const Color(0xFFF5F5F7),
+                              borderRadius: BorderRadius.circular(12),
+                              border: selected
+                                  ? Border.all(
+                                color: const Color(0xFF0084FF),
+                                width: 2,
+                              )
+                                  : null,
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    store["name"],
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+
+                                if (selected)
+                                  Container(
+                                    width: 22,
+                                    height: 22,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFF0084FF),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Center(
+                                      child: Icon(
+                                        Icons.check,
+                                        size: 16,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+
+                    const SizedBox(height: 20),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          final selectedStore = stores.firstWhere(
+                                (e) =>
+                            e["workPlaceId"] ==
+                                tempSelectedWorkPlaceId,
+                          );
+
+                          setState(() {
+                            selectedWorkPlaceId =
+                            selectedStore["workPlaceId"];
+                            selectedStoreName =
+                            selectedStore["name"];
+                          });
+
+                          Navigator.pop(context);
+
+                          // TODO
+                          // 선택된 workPlaceId 기준으로
+                          // 홈 데이터 다시 조회
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor:
+                          const Color(0xFF0084FF),
+                          shape: RoundedRectangleBorder(
+                            borderRadius:
+                            BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          "변경",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
     );
@@ -393,7 +511,7 @@ class _RHomePageState extends State<RHomePage> {
               RHomeHeader(
                 storeName: selectedStoreName,
                 onStoreTap: () {
-                  _showStoreBottomSheet(context);
+                  _RshowStoreBottomSheet(context);
                 },
                 onNotificationTap: () {
                   Navigator.push(
