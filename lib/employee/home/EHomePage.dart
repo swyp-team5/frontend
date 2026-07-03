@@ -1,3 +1,4 @@
+import 'package:chack_chack/employee/crews/ECrewFirstPage.dart';
 import 'package:chack_chack/employee/home/schedule/ESubmitSchedulePage.dart';
 import 'package:chack_chack/employee/home/widgets/ECheckInCard.dart';
 import 'package:chack_chack/employee/home/widgets/EHomeCalendar.dart';
@@ -132,7 +133,7 @@ class _EHomePageState extends State<EHomePage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => const ECrewPage(),
+                builder: (_) => const ECrewFirstPage(),
               ),
             );
           } else if (index == 2) {

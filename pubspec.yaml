@@ -67,6 +67,7 @@ flutter:
     - assets/images/shift_complete.png
     - assets/images/substitute_complete.png
     - assets/images/profile.png
+    - assets/images/e_crew_invite.png
 
     - assets/images/onboarding/onboarding1.png
     - assets/images/onboarding/onboarding2.png
