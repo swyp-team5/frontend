@@ -78,7 +78,7 @@ class ServerTokenManager {
       final refreshDio = Dio();
 
       final response = await refreshDio.post(
-        "https://chackchack.shop/api/auth/refresh",
+        "https://chackchack.shop/api/auth/token/refresh",
         data: {"refreshToken": refreshToken},
       );
 

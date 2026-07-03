@@ -27,11 +27,7 @@ class _ECrewPageState extends State<ECrewPage> {
   String? myProfileImageUrl;
 
   final ProfileApi profileApi = ProfileApi(
-    Dio(
-      BaseOptions(
-        baseUrl: "https://chackchack.shop",
-      ),
-    ),
+    Dio(BaseOptions(baseUrl: "https://chackchack.shop")),
   );
 
   @override
@@ -44,19 +40,16 @@ class _ECrewPageState extends State<ECrewPage> {
   Future<void> _loadMyProfile() async {
     try {
       final token = await ServerTokenManager.getValidAccessToken();
-
       if (token == null) return;
 
-      final profile = await profileApi.getMyProfile(
-        token: token,
-      );
+      final profile = await profileApi.getMyProfile(token: token);
 
       if (!mounted) return;
 
       setState(() {
-        myName = profile["name"] ?? "이름 없음";
+        myName = profile["name"]?.toString() ?? "이름 없음";
         myProfileImageUrl =
-        profile["profileImage"]?["imageUrl"];
+            profile["profileImage"]?["imageUrl"]?.toString();
       });
     } catch (e) {
       debugPrint(e.toString());
@@ -66,7 +59,6 @@ class _ECrewPageState extends State<ECrewPage> {
   Future<void> _loadCrews() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-
       final workPlaceId = prefs.getInt("selectedWorkPlaceId");
 
       if (workPlaceId == null) {
@@ -75,7 +67,6 @@ class _ECrewPageState extends State<ECrewPage> {
       }
 
       final token = await ServerTokenManager.getValidAccessToken();
-
       if (token == null) {
         debugPrint("❌ 토큰 없음");
         return;
@@ -85,72 +76,31 @@ class _ECrewPageState extends State<ECrewPage> {
 
       final response = await dio.get(
         "https://chackchack.shop/api/work-places/$workPlaceId/crews",
-        options: Options(
-          headers: {
-            "Authorization": "Bearer $token",
-          },
-        ),
+        options: Options(headers: {"Authorization": "Bearer $token"}),
       );
 
-      debugPrint("========== CREWS API ==========");
-      debugPrint(response.data.toString());
+      final List list = (response.data["crews"] ?? []) as List;
 
-      final List list = response.data["crews"];
-
-      // 서버가 내려준 원본 데이터 확인
-      debugPrint("========== RAW LIST ==========");
-      for (final item in list) {
-        debugPrint(
-          "${item["name"]} / ${item["crewRole"]}",
-        );
-      }
-
-      final crewList =
-      list.map((e) => ECrewModel.fromJson(e)).toList();
-
-      // 모델 변환 후 확인
-      debugPrint("========== MODEL ==========");
-      for (final crew in crewList) {
-        debugPrint(
-          "${crew.name} / ${crew.crewRole}",
-        );
-      }
-
-      final ownerExists =
-      crewList.any((e) => e.crewRole == "OWNER");
-
-      debugPrint("OWNER 존재 여부 : $ownerExists");
-
-      if (ownerExists) {
-        final owner =
-        crewList.firstWhere((e) => e.crewRole == "OWNER");
-
-        debugPrint(
-          "OWNER -> ${owner.name}, ${owner.profileImageUrl}",
-        );
-      }
+      final crewList = list.map((e) {
+        return ECrewModel.fromJson(Map<String, dynamic>.from(e ?? {}));
+      }).toList();
 
       if (!mounted) return;
 
       setState(() {
         crews = crewList;
       });
-    } on DioException catch (e) {
-      debugPrint("========== API ERROR ==========");
-      debugPrint("status : ${e.response?.statusCode}");
-      debugPrint("body   : ${e.response?.data}");
     } catch (e) {
-      debugPrint("========== ERROR ==========");
-      debugPrint(e.toString());
+      debugPrint("ERROR: $e");
     }
   }
 
   @override
   Widget build(BuildContext context) {
-
-    final owner = crews.where((e) => e.crewRole == "OWNER").toList();
-    final workers = crews.where((e) => e.crewRole == "WORKER").toList();
-
+    // "나" 섹션에 이미 표시되므로, 아래 근무자 리스트에서는 본인을 제외한다.
+    // ⚠️ 이름으로 비교 중이라 동명이인이 있으면 문제가 될 수 있습니다.
+    //    ECrewModel에 고유 id(memberId 등)가 있다면 그걸로 비교하는 것을 권장합니다.
+    final others = crews.where((c) => c.name != myName).toList();
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
@@ -159,46 +109,27 @@ class _ECrewPageState extends State<ECrewPage> {
         currentIndex: 1,
         onTap: (index) {
           if (index == 0) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const EHomePage(),
-              ),
-            );
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const EHomePage()));
           } else if (index == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const ECrewPage(),
-              ),
-            );
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const ECrewPage()));
           } else if (index == 4) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => const EMyPage(),
-              ),
-            );
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const EMyPage()));
           }
         },
       ),
 
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 28,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              /// 제목
               const Text(
                 "근무자",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
 
               const SizedBox(height: 22),
@@ -262,141 +193,70 @@ class _ECrewPageState extends State<ECrewPage> {
 
               const SizedBox(height: 24),
 
-              /// 나
-              Text(
-                "나",
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontSize: 14,
-                ),
-              ),
+              const Text("나",
+                  style: TextStyle(color: Colors.grey, fontSize: 14)),
 
               const SizedBox(height: 14),
 
-              GestureDetector(
-                onTap: () async {
-                  await Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const EProfileEditPage(),
-                    ),
-                  );
-
-                  // 프로필 수정 후 이름 다시 불러오기
-                  _loadMyProfile();
-                },
-                child: Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
+              /// 내 프로필 (아래 근무자 카드와 동일한 스타일)
+              Row(
+                children: [
+                  ClipRRect(
                     borderRadius: BorderRadius.circular(12),
+                    child: (myProfileImageUrl != null &&
+                        myProfileImageUrl!.isNotEmpty)
+                        ? Image.network(
+                      myProfileImageUrl!,
+                      width: 56,
+                      height: 56,
+                      fit: BoxFit.cover,
+                    )
+                        : Image.asset(
+                      "assets/images/profile.png",
+                      width: 56,
+                      height: 56,
+                      fit: BoxFit.cover,
+                    ),
                   ),
-                  child: Row(
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircleAvatar(
-                        radius: 28,
-                        backgroundImage:
-                        (myProfileImageUrl != null &&
-                            myProfileImageUrl!.isNotEmpty)
-                            ? NetworkImage(myProfileImageUrl!)
-                            : const AssetImage(
-                            "assets/images/profile.png")
-                        as ImageProvider,
+                      const Text(
+                        "근무자",
+                        style: TextStyle(color: Colors.grey, fontSize: 13),
                       ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              "근무자",
-                              style: TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF8E8E93),
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              myName,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
+                      const SizedBox(height: 2),
+                      Text(
+                        myName,
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
-                ),
+                ],
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
-              if (owner.isNotEmpty) ...[
-                const SizedBox(height: 20),
-
-                Text(
-                  "사장님",
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 14,
-                  ),
-                ),
-
-                const SizedBox(height: 14),
-
-                ECrewCard(
-                  crew: owner.first,
-                  showArrow: false,
-                ),
-
-                const SizedBox(height: 20),
-              ],
-
-              /// 근무자 수
+              /// 근무자 수 (본인 제외 전체 인원)
               Row(
                 children: [
-                  const Text(
-                    "근무자 ",
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    "${workers.length}",
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.black,
-                    ),
-                  ),
+                  const Text("근무자 ",
+                      style: TextStyle(color: Colors.grey)),
+                  Text("${others.length}",
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
                 ],
               ),
 
               const SizedBox(height: 16),
 
-              /// 근무자 목록
+              /// 근무자 목록 (본인 제외, API 응답 순서 그대로)
               Column(
-                children: workers
-                    .where((crew) => crew.name != myName)
-                    .map((crew) {
+                children: others.map((crew) {
                   return ECrewCard(
                     crew: crew,
-                    onTap: () {
-                      // Navigator.push(
-                      //   context,
-                      //   MaterialPageRoute(
-                      //     builder: (_) => ECrewDetailPage(
-                      //       crew: crew,
-                      //     ),
-                      //   ),
-                      // );
-                    },
+                    showArrow: true,
                   );
                 }).toList(),
               )

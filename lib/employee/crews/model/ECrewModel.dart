@@ -10,7 +10,7 @@ class ECrewModel {
   final String joinStatus;
   final String crewStatus;
 
-  final DateTime createdAt;
+  final DateTime? createdAt;
 
   ECrewModel({
     required this.crewId,
@@ -26,29 +26,21 @@ class ECrewModel {
 
   factory ECrewModel.fromJson(Map<String, dynamic> json) {
     return ECrewModel(
-      crewId: json["crewId"],
-      memberId: json["memberId"],
-      name: json["name"],
-      phoneNumber: json["phoneNumber"],
-      profileImageUrl: json["profileImageUrl"],
-      crewRole: json["crewRole"],
-      joinStatus: json["joinStatus"],
-      crewStatus: json["crewStatus"],
-      createdAt: DateTime.parse(json["createdAt"]),
-    );
-  }
-
-  factory ECrewModel.empty() {
-    return ECrewModel(
-      crewId: 0,
-      memberId: 0,
-      name: "",
-      phoneNumber: "",
-      profileImageUrl: null,
-      crewRole: "",
-      joinStatus: "",
-      crewStatus: "",
-      createdAt: DateTime.now(),
+      crewId: json["crewId"] is int
+          ? json["crewId"]
+          : int.tryParse(json["crewId"]?.toString() ?? "") ?? 0,
+      memberId: json["memberId"] is int
+          ? json["memberId"]
+          : int.tryParse(json["memberId"]?.toString() ?? "") ?? 0,
+      name: json["name"]?.toString() ?? "이름 없음",
+      phoneNumber: json["phoneNumber"]?.toString() ?? "",
+      profileImageUrl: json["profileImageUrl"]?.toString(),
+      crewRole: json["crewRole"]?.toString() ?? "",
+      joinStatus: json["joinStatus"]?.toString() ?? "",
+      crewStatus: json["crewStatus"]?.toString() ?? "",
+      createdAt: json["createdAt"] != null
+          ? DateTime.tryParse(json["createdAt"].toString())
+          : null,
     );
   }
 }

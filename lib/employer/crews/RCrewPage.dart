@@ -365,7 +365,18 @@ class _RCrewPageState extends State<RCrewPage> {
         ),
       );
 
+
+
+      debugPrint("===== [RCrewPage] crews 응답 전체 =====");
+      debugPrint(response.data.toString());
+
       final List list = response.data["crews"];
+
+      debugPrint("===== [RCrewPage] crews 개수: ${list.length} =====");
+      for (final e in list) {
+        debugPrint(
+            "crewId: ${e['crewId']}, name: '${e['name']}', crewRole raw: '${e['crewRole']}'");
+      }
 
       setState(() {
         crews =

@@ -240,7 +240,8 @@ class _EMyPageState extends State<EMyPage> {
         ),
       );
 
-      final List list = response.data["workPlaces"] ?? [];
+      final data = response.data as Map<String, dynamic>;
+      final List list = data["workPlaces"] ?? [];
 
       setState(() {
         stores = List<Map<String, dynamic>>.from(list);
