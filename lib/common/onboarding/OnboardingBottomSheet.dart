@@ -88,36 +88,30 @@ class OnboardingBottomSheet extends ConsumerWidget {
                     try {
                       final result = await KakaoLoginService.login();
 
-                      debugPrint("===== Kakao Login Success =====");
-                      debugPrint(result.toString());
-
-                      // 서버 JWT 저장
-                      await ServerTokenManager.saveTokens(
-                        accessToken: result["serverAccessToken"],
-                        refreshToken: result["serverRefreshToken"],
-                      );
+                      // 1. 이미 가입된 유저인 경우 서버 토큰이 바로 오므로 저장
+                      if (result["serverAccessToken"] != null) {
+                        await ServerTokenManager.saveTokens(
+                          accessToken: result["serverAccessToken"],
+                          refreshToken: result["serverRefreshToken"],
+                        );
+                      }
 
                       final notifier = ref.read(signupProvider.notifier);
-
                       notifier.setProvider(SocialProvider.KAKAO);
 
-                      // Provider에도 서버 JWT 저장
-                      notifier.setAccessToken(result["serverAccessToken"]);
-                      notifier.setRefreshToken(result["serverRefreshToken"]);
+                      // 2. 가입에 필요한 카카오 액세스 토큰 저장
+                      notifier.setAccessToken(result["kakaoAccessToken"]);
 
+                      // 3. 디바이스 정보 저장
                       notifier.setDevice(
-                        deviceId: result["deviceId"],
-                        platform: result["platform"],
-                        appVersion: result["appVersion"],
+                        deviceId: result["deviceId"] ?? "",
+                        platform: result["platform"] ?? "",
+                        appVersion: result["appVersion"] ?? "",
                       );
-
-                      // 저장 확인
-                      final token = await ServerTokenManager.getAccessToken();
-                      debugPrint("===== SAVED TOKEN =====");
-                      debugPrint(token);
 
                       if (!context.mounted) return;
 
+                      // 회원가입 페이지(이름 입력)로 이동
                       Navigator.push(
                         context,
                         MaterialPageRoute(

@@ -40,8 +40,12 @@ class ServerTokenManager {
         base64Url.decode(base64Url.normalize(parts[1])),
       );
       final Map<String, dynamic> data = jsonDecode(payload);
-      final exp = data['exp'] as int?;
-      if (exp == null) return true;
+      
+      // 'Null' is not a subtype of type 'int' 오류를 방지하기 위해 num으로 받고 toInt() 처리
+      final dynamic expValue = data['exp'];
+      if (expValue == null) return true;
+      
+      final int exp = (expValue as num).toInt();
 
       final expDate = DateTime.fromMillisecondsSinceEpoch(exp * 1000);
       // 만료 10초 전이면 미리 만료로 취급 (여유 버퍼)
@@ -74,19 +78,21 @@ class ServerTokenManager {
       final refreshDio = Dio();
 
       final response = await refreshDio.post(
-        "https://chackchack.shop/api/auth/reissue", // TODO: 실제 엔드포인트로 수정
+        "https://chackchack.shop/api/auth/refresh",
         data: {"refreshToken": refreshToken},
       );
 
       final newAccessToken = response.data["accessToken"];
       final newRefreshToken = response.data["refreshToken"] ?? refreshToken;
 
-      await saveTokens(
-        accessToken: newAccessToken,
-        refreshToken: newRefreshToken,
-      );
-
-      return newAccessToken;
+      if (newAccessToken != null) {
+        await saveTokens(
+          accessToken: newAccessToken,
+          refreshToken: newRefreshToken,
+        );
+        return newAccessToken;
+      }
+      return null;
     } catch (e) {
       // refresh도 실패 → 재로그인 필요
       await clear();

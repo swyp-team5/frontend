@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/signup_api.dart';
+import '../../auth/server_token_manager.dart';
 import '../models/signup_request.dart';
 
 final signupProvider =
@@ -164,20 +165,36 @@ class SignupNotifier extends StateNotifier<SignupRequest> {
   // 회원가입
   //----------------------------------------
 
-  Future<Map<String, dynamic>?> signUp() async {
+  Future<bool> signUp() async {
     try {
       final response = state.isEmployer
           ? await SignupApi.ownerSignup(state)
           : await SignupApi.workerSignup(state);
 
-      if (response.statusCode == 200 ||
-          response.statusCode == 201) {
-        return jsonDecode(response.body);
-      }
+      final result = jsonDecode(response.body);
 
-      return null;
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = result["data"];
+        // 서버 응답 구조에 따라 토큰 추출 (data 객체 유무 확인)
+        final String? accessToken = data != null ? data["accessToken"] : result["accessToken"];
+        final String? refreshToken = data != null ? data["refreshToken"] : result["refreshToken"];
+
+        if (accessToken != null && refreshToken != null) {
+          // 서버 JWT를 로컬 저장소에 영구 저장
+          await ServerTokenManager.saveTokens(
+            accessToken: accessToken,
+            refreshToken: refreshToken,
+          );
+          return true;
+        }
+        return false;
+      } else {
+        print("회원가입 실패: ${result["message"]}");
+        return false;
+      }
     } catch (e) {
-      return null;
+      print("회원가입 오류: $e");
+      return false;
     }
   }
 
