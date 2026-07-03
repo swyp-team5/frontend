@@ -52,6 +52,7 @@ class _ECrewCodePageState extends State<ECrewCodePage> {
     setState(() {});
   }
 
+  // 코드 초대 검증
   Future<void> _checkInviteCode() async {
     try {
       final token = await ServerTokenManager.getValidAccessToken();
