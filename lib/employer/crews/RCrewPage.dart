@@ -32,6 +32,10 @@ class _RCrewPageState extends State<RCrewPage> {
   String ownerName = "사장님";
   String? ownerProfileImageUrl;
 
+  String inviteCode = "";
+  String inviteUrl = "";
+  bool isCreatingInvitation = false;
+
   final ProfileApi profileApi = ProfileApi(
     Dio(
       BaseOptions(
@@ -39,6 +43,62 @@ class _RCrewPageState extends State<RCrewPage> {
       ),
     ),
   );
+
+  Future<void> _createCrewInvitation() async {
+    try {
+      setState(() {
+        isCreatingInvitation = true;
+      });
+
+      final prefs = await SharedPreferences.getInstance();
+
+      final workPlaceId = prefs.getInt("selectedWorkPlaceId");
+
+      if (workPlaceId == null) {
+        throw Exception("workPlaceId 없음");
+      }
+
+      final token = await ServerTokenManager.getValidAccessToken();
+
+      if (token == null) {
+        throw Exception("토큰 없음");
+      }
+
+      final dio = Dio();
+
+      final response = await dio.post(
+        "https://chackchack.shop/api/work-places/$workPlaceId/crew-invitations",
+        options: Options(
+          headers: {
+            "Authorization": "Bearer $token",
+          },
+        ),
+      );
+
+      debugPrint(response.data.toString());
+
+      setState(() {
+        inviteCode = response.data["inviteCode"] ?? "";
+        inviteUrl = response.data["inviteUrl"] ?? "";
+      });
+    } on DioException catch (e) {
+      debugPrint(e.response?.data.toString());
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.response?.data["message"] ?? "초대 생성 실패",
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isCreatingInvitation = false;
+        });
+      }
+    }
+  }
 
   void _showInviteBottomSheet(BuildContext context) {
     showModalBottomSheet(
@@ -151,9 +211,9 @@ class _RCrewPageState extends State<RCrewPage> {
                     color: const Color(0xFFF5F5F7),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Text(
-                    "https://chackchack.page.link/dabin",
-                    style: TextStyle(
+                  child: Text(
+                    inviteUrl,
+                    style: const TextStyle(
                       fontSize: 15,
                       color: Colors.black54,
                     ),
@@ -187,9 +247,9 @@ class _RCrewPageState extends State<RCrewPage> {
                     color: const Color(0xFFF5F5F7),
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: const Text(
-                    "586420",
-                    style: TextStyle(
+                  child: Text(
+                    inviteCode,
+                    style: const TextStyle(
                       fontSize: 15,
                       color: Colors.black54,
                     ),
@@ -205,8 +265,8 @@ class _RCrewPageState extends State<RCrewPage> {
                     onPressed: () async {
                       // TODO: 링크 및 코드 복사
                       await Clipboard.setData(
-                        const ClipboardData(
-                          text: 'https://chackchack.page.link/dabin\n586420',
+                        ClipboardData(
+                          text: "$inviteUrl\n$inviteCode",
                         ),
                       );
 
@@ -363,8 +423,12 @@ class _RCrewPageState extends State<RCrewPage> {
                     ),
                   ),
                   IconButton(
-                    onPressed: () {
-                      _showInviteBottomSheet(context);
+                    onPressed: () async {
+                      await _createCrewInvitation();
+
+                      if (inviteCode.isNotEmpty) {
+                        _showInviteBottomSheet(context);
+                      }
                     },
                     icon: const Icon(
                       Icons.person_add_alt_1,
