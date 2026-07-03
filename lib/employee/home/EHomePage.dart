@@ -9,6 +9,9 @@ import 'package:chack_chack/employee/mypage/EMyPage.dart';
 import 'package:chack_chack/employee/schedule/EMainSchedulePage.dart';
 import 'package:flutter/material.dart';
 
+import 'package:dio/dio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import '../../common/auth/server_token_manager.dart';
 import '../../common/widgets/BottomNavBar.dart';
 import '../crews/ECrewPage.dart';
@@ -39,10 +42,67 @@ class _EHomePageState extends State<EHomePage> {
   DateTime? selectedDay;
   bool isCardVisible = true;
 
+  String workPlaceName = "";
+  int? workPlaceId;
+
+  Future<void> _loadMyWorkPlace() async {
+    try {
+      final token = await ServerTokenManager.getValidAccessToken();
+      if (token == null) return;
+
+      final dio = Dio(
+        BaseOptions(baseUrl: "https://chackchack.shop"),
+      );
+
+      final response = await dio.get(
+        "/api/work-places/me",
+        options: Options(
+          headers: {
+            "Authorization": "Bearer $token",
+          },
+        ),
+      );
+
+      final List workPlaces = response.data["workPlaces"] ?? [];
+
+      if (workPlaces.isEmpty) {
+        debugPrint("workPlaces empty");
+        return;
+      }
+
+      final workPlace = workPlaces.first;
+
+      final int? id = workPlace["workPlaceId"];
+      final String name = (workPlace["name"] ?? "").toString();
+
+      if (id == null) {
+        debugPrint("workPlaceId null");
+        return;
+      }
+
+      final prefs = await SharedPreferences.getInstance();
+
+      await prefs.setInt("selectedWorkPlaceId", id);
+      await prefs.setString("selectedWorkPlaceName", name);
+
+      if (!mounted) return;
+
+      setState(() {
+        workPlaceId = id;
+        workPlaceName = name;
+      });
+
+      debugPrint("근무지 로딩 성공: $id / $name");
+    } catch (e) {
+      debugPrint("workPlace 로딩 실패: $e");
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     _checkTokens();
+    _loadMyWorkPlace();
   }
 
   /// 토큰 저장 여부 확인 로그
@@ -86,7 +146,7 @@ class _EHomePageState extends State<EHomePage> {
           if (index == 1) {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const ECrewFirstPage()),
+              MaterialPageRoute(builder: (_) => const ECrewPage()),
             );
           } else if (index == 2) {
             Navigator.push(
@@ -110,7 +170,9 @@ class _EHomePageState extends State<EHomePage> {
           child: Column(
             children: [
               /// Header
-              const EHomeHeader(),
+              EHomeHeader(
+                workPlaceName: workPlaceName,
+              ),
               const SizedBox(height: 20),
 
               /// Notice

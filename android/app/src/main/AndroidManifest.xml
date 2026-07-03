@@ -51,6 +51,18 @@
                     android:scheme="kakao05952ada0dceff8e149cd664e5459465"
                     android:host="oauth"/>
             </intent-filter>
+
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+
+                <data
+                    android:scheme="chack-chack"
+                    android:host="crew-invitations"/>
+            </intent-filter>
+
         </activity>
     </application>
     <!-- Required to query activities that can process text, see:

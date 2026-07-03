@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
+import '../../common/auth/server_token_manager.dart';
+import '../../employer/mypage/api/profile_api.dart';
 import '../home/EHomePage.dart';
 import '../mypage/EMyPage.dart';
 import '../mypage/EProfileEditPage.dart';
@@ -18,58 +21,136 @@ class ECrewPage extends StatefulWidget {
 }
 
 class _ECrewPageState extends State<ECrewPage> {
-  String myName = "손흥민";
+  List<ECrewModel> crews = [];
+
+  String myName = "";
+  String? myProfileImageUrl;
+
+  final ProfileApi profileApi = ProfileApi(
+    Dio(
+      BaseOptions(
+        baseUrl: "https://chackchack.shop",
+      ),
+    ),
+  );
 
   @override
   void initState() {
     super.initState();
-    _loadMyName();
+    _loadMyProfile();
+    _loadCrews();
   }
 
-  Future<void> _loadMyName() async {
-    final prefs = await SharedPreferences.getInstance();
+  Future<void> _loadMyProfile() async {
+    try {
+      final token = await ServerTokenManager.getValidAccessToken();
 
-    // setState(() {
-    //   myName =
-    //       prefs.getString(EProfileEditPage.EkeyName) ?? "손흥민";
-    // });
+      if (token == null) return;
+
+      final profile = await profileApi.getMyProfile(
+        token: token,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        myName = profile["name"] ?? "이름 없음";
+        myProfileImageUrl =
+        profile["profileImage"]?["imageUrl"];
+      });
+    } catch (e) {
+      debugPrint(e.toString());
+    }
   }
 
-  final List<ECrewModel> crews = [
-    ECrewModel(
-      role: "사장님",
-      name: "라이츄",
-      tags: [],
-    ),
-    ECrewModel(
-      role: "근무자",
-      name: "파이리",
-      tags: ["주방", "불뽑기"],
-    ),
-    ECrewModel(
-      role: "근무자",
-      name: "꼬부기",
-      tags: ["카운터", "물대포"],
-    ),
-    ECrewModel(
-      role: "근무자",
-      name: "피존투",
-      tags: ["카운터", "피존추"],
-    ),
-    ECrewModel(
-      role: "근무자",
-      name: "버터플",
-      tags: ["카운터", "주방"],
-    ),
-  ];
+  Future<void> _loadCrews() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      final workPlaceId = prefs.getInt("selectedWorkPlaceId");
+
+      if (workPlaceId == null) {
+        debugPrint("❌ workPlaceId 없음");
+        return;
+      }
+
+      final token = await ServerTokenManager.getValidAccessToken();
+
+      if (token == null) {
+        debugPrint("❌ 토큰 없음");
+        return;
+      }
+
+      final dio = Dio();
+
+      final response = await dio.get(
+        "https://chackchack.shop/api/work-places/$workPlaceId/crews",
+        options: Options(
+          headers: {
+            "Authorization": "Bearer $token",
+          },
+        ),
+      );
+
+      debugPrint("========== CREWS API ==========");
+      debugPrint(response.data.toString());
+
+      final List list = response.data["crews"];
+
+      // 서버가 내려준 원본 데이터 확인
+      debugPrint("========== RAW LIST ==========");
+      for (final item in list) {
+        debugPrint(
+          "${item["name"]} / ${item["crewRole"]}",
+        );
+      }
+
+      final crewList =
+      list.map((e) => ECrewModel.fromJson(e)).toList();
+
+      // 모델 변환 후 확인
+      debugPrint("========== MODEL ==========");
+      for (final crew in crewList) {
+        debugPrint(
+          "${crew.name} / ${crew.crewRole}",
+        );
+      }
+
+      final ownerExists =
+      crewList.any((e) => e.crewRole == "OWNER");
+
+      debugPrint("OWNER 존재 여부 : $ownerExists");
+
+      if (ownerExists) {
+        final owner =
+        crewList.firstWhere((e) => e.crewRole == "OWNER");
+
+        debugPrint(
+          "OWNER -> ${owner.name}, ${owner.profileImageUrl}",
+        );
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        crews = crewList;
+      });
+    } on DioException catch (e) {
+      debugPrint("========== API ERROR ==========");
+      debugPrint("status : ${e.response?.statusCode}");
+      debugPrint("body   : ${e.response?.data}");
+    } catch (e) {
+      debugPrint("========== ERROR ==========");
+      debugPrint(e.toString());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final myInfo = ECrewModel(
-      role: "근무자",
-      name: myName,
-      isMe: true,
-    );
+
+    final owner = crews.where((e) => e.crewRole == "OWNER").toList();
+    final workers = crews.where((e) => e.crewRole == "WORKER").toList();
+
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
@@ -202,15 +283,77 @@ class _ECrewPageState extends State<ECrewPage> {
                   );
 
                   // 프로필 수정 후 이름 다시 불러오기
-                  _loadMyName();
+                  _loadMyProfile();
                 },
-                child: ECrewCard(
-                  crew: myInfo,
-                  showArrow: false,
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 28,
+                        backgroundImage:
+                        (myProfileImageUrl != null &&
+                            myProfileImageUrl!.isNotEmpty)
+                            ? NetworkImage(myProfileImageUrl!)
+                            : const AssetImage(
+                            "assets/images/profile.png")
+                        as ImageProvider,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "근무자",
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Color(0xFF8E8E93),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              myName,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
               const SizedBox(height: 20),
+
+              if (owner.isNotEmpty) ...[
+                const SizedBox(height: 20),
+
+                Text(
+                  "사장님",
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 14,
+                  ),
+                ),
+
+                const SizedBox(height: 14),
+
+                ECrewCard(
+                  crew: owner.first,
+                  showArrow: false,
+                ),
+
+                const SizedBox(height: 20),
+              ],
 
               /// 근무자 수
               Row(
@@ -225,7 +368,7 @@ class _ECrewPageState extends State<ECrewPage> {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    "${crews.length}",
+                    "${workers.length}",
                     style: const TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
@@ -239,22 +382,24 @@ class _ECrewPageState extends State<ECrewPage> {
 
               /// 근무자 목록
               Column(
-                children: crews.map((crew) {
+                children: workers
+                    .where((crew) => crew.name != myName)
+                    .map((crew) {
                   return ECrewCard(
                     crew: crew,
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ECrewDetailPage(
-                            crew: crew,
-                          ),
-                        ),
-                      );
+                      // Navigator.push(
+                      //   context,
+                      //   MaterialPageRoute(
+                      //     builder: (_) => ECrewDetailPage(
+                      //       crew: crew,
+                      //     ),
+                      //   ),
+                      // );
                     },
                   );
                 }).toList(),
-              ),
+              )
             ],
           ),
         ),

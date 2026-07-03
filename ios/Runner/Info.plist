@@ -82,5 +82,22 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+
+	<key>CFBundleURLTypes</key>
+	<array>
+    		<dict>
+    			<key>CFBundleURLSchemes</key>
+    			<array>
+    				<string>kakao05952ada0dceff8e149cd664e5459465</string>
+    			</array>
+    		</dict>
+
+    		<dict>
+    			<key>CFBundleURLSchemes</key>
+    			<array>
+    				<string>chack-chack</string>
+    			</array>
+    		</dict>
+    </array>
 </dict>
 </plist>

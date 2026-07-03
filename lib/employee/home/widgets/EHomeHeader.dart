@@ -3,7 +3,12 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class EHomeHeader extends StatelessWidget {
-  const EHomeHeader({super.key});
+  final String workPlaceName;
+
+  const EHomeHeader({
+    super.key,
+    required this.workPlaceName,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -11,16 +16,16 @@ class EHomeHeader extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Row(
-          children: const [
+          children: [
             Text(
-              "매장명",
-              style: TextStyle(
+              workPlaceName.isEmpty ? "" : workPlaceName,
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(width: 4),
-            Icon(Icons.keyboard_arrow_down),
+            const SizedBox(width: 4),
+            const Icon(Icons.keyboard_arrow_down),
           ],
         ),
 

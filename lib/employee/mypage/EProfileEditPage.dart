@@ -8,7 +8,6 @@ import 'dart:typed_data';
 import 'package:photo_manager/photo_manager.dart';
 
 import '../../employer/mypage/api/profile_api.dart';
-import '../crews/widgets/ETagChip.dart';
 
 import '../../../common/auth/server_token_manager.dart';
 import 'package:dio/dio.dart';
