@@ -33,26 +33,9 @@ class _EMyPageState extends State<EMyPage> {
 
   String profileName = "";
 
-  /// 현재는 더미 사용자 ID
-  /// API 연결 시: response.user.id 사용
-  final String userId = "owner_1";
-
-  /// 사용자별 저장 키
-  String get EstorePreferenceKey => "E_selected_store_$userId";
-
-  /// 현재는 더미 데이터
-  /// API 연결 시:
-  // final List<StoreModel> stores = response.data;
-  final List<String> stores = [
-    "매장명1", "매장명2"
-  ];
-
-  String EselectedStore = "매장명1";
-  String EtempSelectedStore = "매장명1";
-
-  /// API 연결 시:
-  // selectedStore = response.currentStore.name;
-  // tempSelectedStore = selectedStore;
+  List<Map<String, dynamic>> stores = [];
+  String EselectedStore = "";
+  String EtempSelectedStore = "";
 
 
   void _EshowStoreBottomSheet(BuildContext context) {
@@ -135,68 +118,45 @@ class _EMyPageState extends State<EMyPage> {
 
                     /// 매장 목록
                     ...stores.map((store) {
-                      final selected = store == EtempSelectedStore;
+                      final String name = store["name"] ?? "";
+                      final bool selected = name == EtempSelectedStore;
 
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: InkWell(
-                          borderRadius: BorderRadius.circular(18),
                           onTap: () {
                             setModalState(() {
-                              EtempSelectedStore = store;
+                              EtempSelectedStore = name;
                             });
                           },
                           child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 22,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
                             decoration: BoxDecoration(
-                              color: selected
-                                  ? const Color(0xFFE6F3FF) // 선택 시 파란 배경
-                                  : const Color(0xFFF5F5F7), // 미선택 시 회색 배경
+                              color: selected ? const Color(0xFFE6F3FF) : const Color(0xFFF5F5F7),
                               borderRadius: BorderRadius.circular(12),
                               border: selected
-                                  ? Border.all(
-                                color: Color(0xFF0084FF),
-                                width: 2,
-                              )
+                                  ? Border.all(color: const Color(0xFF0084FF), width: 2)
                                   : null,
                             ),
                             child: Row(
                               children: [
                                 Expanded(
                                   child: Text(
-                                    store,
+                                    name,
                                     style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                 ),
-
                                 if (selected)
-                                  Container(
-                                    width: 22,
-                                    height: 22,
-                                    decoration: const BoxDecoration(
-                                      color: Color(0xFF0084FF),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Center(
-                                      child: Icon(
-                                        Icons.check,
-                                        size: 16,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                  ),
+                                  const Icon(Icons.check, color: Color(0xFF0084FF)),
                               ],
                             ),
                           ),
                         ),
                       );
-                    }),
+                    }).toList(),
 
                     const SizedBox(height: 20),
 
@@ -209,7 +169,7 @@ class _EMyPageState extends State<EMyPage> {
 
                           // 선택한 매장 저장
                           await prefs.setString(
-                            EstorePreferenceKey,
+                            "selectedWorkPlaceName",
                             EtempSelectedStore,
                           );
 
@@ -248,6 +208,7 @@ class _EMyPageState extends State<EMyPage> {
   @override
   void initState() {
     super.initState();
+    _loadStores();
     _loadSelectedStore();
     _loadProfileName();
   }
@@ -255,13 +216,48 @@ class _EMyPageState extends State<EMyPage> {
   Future<void> _loadSelectedStore() async {
     final prefs = await SharedPreferences.getInstance();
 
-    final savedStore = prefs.getString(EstorePreferenceKey);
+    final savedStore = prefs.getString("selectedWorkPlaceName");
 
-    if (savedStore != null && stores.contains(savedStore)) {
+    if (savedStore != null && savedStore.isNotEmpty) {
       setState(() {
         EselectedStore = savedStore;
         EtempSelectedStore = savedStore;
       });
+    }
+  }
+
+  Future<void> _loadStores() async {
+    try {
+      final token = await ServerTokenManager.getAccessToken();
+      if (token == null) return;
+
+      final dio = Dio(BaseOptions(baseUrl: "https://chackchack.shop"));
+
+      final response = await dio.get(
+        "/api/work-places/me",
+        options: Options(
+          headers: {"Authorization": "Bearer $token"},
+        ),
+      );
+
+      final List list = response.data["workPlaces"] ?? [];
+
+      setState(() {
+        stores = List<Map<String, dynamic>>.from(list);
+      });
+
+      if (stores.isNotEmpty) {
+        final first = stores.first;
+        final name = first["name"] ?? "";
+
+        setState(() {
+          EselectedStore = name;
+          EtempSelectedStore = name;
+        });
+      }
+
+    } catch (e) {
+      debugPrint("매장 로딩 실패: $e");
     }
   }
 
