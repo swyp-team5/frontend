@@ -3,10 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import '../../../common/employee/EScheduleSubmitComplete.dart';
+import 'api/CalendarActivateApi.dart';
+import 'models/CalendarActivate.dart';
 import 'models/ScheduleInfo.dart';
 
 class ESubmitSchedulePage extends StatefulWidget {
-  const ESubmitSchedulePage({super.key});
+  final int workPlaceId;
+
+  const ESubmitSchedulePage({super.key, required this.workPlaceId});
 
   @override
   State<ESubmitSchedulePage> createState() => _ESubmitSchedulePageState();
@@ -14,8 +18,6 @@ class ESubmitSchedulePage extends StatefulWidget {
 
 class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
   late DateTime selectedDate;
-  late DateTime startDate;
-  late DateTime endDate;
 
   /// 현재 캘린더에서 선택된 날짜
   final Set<DateTime> selectedDays = {};
@@ -25,33 +27,42 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
 
   bool holiday = false;
 
-  /// 더미 휴무일 (6월 29일)
-  final List<DateTime> offDays = [
-    DateTime(2026, 6, 29),
-  ];
+  CalendarActivateResponse? _calendar;
+  bool _isLoading = true;
+  String? _loadError;
 
-  bool get _canProceed => holiday || selectedDays.isNotEmpty;
+  bool get _canProceed =>
+      (holiday || selectedDays.isNotEmpty) && _calendar != null;
 
   @override
   void initState() {
     super.initState();
+    selectedDate = DateTime.now();
+    _loadCalendar();
+  }
 
-    final now = DateTime.now();
+  Future<void> _loadCalendar() async {
+    setState(() {
+      _isLoading = true;
+      _loadError = null;
+    });
 
-    // 캘린더가 처음 보여줄 날짜
-    selectedDate = now;
+    try {
+      final res = await CalendarActivateApi.getCalendarActivate(
+        workPlaceId: widget.workPlaceId,
+      );
 
-    // 다음주 월요일 계산
-    final nextMonday =
-    now.add(Duration(days: DateTime.daysPerWeek - now.weekday + 1));
-
-    startDate = DateTime(
-      nextMonday.year,
-      nextMonday.month,
-      nextMonday.day,
-    );
-
-    endDate = startDate.add(const Duration(days: 6));
+      setState(() {
+        _calendar = res;
+        selectedDate = res.firstDate ?? DateTime.now();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _loadError = e.toString();
+        _isLoading = false;
+      });
+    }
   }
 
   bool _isSame(DateTime a, DateTime b) {
@@ -60,25 +71,20 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
         a.day == b.day;
   }
 
-  bool isSelectable(DateTime day) {
-    final d = DateTime(day.year, day.month, day.day);
+  AvailableDate? _availableDateOf(DateTime day) => _calendar?.findByDate(day);
 
-    return !d.isBefore(startDate) &&
-        !d.isAfter(endDate) &&
-        !isOffDay(day);
+  bool isOffDay(DateTime day) {
+    return _availableDateOf(day)?.holidayStatus ?? false;
+  }
+
+  bool isSelectable(DateTime day) {
+    final info = _availableDateOf(day);
+    if (info == null) return false; // 스케줄 대상 주가 아닌 날짜는 선택 불가
+    return !info.holidayStatus && !info.selectLimitStatus;
   }
 
   bool isSelected(DateTime day) {
     return selectedDays.any((e) => _isSame(e, day));
-  }
-
-  bool isOffDay(DateTime day) {
-    return offDays.any(
-          (e) =>
-      e.year == day.year &&
-          e.month == day.month &&
-          e.day == day.day,
-    );
   }
 
   bool isSaved(DateTime day) {
@@ -105,6 +111,8 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
       backgroundColor: Colors.transparent,
       builder: (_) {
         return ESubmitScheduleBottomSheet(
+          workPlaceId: widget.workPlaceId,
+          weekScheduleId: _calendar!.weekScheduleId,
           date: day,
         );
       },
@@ -121,6 +129,12 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
               timeRange: result["timeRange"],
             );
       });
+    } else {
+      if (!isSaved(day)) {
+        setState(() {
+          selectedDays.removeWhere((e) => _isSame(e, day));
+        });
+      }
     }
   }
 
@@ -155,9 +169,9 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
                   ),
 
                   /// 타이틀
-                  const Text(
-                    "스케줄 제출",
-                    style: TextStyle(
+                  Text(
+                    _calendar?.weekScheduleName ?? "스케줄 제출",
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w600,
                     ),
@@ -166,261 +180,282 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
               ),
             ),
 
-            Expanded(
-              child: Padding(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  children: [
-                    TableCalendar(
-                      rowHeight: 60,
-                      daysOfWeekHeight: 40,
-                      locale: 'ko_KR',
-                      firstDay: DateTime.now()
-                          .subtract(const Duration(days: 365)),
-                      lastDay: DateTime.now()
-                          .add(const Duration(days: 365)),
-                      focusedDay: selectedDate,
-                      calendarFormat: CalendarFormat.month,
+            if (_isLoading)
+              const Expanded(
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_loadError != null)
+              Expanded(
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(_loadError!,
+                          style: const TextStyle(color: Colors.red)),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: _loadCalendar,
+                        child: const Text("다시 시도"),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              Expanded(
+                child: Padding(
+                  padding:
+                  const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    children: [
+                      TableCalendar(
+                        rowHeight: 60,
+                        daysOfWeekHeight: 40,
+                        locale: 'ko_KR',
+                        firstDay: DateTime.now()
+                            .subtract(const Duration(days: 365)),
+                        lastDay: DateTime.now()
+                            .add(const Duration(days: 365)),
+                        focusedDay: selectedDate,
+                        calendarFormat: CalendarFormat.month,
 
-                      startingDayOfWeek:
-                      StartingDayOfWeek.sunday,
+                        startingDayOfWeek:
+                        StartingDayOfWeek.sunday,
 
-                      selectedDayPredicate: (day) {
-                        return isSelected(day) && !isSaved(day);
-                      },
+                        selectedDayPredicate: (day) {
+                          return isSelected(day) && !isSaved(day);
+                        },
 
-                      enabledDayPredicate: (day) {
-                        return isSelectable(day);
-                      },
+                        enabledDayPredicate: (day) {
+                          return isSelectable(day);
+                        },
 
-                      onDaySelected:
-                          (selectedDay, focusedDay) {
-                        _onDayTap(selectedDay);
-                      },
+                        onDaySelected:
+                            (selectedDay, focusedDay) {
+                          _onDayTap(selectedDay);
+                        },
 
-                      onPageChanged: (focusedDay) {
-                        setState(() {
-                          selectedDate = focusedDay;
-                        });
-                      },
+                        onPageChanged: (focusedDay) {
+                          setState(() {
+                            selectedDate = focusedDay;
+                          });
+                        },
 
-                      headerStyle: HeaderStyle(
-                        formatButtonVisible: false,
-                        titleCentered: true,
+                        headerStyle: HeaderStyle(
+                          formatButtonVisible: false,
+                          titleCentered: true,
 
-                        titleTextStyle: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.black,
-                        ),
+                          titleTextStyle: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.black,
+                          ),
 
-                        leftChevronIcon: Transform.translate(
-                          offset: const Offset(-15, 0), // 왼쪽으로 15
-                          child: Container(
-                            width: 30,
-                            height: 30,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFF4F5FA),
-                              shape: BoxShape.circle,
+                          leftChevronIcon: Transform.translate(
+                            offset: const Offset(-15, 0),
+                            child: Container(
+                              width: 30,
+                              height: 30,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFF4F5FA),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.chevron_left,
+                                color: Color(0xFFB7BCC8),
+                              ),
                             ),
-                            child: const Icon(
-                              Icons.chevron_left,
-                              color: Color(0xFFB7BCC8),
+                          ),
+
+                          rightChevronIcon: Transform.translate(
+                            offset: const Offset(15, 0),
+                            child: Container(
+                              width: 30,
+                              height: 30,
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFF4F5FA),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.chevron_right,
+                                color: Color(0xFFB7BCC8),
+                              ),
                             ),
                           ),
                         ),
 
-                        rightChevronIcon: Transform.translate(
-                          offset: const Offset(15, 0), // 오른쪽으로 15
-                          child: Container(
-                            width: 30,
-                            height: 30,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFFF4F5FA),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.chevron_right,
-                              color: Color(0xFFB7BCC8),
-                            ),
+                        daysOfWeekStyle: const DaysOfWeekStyle(
+                          weekdayStyle: TextStyle(
+                            fontSize: 15,
+                            color: Color(0xFF9B9B9B),
+                            fontWeight: FontWeight.w500,
+                          ),
+                          weekendStyle: TextStyle(
+                            fontSize: 15,
+                            color: Color(0xFF9B9B9B),
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                      ),
 
-                      daysOfWeekStyle: const DaysOfWeekStyle(
-                        weekdayStyle: TextStyle(
-                          fontSize: 15,
-                          color: Color(0xFF9B9B9B),
-                          fontWeight: FontWeight.w500,
-                        ),
-                        weekendStyle: TextStyle(
-                          fontSize: 15,
-                          color: Color(0xFF9B9B9B),
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                        calendarStyle: CalendarStyle(
+                          isTodayHighlighted: false,
 
-                      calendarStyle: CalendarStyle(
-                        isTodayHighlighted: false,
+                          outsideTextStyle: const TextStyle(
+                            color: Color(0xFFD5D7E2),
+                            fontSize: 16,
+                          ),
 
-                        outsideTextStyle: const TextStyle(
-                          color: Color(0xFFD5D7E2),
-                          fontSize: 16,
-                        ),
+                          defaultTextStyle: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
 
-                        defaultTextStyle: const TextStyle(
-                          color: Colors.black,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
+                          disabledTextStyle: const TextStyle(
+                            color: Color(0xFFD5D7E2),
+                            fontSize: 16,
+                          ),
+
+                          cellMargin: const EdgeInsets.all(4),
+
+                          tablePadding: EdgeInsets.zero,
                         ),
 
-                        disabledTextStyle: const TextStyle(
-                          color: Color(0xFFD5D7E2),
-                          fontSize: 16,
-                        ),
+                        calendarBuilders: CalendarBuilders(
+                          defaultBuilder: (context, day, focusedDay) {
+                            if (isSaved(day)) {
+                              return Center(
+                                child: Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFF1F1F5),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: Text(
+                                    '${day.day}',
+                                    style: const TextStyle(
+                                      color: Color(0xFF767676),
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }
 
-                        cellMargin: const EdgeInsets.all(4),
+                            final enable = isSelectable(day);
 
-                        tablePadding: EdgeInsets.zero,
-                      ),
+                            return Center(
+                              child: Text(
+                                '${day.day}',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: enable
+                                      ? Colors.black
+                                      : const Color(0xFFD5D7E2),
+                                ),
+                              ),
+                            );
+                          },
 
-                      calendarBuilders: CalendarBuilders(
-                        defaultBuilder: (context, day, focusedDay) {
-                          if (isSaved(day)) {
+                          outsideBuilder: (context, day, focusedDay) {
+                            return Center(
+                              child: Text(
+                                '${day.day}',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  color: Color(0xFFD5D7E2),
+                                ),
+                              ),
+                            );
+                          },
+
+                          selectedBuilder: (context, day, focusedDay) {
                             return Center(
                               child: Container(
                                 width: 44,
                                 height: 44,
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFF1F1F5),
+                                  color: const Color(0xFF0084FF),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 alignment: Alignment.center,
                                 child: Text(
                                   '${day.day}',
                                   style: const TextStyle(
-                                    color: Color(0xFF767676),
+                                    color: Colors.white,
                                     fontSize: 16,
-                                    fontWeight: FontWeight.w600,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ),
                             );
-                          }
+                          },
+                        ),
+                      ),
 
-                          final enable = isSelectable(day);
+                      const SizedBox(height: 20),
 
-                          return Center(
-                            child: Text(
-                              '${day.day}',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                                color: enable
-                                    ? Colors.black
-                                    : const Color(0xFFD5D7E2),
-                              ),
-                            ),
-                          );
-                        },
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF1F1F5),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Center(
+                          child: Text(
+                            "근무가 불가능한 날짜를 선택해주세요",
+                            style: TextStyle(color: Color(0xFF767676)),
+                          ),
+                        ),
+                      ),
 
-                        outsideBuilder: (context, day, focusedDay) {
-                          return Center(
-                            child: Text(
-                              '${day.day}',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                color: Color(0xFFD5D7E2),
-                              ),
-                            ),
-                          );
-                        },
+                      const SizedBox(height: 20),
 
-                        selectedBuilder: (context, day, focusedDay) {
-                          return Center(
-                            child: Container(
-                              width: 44,
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF0084FF),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              alignment: Alignment.center,
-                              child: Text(
-                                '${day.day}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
+                      /// 휴무 없음 체크
+                      savedSchedules.isEmpty
+                          ? Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 15,
+                        ),
+                        child: Row(
+                          children: [
+                            Transform.scale(
+                              scale: 1.3,
+                              child: SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: Checkbox(
+                                  value: holiday,
+                                  activeColor: const Color(0xFF0084FF),
+                                  onChanged: selectedDays.isEmpty
+                                      ? (v) {
+                                    setState(() {
+                                      holiday = v ?? false;
+                                    });
+                                  }
+                                      : null,
                                 ),
                               ),
                             ),
-                          );
-                        },
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F1F5),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Center(
-                        child: Text(
-                          "근무가 불가능한 날짜를 선택해주세요",
-                          style: TextStyle(color: Color(0xFF767676)),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    /// 휴무 없음 체크
-                    savedSchedules.isEmpty
-                        ? Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 15,
-                      ),
-                      child: Row(
-                        children: [
-                          Transform.scale(
-                            scale: 1.3,
-                            child: SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: Checkbox(
-                                value: holiday,
-                                activeColor: const Color(0xFF0084FF),
-                                onChanged: selectedDays.isEmpty
-                                    ? (v) {
-                                  setState(() {
-                                    holiday = v ?? false;
-                                  });
-                                }
-                                    : null,
+                            const SizedBox(width: 10),
+                            Text(
+                              "불가능한 날짜가 없어요",
+                              style: TextStyle(
+                                color: const Color(0xFF505050),
+                                fontSize: 15,
+                                fontWeight:
+                                holiday ? FontWeight.w600 : FontWeight.w500,
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          Text(
-                            "불가능한 날짜가 없어요",
-                            style: TextStyle(
-                              color: const Color(0xFF505050),
-                              fontSize: 15,
-                              fontWeight:
-                              holiday ? FontWeight.w600 : FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-
-                        : ListView.builder(
+                          ],
+                        ),
+                      )
+                          : ListView.builder(
                         itemCount: savedSchedules.length,
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
@@ -459,9 +494,7 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
                                           color: Colors.black,
                                         ),
                                       ),
-
                                       const SizedBox(height: 8),
-
                                       Text(
                                         info.types.join(", "),
                                         style: const TextStyle(
@@ -472,12 +505,10 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
                                     ],
                                   ),
                                 ),
-
                                 GestureDetector(
                                   onTap: () {
                                     setState(() {
                                       savedSchedules.remove(date);
-
                                       selectedDays.removeWhere(
                                             (e) => _isSame(e, date),
                                       );
@@ -493,10 +524,10 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
                           );
                         },
                       ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),
@@ -518,8 +549,8 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
                   context,
                   MaterialPageRoute(
                     builder: (_) => EScheduleSubmitComplete(
-                      startDate: startDate,
-                      endDate: endDate,
+                      startDate: _calendar!.firstDate!,
+                      endDate: _calendar!.lastDate!,
                     ),
                   ),
                 );

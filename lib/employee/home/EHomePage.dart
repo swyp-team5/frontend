@@ -192,10 +192,16 @@ class _EHomePageState extends State<EHomePage> {
                   onDetailTap: () {
                     switch (cardType) {
                       case HomeCardType.weeklySchedule:
+                        if (workPlaceId == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("근무지 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.")),
+                          );
+                          break;
+                        }
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => const ESubmitSchedulePage(),
+                            builder: (_) => ESubmitSchedulePage(workPlaceId: workPlaceId!),
                           ),
                         );
                         break;
