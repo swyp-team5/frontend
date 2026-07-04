@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../RHomePage.dart';
+
 class RCompleteMakingSchedule extends StatelessWidget {
   const RCompleteMakingSchedule({super.key});
 
@@ -67,7 +69,12 @@ class RCompleteMakingSchedule extends StatelessWidget {
                   height: 56,
                   child: ElevatedButton(
                     onPressed: () {
-                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const RHomePage(),
+                        ),
+                      );
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF0084FF),

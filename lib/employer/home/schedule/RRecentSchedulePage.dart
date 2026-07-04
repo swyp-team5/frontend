@@ -1,20 +1,30 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/material.dart' show TimeOfDay;
 
+import 'api/ScheduleApiService.dart';
+import 'models/LatestScheduleCondition.dart';
 import 'RStoreClosePage.dart';
+import 'RMakingSchedulePage.dart'; // RegisteredSchedule
+import 'models/ShiftInfo.dart';
 
 class RRecentSchedulePage extends StatefulWidget {
-  const RRecentSchedulePage({super.key});
+  final int workPlaceId;
+
+  const RRecentSchedulePage({super.key, required this.workPlaceId});
 
   @override
   State<RRecentSchedulePage> createState() => _RRecentSchedulePageState();
 }
 
 class _RRecentSchedulePageState extends State<RRecentSchedulePage> {
-  Map<String, dynamic>? recentSchedule;
+  LatestScheduleResponse? recentSchedule;
   bool isLoading = true;
+  String? errorMessage;
+
+  static const _engToKor = {
+    "MONDAY": "월", "TUESDAY": "화", "WEDNESDAY": "수", "THURSDAY": "목",
+    "FRIDAY": "금", "SATURDAY": "토", "SUNDAY": "일",
+  };
 
   @override
   void initState() {
@@ -23,35 +33,46 @@ class _RRecentSchedulePageState extends State<RRecentSchedulePage> {
   }
 
   Future<void> _loadRecentSchedule() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    final json = prefs.getString("recent_schedule");
-
-    if (json != null) {
-      recentSchedule = jsonDecode(json);
-    }
-
     setState(() {
-      isLoading = false;
+      isLoading = true;
+      errorMessage = null;
     });
+
+    try {
+      final result = await ScheduleApiService.getLatestScheduleConditions(
+        workPlaceId: widget.workPlaceId,
+      );
+
+      debugPrint("========== 최근 스케줄 조회 ==========");
+      debugPrint(result == null ? "저장된 스케줄 없음" : "weekScheduleId=${result.weekScheduleId}");
+      debugPrint("=====================================");
+
+      setState(() {
+        recentSchedule = result;
+        isLoading = false;
+      });
+    } catch (e) {
+      debugPrint("최근 스케줄 조회 실패: $e");
+      setState(() {
+        errorMessage = e.toString();
+        isLoading = false;
+      });
+    }
   }
 
-  /// n번째 주 계산
-  String getMonthWeekText() {
-    final now = DateTime.now();
+  String _korDays(List<String> dayNames) {
+    return dayNames.map((d) => _engToKor[d] ?? d).join(", ");
+  }
 
-    // 이번 달 1일
-    final firstDayOfMonth = DateTime(now.year, now.month, 1);
+  String _hhmm(String time) {
+    // "09:00:00" -> "09:00"
+    final parts = time.split(":");
+    return "${parts[0]}:${parts[1]}";
+  }
 
-    // 1일부터 현재 날짜까지 며칠 지났는지
-    final day = now.day;
-
-    // 몇 번째 주인지 계산 (1~7 = 첫째 주, 8~14 = 둘째 주 ...)
-    final week = ((day - 1) ~/ 7) + 1;
-
-    const weekNames = ['', '첫째', '둘째', '셋째', '넷째', '다섯째', '여섯째',];
-
-    return '${now.month}월 ${weekNames[week]} 주';
+  TimeOfDay _parseTime(String time) {
+    final parts = time.split(":");
+    return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
   }
 
   Widget _buildInfoRow(String title, String value) {
@@ -79,7 +100,7 @@ class _RRecentSchedulePageState extends State<RRecentSchedulePage> {
     );
   }
 
-  Widget _buildShift(Map<String, dynamic> shift) {
+  Widget _buildShift(LatestTimeDetail shift) {
     return Padding(
       padding: const EdgeInsets.only(top: 18, bottom: 8),
       child: Column(
@@ -95,7 +116,7 @@ class _RRecentSchedulePageState extends State<RRecentSchedulePage> {
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
-              shift["name"],
+              shift.timeName,
               style: const TextStyle(
                 color: Color(0xFF0084FF),
                 fontWeight: FontWeight.bold,
@@ -120,20 +141,57 @@ class _RRecentSchedulePageState extends State<RRecentSchedulePage> {
               children: [
                 _buildInfoRow(
                   "타임 운영 시간",
-                  "${shift["startTime"]} - ${shift["endTime"]}",
+                  "${_hhmm(shift.startTime)} - ${_hhmm(shift.closeTime)}",
                 ),
                 _buildInfoRow(
                   "필요 근무자 수",
-                  "${shift["requiredWorkers"]}명",
+                  "${shift.workerCount}명",
                 ),
                 _buildInfoRow(
                   "휴게 시간",
-                  shift["breakTime"],
+                  "${shift.restMinutes}분",
                 ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// 불러온 데이터를 다음 화면(RStoreClosePage)에서 쓸 형태로 변환
+  void _goToStoreClosePage() {
+    final schedule = recentSchedule;
+    if (schedule == null || schedule.groups.isEmpty) return;
+
+    final firstGroup = schedule.groups.first;
+
+    final registeredSchedules = schedule.groups.map((group) {
+      return RegisteredSchedule(
+        days: group.dayNames.map((d) => _engToKor[d] ?? d).toSet(),
+        shifts: group.timeDetails.map((td) {
+          return ShiftInfo(
+            name: td.timeName,
+            startTime: _parseTime(td.startTime),
+            endTime: _parseTime(td.closeTime),
+            breakTime: "${td.restMinutes}분",
+            requiredWorkers: td.workerCount,
+          );
+        }).toList(),
+      );
+    }).toList();
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RStoreClosePage(
+          workPlaceId: widget.workPlaceId,
+          openTime: _parseTime(firstGroup.workPlaceOpenTime),
+          closeTime: _parseTime(firstGroup.workPlaceCloseTime),
+          minWork: firstGroup.minPersonalWorkCount,
+          maxWork: firstGroup.maxPersonalWorkCount,
+          registeredSchedules: registeredSchedules,
+        ),
       ),
     );
   }
@@ -181,7 +239,23 @@ class _RRecentSchedulePageState extends State<RRecentSchedulePage> {
               ),
             ),
 
-            if (recentSchedule == null)
+            if (errorMessage != null)
+              Expanded(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Text(
+                      "불러오는 중 오류가 발생했어요\n$errorMessage",
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 15,
+                        color: Color(0xFF999999),
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            else if (recentSchedule == null)
               const Expanded(
                 child: Center(
                   child: Text(
@@ -210,64 +284,55 @@ class _RRecentSchedulePageState extends State<RRecentSchedulePage> {
                           ),
                           child: SingleChildScrollView(
                             child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  getMonthWeekText(),
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
+                                Center(
+                                  child: Text(
+                                    recentSchedule!.weekScheduleName,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
 
                                 const SizedBox(height: 24),
 
-                                _buildInfoRow(
-                                  "가게 운영 시간",
-                                  "${recentSchedule!["openTime"]} - ${recentSchedule!["closeTime"]}",
-                                ),
-
-                                _buildInfoRow(
-                                  "인원 당 근무 횟수",
-                                  "최소 ${recentSchedule!["minWork"]}, 최대 ${recentSchedule!["maxWork"]}",
-                                ),
-
-                                const SizedBox(height: 18),
-                                const Divider(color: Color(0xFFE5E5EC)),
-                                const SizedBox(height: 12),
-
-                                ...((recentSchedule!["registeredSchedules"]
-                                as List<dynamic>)
-                                    .map((schedule) {
-                                  final days =
-                                  (schedule["days"] as List).join(", ");
-
-                                  final shifts =
-                                  schedule["shifts"] as List<dynamic>;
-
+                                ...recentSchedule!.groups.map((group) {
                                   return Padding(
-                                    padding:
-                                    const EdgeInsets.only(bottom: 20),
+                                    padding: const EdgeInsets.only(bottom: 20),
                                     child: Column(
                                       crossAxisAlignment:
                                       CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          days,
+                                          _korDays(group.dayNames),
                                           style: const TextStyle(
                                             fontWeight: FontWeight.bold,
                                             fontSize: 16,
                                           ),
                                         ),
 
-                                        ...shifts.map(
-                                              (e) => _buildShift(
-                                            Map<String, dynamic>.from(e),
-                                          ),
+                                        const SizedBox(height: 8),
+
+                                        _buildInfoRow(
+                                          "가게 운영 시간",
+                                          "${_hhmm(group.workPlaceOpenTime)} - ${_hhmm(group.workPlaceCloseTime)}",
                                         ),
+                                        _buildInfoRow(
+                                          "인원 당 근무 횟수",
+                                          "최소 ${group.minPersonalWorkCount}, 최대 ${group.maxPersonalWorkCount}",
+                                        ),
+
+                                        const SizedBox(height: 12),
+                                        const Divider(color: Color(0xFFE5E5EC)),
+
+                                        ...group.timeDetails
+                                            .map((td) => _buildShift(td)),
                                       ],
                                     ),
                                   );
-                                })),
+                                }),
                               ],
                             ),
                           ),
@@ -280,21 +345,11 @@ class _RRecentSchedulePageState extends State<RRecentSchedulePage> {
                         width: double.infinity,
                         height: 56,
                         child: ElevatedButton(
-                          onPressed: () {
-                            // Navigator.push(
-                            //   context,
-                            //   MaterialPageRoute(
-                            //     builder: (_) =>
-                            //     const RStoreClosePage(),
-                            //   ),
-                            // );
-                          },
+                          onPressed: _goToStoreClosePage,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                            const Color(0xFF0084FF),
+                            backgroundColor: const Color(0xFF0084FF),
                             shape: RoundedRectangleBorder(
-                              borderRadius:
-                              BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(10),
                             ),
                           ),
                           child: const Text(

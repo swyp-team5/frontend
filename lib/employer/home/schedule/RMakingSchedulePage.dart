@@ -196,7 +196,9 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const RRecentSchedulePage(),
+                                builder: (_) => RRecentSchedulePage(
+                                  workPlaceId:widget.workPlaceId,
+                                ),
                               ),
                             );
                           },

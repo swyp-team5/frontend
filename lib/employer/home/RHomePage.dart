@@ -350,7 +350,9 @@ class _RHomePageState extends State<RHomePage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const RRecentSchedulePage(),
+                          builder: (_) => RRecentSchedulePage(
+                            workPlaceId: selectedWorkPlaceId!,
+                          ),
                         ),
                       );
                     },
