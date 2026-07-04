@@ -48,6 +48,11 @@ class DayTimeDetail {
     );
   }
 
-  /// "09:00 - 13:00" 형태로 표시
-  String get displayTime => "$startTime - $closeTime";
+  /// "09:00:00" → "09:00" 처럼 초 단위를 잘라서 "HH:mm" 형태만 남김
+  static String _trim(String time) {
+    return time.length >= 5 ? time.substring(0, 5) : time;
+  }
+
+  /// "09:00 - 12:00" 형태로 표시
+  String get displayTime => "${_trim(startTime)} - ${_trim(closeTime)}";
 }

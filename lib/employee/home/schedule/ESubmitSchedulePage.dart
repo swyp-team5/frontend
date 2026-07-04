@@ -4,6 +4,7 @@ import 'package:table_calendar/table_calendar.dart';
 
 import '../../../common/employee/EScheduleSubmitComplete.dart';
 import 'api/CalendarActivateApi.dart';
+import 'api/WorkerImpossibleApi.dart';
 import 'models/CalendarActivate.dart';
 import 'models/ScheduleInfo.dart';
 
@@ -27,12 +28,56 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
 
   bool holiday = false;
 
+  bool _isSubmitting = false;
+
+  Future<void> _onSubmit() async {
+    if (_calendar == null) return;
+
+    setState(() => _isSubmitting = true);
+
+    // 휴무 없음 체크 시에는 빈 배열로 제출
+    final allTimeDetailIds = holiday
+        ? <int>[]
+        : savedSchedules.values
+        .expand((info) => info.timeDetailIds)
+        .toSet()
+        .toList();
+
+    try {
+      await WorkerImpossibleApi.postWorkerSelect(
+        workPlaceId: widget.workPlaceId,
+        weekScheduleId: _calendar!.weekScheduleId,
+        timeDetails: allTimeDetailIds,
+      );
+
+      if (!mounted) return;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => EScheduleSubmitComplete(
+            startDate: _calendar!.firstDate!,
+            endDate: _calendar!.lastDate!,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
   CalendarActivateResponse? _calendar;
   bool _isLoading = true;
   String? _loadError;
 
   bool get _canProceed =>
-      (holiday || selectedDays.isNotEmpty) && _calendar != null;
+      (holiday || selectedDays.isNotEmpty) &&
+          _calendar != null &&
+          !_isSubmitting;
 
   @override
   void initState() {
@@ -127,6 +172,7 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
             ScheduleInfo(
               types: List<String>.from(result["types"]),
               timeRange: result["timeRange"],
+              timeDetailIds: List<int>.from(result["timeDetailIds"]),
             );
       });
     } else {
@@ -416,113 +462,117 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
                       const SizedBox(height: 20),
 
                       /// 휴무 없음 체크
-                      savedSchedules.isEmpty
-                          ? Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 15,
-                        ),
-                        child: Row(
-                          children: [
-                            Transform.scale(
-                              scale: 1.3,
-                              child: SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: Checkbox(
-                                  value: holiday,
-                                  activeColor: const Color(0xFF0084FF),
-                                  onChanged: selectedDays.isEmpty
-                                      ? (v) {
-                                    setState(() {
-                                      holiday = v ?? false;
-                                    });
-                                  }
-                                      : null,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              "불가능한 날짜가 없어요",
-                              style: TextStyle(
-                                color: const Color(0xFF505050),
-                                fontSize: 15,
-                                fontWeight:
-                                holiday ? FontWeight.w600 : FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
-                          : ListView.builder(
-                        itemCount: savedSchedules.length,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemBuilder: (context, index) {
-                          final date = savedSchedules.keys.elementAt(index);
-                          final info = savedSchedules.values.elementAt(index);
-
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(18),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF1F1F5),
-                              borderRadius: BorderRadius.circular(16),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: savedSchedules.isEmpty
+                              ? Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 15,
                             ),
                             child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        "${date.month}월 ${date.day}일",
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.black,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        info.timeRange,
-                                        style: const TextStyle(
-                                          fontSize: 15,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.black,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        info.types.join(", "),
-                                        style: const TextStyle(
-                                          fontSize: 14,
-                                          color: Color(0xFF767676),
-                                        ),
-                                      ),
-                                    ],
+                                Transform.scale(
+                                  scale: 1.3,
+                                  child: SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: Checkbox(
+                                      value: holiday,
+                                      activeColor: const Color(0xFF0084FF),
+                                      onChanged: selectedDays.isEmpty
+                                          ? (v) {
+                                        setState(() {
+                                          holiday = v ?? false;
+                                        });
+                                      }
+                                          : null,
+                                    ),
                                   ),
                                 ),
-                                GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      savedSchedules.remove(date);
-                                      selectedDays.removeWhere(
-                                            (e) => _isSame(e, date),
-                                      );
-                                    });
-                                  },
-                                  child: const Icon(
-                                    Icons.close,
-                                    color: Color(0xFF767676),
+                                const SizedBox(width: 10),
+                                Text(
+                                  "불가능한 날짜가 없어요",
+                                  style: TextStyle(
+                                    color: const Color(0xFF505050),
+                                    fontSize: 15,
+                                    fontWeight:
+                                    holiday ? FontWeight.w600 : FontWeight.w500,
                                   ),
                                 ),
                               ],
                             ),
-                          );
-                        },
+                          )
+                              : ListView.builder(
+                            itemCount: savedSchedules.length,
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemBuilder: (context, index) {
+                              final date = savedSchedules.keys.elementAt(index);
+                              final info = savedSchedules.values.elementAt(index);
+
+                              return Container(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                padding: const EdgeInsets.all(18),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF1F1F5),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            "${date.month}월 ${date.day}일",
+                                            style: const TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            info.timeRange,
+                                            style: const TextStyle(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.black,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            info.types.join(", "),
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              color: Color(0xFF767676),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () {
+                                        setState(() {
+                                          savedSchedules.remove(date);
+                                          selectedDays.removeWhere(
+                                                (e) => _isSame(e, date),
+                                          );
+                                        });
+                                      },
+                                      child: const Icon(
+                                        Icons.close,
+                                        color: Color(0xFF767676),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
                       ),
                     ],
                   ),
@@ -534,39 +584,30 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
 
       bottomNavigationBar: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            20,
-            0,
-            20,
-            20,
-          ),
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
           child: SizedBox(
             height: 58,
             child: ElevatedButton(
-              onPressed: _canProceed
-                  ? () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => EScheduleSubmitComplete(
-                      startDate: _calendar!.firstDate!,
-                      endDate: _calendar!.lastDate!,
-                    ),
-                  ),
-                );
-              }
-                  : null,
+              onPressed: _canProceed ? _onSubmit : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1687F8),
-                disabledBackgroundColor:
-                const Color(0xFFA9D0FB),
+                disabledBackgroundColor: const Color(0xFFA9D0FB),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                "다음",
+              child: _isSubmitting
+                  ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  color: Colors.white,
+                  strokeWidth: 2,
+                ),
+              )
+                  : const Text(
+                "제출하기",
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
