@@ -1,93 +1,153 @@
-import 'dart:convert';
+import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
+import '../../../common/auth/server_token_manager.dart';
 import 'RNotificationModel.dart';
+import 'api/notice_list_api.dart';
 
-final RNotificationProvider = StateNotifierProvider<RNotificationNotifier, List<RNotificationModel>>((ref) {
-  return RNotificationNotifier();
-});
+class NoticeListState {
+  final List<NoticeModel> notices;
+  final bool isLoading;
+  final bool isLoadingMore;
+  final String? error;
+  final int page;
+  final int totalPages;
 
-class RNotificationNotifier extends StateNotifier<List<RNotificationModel>> {
-  RNotificationNotifier() : super([]) {
-    _init();
-  }
+  const NoticeListState({
+    this.notices = const [],
+    this.isLoading = false,
+    this.isLoadingMore = false,
+    this.error,
+    this.page = 0,
+    this.totalPages = 1,
+  });
 
-  static const String _key = 'notifications_persistence_key';
+  bool get hasMore => page + 1 < totalPages;
 
-  Future<void> _init() async {
-    await _loadNotices();
-  }
-
-  // 저장소에서 데이터 불러오기
-  Future<void> _loadNotices() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final String? jsonString = prefs.getString(_key);
-      if (jsonString != null) {
-        final List<dynamic> jsonList = json.decode(jsonString);
-        state = jsonList.map((e) => RNotificationModel.fromJson(e)).toList();
-      }
-    } catch (e) {
-      print('공지사항 로드 오류: $e');
-    }
-  }
-
-  // 공지사항 추가 (최신순)
-  Future<void> addNotice(RNotificationModel notice) async {
-    state = [notice, ...state];
-    await _saveToPrefs();
-  }
-
-  // 반응 추가
-  Future<void> addReaction(int index, String emoji) async {
-    if (index < 0 || index >= state.length) return;
-
-    final List<RNotificationModel> currentList = [...state];
-    final target = currentList[index];
-
-    currentList[index] = target.copyWith(
-      reactions: [...target.reactions, emoji],
+  NoticeListState copyWith({
+    List<NoticeModel>? notices,
+    bool? isLoading,
+    bool? isLoadingMore,
+    String? error,
+    int? page,
+    int? totalPages,
+  }) {
+    return NoticeListState(
+      notices: notices ?? this.notices,
+      isLoading: isLoading ?? this.isLoading,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      error: error,
+      page: page ?? this.page,
+      totalPages: totalPages ?? this.totalPages,
     );
-
-    state = currentList;
-    await _saveToPrefs();
-  }
-
-  // 실제 물리 저장소에 쓰기
-  Future<void> _saveToPrefs() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final String jsonString = json.encode(state.map((e) => e.toJson()).toList());
-      await prefs.setString(_key, jsonString);
-    } catch (e) {
-      print('공지사항 저장 오류: $e');
-    }
-  }
-
-  // 수정 기능
-  Future<void> updateNotice(int index, RNotificationModel notice,) async {
-    if (index < 0 || index >= state.length) return;
-
-    final updatedList = [...state];
-    updatedList[index] = notice;
-
-    state = updatedList;
-
-    await _saveToPrefs();
-  }
-
-  // 삭제 기능
-  Future<void> removeNotice(int index,) async {
-    if (index < 0 || index >= state.length) {
-      return;
-    }
-
-    final updated = [...state];
-
-    updated.removeAt(index);
-
-    state = updated;
-
-    await _saveToPrefs();
   }
 }
+
+class RNotificationNotifier extends StateNotifier<NoticeListState> {
+  RNotificationNotifier() : super(const NoticeListState());
+
+  final NoticeListApi _api = NoticeListApi(
+    Dio(BaseOptions(baseUrl: "https://chackchack.shop")),
+  );
+
+  static const int _pageSize = 20;
+
+  Future<int?> _getWorkPlaceId() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getInt("selectedWorkPlaceId");
+  }
+
+  Future<void> fetchFirstPage() async {
+
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      final token = await ServerTokenManager.getAccessToken();
+      final workPlaceId = await _getWorkPlaceId();
+
+      debugPrint("=== fetchFirstPage 시작 ===");
+      debugPrint("token: ${token != null ? '있음(${token.length}자)' : 'null'}");
+      debugPrint("workPlaceId: $workPlaceId");
+
+      if (token == null || token.isEmpty) {
+        throw Exception("로그인이 필요합니다.");
+      }
+      if (workPlaceId == null) {
+        throw Exception("근무지 정보를 찾을 수 없습니다.");
+      }
+
+      final json = await _api.getNotices(
+        workPlaceId: workPlaceId,
+        accessToken: token,
+        page: 0,
+        size: _pageSize,
+      );
+
+      debugPrint("API 원본 응답: $json");
+
+      final result = NoticePageResponse.fromJson(json);
+
+      debugPrint("파싱된 공지 개수: ${result.content.length}");
+      for (final n in result.content) {
+        debugPrint(
+            "noticeId=${n.noticeId} title=${n.title} images=${n.images.length} imageUrl=${n.imageUrl}");
+      }
+
+      state = state.copyWith(
+        notices: result.content,
+        isLoading: false,
+        page: result.page,
+        totalPages: result.totalPages,
+      );
+
+      debugPrint("=== fetchFirstPage 완료, state.notices.length=${state.notices.length} ===");
+    } catch (e, stack) {
+      debugPrint("🔴 fetchFirstPage 에러: $e");
+      debugPrint("스택: $stack");
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<void> fetchNextPage() async {
+    if (state.isLoadingMore || !state.hasMore) return;
+
+    state = state.copyWith(isLoadingMore: true);
+
+    try {
+      final token = await ServerTokenManager.getAccessToken();
+      final workPlaceId = await _getWorkPlaceId();
+
+      if (token == null || workPlaceId == null) {
+        state = state.copyWith(isLoadingMore: false);
+        return;
+      }
+
+      final nextPage = state.page + 1;
+
+      final json = await _api.getNotices(
+        workPlaceId: workPlaceId,
+        accessToken: token,
+        page: nextPage,
+        size: _pageSize,
+      );
+
+      final result = NoticePageResponse.fromJson(json);
+
+      state = state.copyWith(
+        notices: [...state.notices, ...result.content],
+        isLoadingMore: false,
+        page: result.page,
+        totalPages: result.totalPages,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoadingMore: false, error: e.toString());
+    }
+  }
+}
+
+final RNotificationProvider =
+StateNotifierProvider<RNotificationNotifier, NoticeListState>(
+      (ref) => RNotificationNotifier(),
+);

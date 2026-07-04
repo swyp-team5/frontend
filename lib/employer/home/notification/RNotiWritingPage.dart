@@ -53,12 +53,14 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
       if (titleController.text.trim().isEmpty) {
         throw Exception("제목을 입력해주세요.");
       }
-
       if (contentController.text.trim().isEmpty) {
         throw Exception("내용을 입력해주세요.");
       }
 
       List<String> imageObjectKeys = [];
+
+      debugPrint("=== _registerNotice 시작 ===");
+      debugPrint("selectedImage: ${selectedImage?.path}");
 
       //---------------------------------------------------
       // 1. 이미지가 있으면 업로드 URL 발급 → S3 업로드
@@ -70,19 +72,27 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
           file: selectedImage!,
         );
 
-        debugPrint(uploadInfo.toString());
+        debugPrint("uploadInfo: $uploadInfo");
 
         await uploadService.uploadImageToS3(
           uploadInfo: uploadInfo,
           file: selectedImage!,
         );
 
+        debugPrint("S3 업로드 완료");
+
         imageObjectKeys.add(uploadInfo["objectKey"]);
+
+        debugPrint("imageObjectKeys: $imageObjectKeys");
+      } else {
+        debugPrint("selectedImage가 null이라 이미지 업로드 스킵");
       }
 
       //---------------------------------------------------
       // 2. 공지 등록
       //---------------------------------------------------
+      debugPrint("createNotice 호출 직전 imageObjectKeys: $imageObjectKeys");
+
       final response = await noticeApi.createNotice(
         workPlaceId: workPlaceId,
         accessToken: accessToken,
@@ -92,7 +102,7 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
         imageObjectKeys: imageObjectKeys,
       );
 
-      debugPrint("========== NOTICE ==========");
+      debugPrint("========== NOTICE 응답 ==========");
       debugPrint(response.data.toString());
 
       if (!mounted) return;
@@ -104,15 +114,18 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
       Navigator.pop(context);
       Navigator.pop(context);
     } on DioException catch (e) {
-      debugPrint(e.response?.statusCode.toString());
-      debugPrint(e.response?.data.toString());
+      debugPrint("🔴 DioException: ${e.response?.statusCode}");
+      debugPrint("🔴 응답 데이터: ${e.response?.data}");
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.response?.data.toString() ?? "등록 실패")),
       );
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint("🔴 일반 예외: $e");
+      debugPrint("스택: $stack");
+
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
