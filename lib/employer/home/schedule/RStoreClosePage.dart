@@ -2,8 +2,25 @@ import 'package:chack_chack/employer/home/schedule/RDayOffLimitPage.dart';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 
+import 'RMakingSchedulePage.dart';
+
 class RStoreClosePage extends StatefulWidget {
-  const RStoreClosePage({super.key});
+  final int workPlaceId;
+  final TimeOfDay openTime;
+  final TimeOfDay closeTime;
+  final int minWork;
+  final int maxWork;
+  final List<RegisteredSchedule> registeredSchedules;
+
+  const RStoreClosePage({
+    super.key,
+    required this.workPlaceId,
+    required this.openTime,
+    required this.closeTime,
+    required this.minWork,
+    required this.maxWork,
+    required this.registeredSchedules,
+  });
 
   @override
   State<RStoreClosePage> createState() => _RStoreClosePageState();
@@ -22,27 +39,30 @@ class _RStoreClosePageState extends State<RStoreClosePage> {
   void initState() {
     super.initState();
 
-    final now = _koreaNow;
-    _focusedDay = DateTime(now.year, now.month, 1);
+    // 다음 주가 포함된 달을 기본으로 보여준다.
+    _focusedDay = DateTime(_weekStart.year, _weekStart.month, 1);
   }
 
   /// 한국 시간
   DateTime get _koreaNow =>
       DateTime.now().toUtc().add(const Duration(hours: 9));
 
-  /// 이번 주 월요일
+  /// 다음 주 월요일
+  /// (오늘 기준 이번 주 월요일 + 7일 → 항상 "다음 주"를 가리킴)
   DateTime get _weekStart {
     final now = _koreaNow;
-    final monday = now.subtract(Duration(days: now.weekday - 1));
+    final thisMonday = now.subtract(Duration(days: now.weekday - 1));
 
-    return DateTime(
-      monday.year,
-      monday.month,
-      monday.day,
-    );
+    final nextMonday = DateTime(
+      thisMonday.year,
+      thisMonday.month,
+      thisMonday.day,
+    ).add(const Duration(days: 7));
+
+    return nextMonday;
   }
 
-  /// 이번 주 일요일
+  /// 다음 주 일요일
   DateTime get _weekEnd {
     return _weekStart.add(const Duration(days: 6));
   }
@@ -314,7 +334,16 @@ class _RStoreClosePageState extends State<RStoreClosePage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => const RDayOffLimitPage(),
+                    builder: (_) => RDayOffLimitPage(
+                      workPlaceId: widget.workPlaceId,
+                      openTime: widget.openTime,
+                      closeTime: widget.closeTime,
+                      minWork: widget.minWork,
+                      maxWork: widget.maxWork,
+                      registeredSchedules: widget.registeredSchedules,
+                      closedDays: noClosedDay ? {} : _selectedDays,
+                      noClosedDay: noClosedDay,
+                    ),
                   ),
                 );
               }

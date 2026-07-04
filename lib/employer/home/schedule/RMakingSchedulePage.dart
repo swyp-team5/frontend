@@ -11,7 +11,8 @@ import 'models/ShiftInfo.dart';
 import 'RStoreClosePage.dart';
 
 class RMakingSchedulePage extends StatefulWidget {
-  const RMakingSchedulePage({super.key});
+  final int workPlaceId;
+  const RMakingSchedulePage({super.key, required this.workPlaceId});
 
   @override
   State<RMakingSchedulePage> createState() => _RMakingSchedulePageState();
@@ -410,32 +411,32 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                   const SizedBox(height: 16),
                   const Divider(),
                   ...schedule.shifts.map((shift) => Padding(
-                        padding: const EdgeInsets.only(bottom: 24),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEAF3FF),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Text(shift.name,
-                                  style: const TextStyle(
-                                      color: Color(0xFF007AFF),
-                                      fontWeight: FontWeight.bold)),
-                            ),
-                            const SizedBox(height: 12),
-                            _buildDataRow("타임 운영 시간",
-                                "${_formatTime(shift.startTime)} - ${_formatTime(shift.endTime)}"),
-                            const SizedBox(height: 10),
-                            _buildDataRow("필요 근무자 수", "${shift.requiredWorkers}명"),
-                            const SizedBox(height: 10),
-                            _buildDataRow("휴게 시간", shift.breakTime),
-                          ],
+                    padding: const EdgeInsets.only(bottom: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEAF3FF),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(shift.name,
+                              style: const TextStyle(
+                                  color: Color(0xFF007AFF),
+                                  fontWeight: FontWeight.bold)),
                         ),
-                      )),
+                        const SizedBox(height: 12),
+                        _buildDataRow("타임 운영 시간",
+                            "${_formatTime(shift.startTime)} - ${_formatTime(shift.endTime)}"),
+                        const SizedBox(height: 10),
+                        _buildDataRow("필요 근무자 수", "${shift.requiredWorkers}명"),
+                        const SizedBox(height: 10),
+                        _buildDataRow("휴게 시간", shift.breakTime),
+                      ],
+                    ),
+                  )),
                   Center(
                     child: TextButton(
                       onPressed: () =>
@@ -599,7 +600,7 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                   onPressed: _canRegister ? _onRegisterPressed : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor:
-                        _canRegister ? const Color(0xFF0084FF) : const Color(0xFFF2F2F5),
+                    _canRegister ? const Color(0xFF0084FF) : const Color(0xFFF2F2F5),
                     disabledBackgroundColor: const Color(0xFFF2F2F5),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -637,14 +638,22 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => const RStoreClosePage(),
+                  builder: (_) => RStoreClosePage(
+                    workPlaceId: widget.workPlaceId, // 생성자에 추가 필요
+                    openTime: _openTime,
+                    closeTime: _closeTime,
+                    minWork: _minWork,
+                    maxWork: _maxWork,
+                    registeredSchedules: _registeredSchedules,
+                  ),
                 ),
               );
             }
                 : null,
+
             style: ElevatedButton.styleFrom(
               backgroundColor:
-                  _isRegistered ? const Color(0xFF0084FF) : const Color(0xFFA9D0FB),
+              _isRegistered ? const Color(0xFF0084FF) : const Color(0xFFA9D0FB),
               disabledBackgroundColor: const Color(0xFFA9D0FB),
               elevation: 0,
               shape: RoundedRectangleBorder(

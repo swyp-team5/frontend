@@ -281,13 +281,13 @@ class _RRecentSchedulePageState extends State<RRecentSchedulePage> {
                         height: 56,
                         child: ElevatedButton(
                           onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                const RStoreClosePage(),
-                              ),
-                            );
+                            // Navigator.push(
+                            //   context,
+                            //   MaterialPageRoute(
+                            //     builder: (_) =>
+                            //     const RStoreClosePage(),
+                            //   ),
+                            // );
                           },
                           style: ElevatedButton.styleFrom(
                             backgroundColor:

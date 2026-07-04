@@ -65,6 +65,7 @@ flutter:
     - assets/images/r_weeklySchedule_card.png
     - assets/images/r_scheduleCreationAvailable_card.png
     - assets/images/r_submissionStatus_card.png
+    - assets/images/r_scheduleCollection.png
 
     - assets/images/accept.png
     - assets/images/reject.png

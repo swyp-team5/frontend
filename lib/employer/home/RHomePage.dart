@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:chack_chack/common/employer/RAutoScheduling.dart';
 import 'package:chack_chack/employer/home/notification/RNotificationPage.dart';
 import 'package:chack_chack/employer/home/schedule/RMakingSchedulePage.dart';
 import 'package:chack_chack/employer/home/schedule/RRecentSchedulePage.dart';
@@ -258,11 +259,11 @@ class _RHomePageState extends State<RHomePage> {
   // 개발용
   //==========================================================
 
-  // static const HomeCardType? debugCardType =
-  //     HomeCardType.weeklySchedule;
-
   static const HomeCardType? debugCardType =
-      HomeCardType.scheduleCreationAvailable;
+      HomeCardType.weeklySchedule;
+
+  // static const HomeCardType? debugCardType =
+  //     HomeCardType.scheduleCreationAvailable;
 
   // static const HomeCardType? debugCardType =
   //     HomeCardType.submissionStatus;
@@ -381,7 +382,9 @@ class _RHomePageState extends State<RHomePage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const RMakingSchedulePage(),
+                          builder: (_) => RMakingSchedulePage(
+                            workPlaceId: selectedWorkPlaceId!,
+                          ),
                         ),
                       );
                     },
@@ -585,7 +588,7 @@ class _RHomePageState extends State<RHomePage> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (_) => const RMakingSchedulePage(),
+                                  builder: (_) => const RAutoSchedulingPage(),
                                 ),
                               );
                             },
