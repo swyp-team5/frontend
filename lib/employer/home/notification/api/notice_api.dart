@@ -5,25 +5,8 @@ class NoticeApi {
 
   NoticeApi(this.dio);
 
-  Future<int> getMyWorkPlaceId(String accessToken) async {
-    final response = await dio.get(
-      "/api/work-places/me",
-      options: Options(
-        headers: {
-          "Authorization": "Bearer $accessToken",
-        },
-      ),
-    );
-
-    final list = response.data["workPlaces"] as List;
-
-    if (list.isEmpty) {
-      throw Exception("가입된 사업장이 없습니다.");
-    }
-
-    return list.first["workPlaceId"];
-  }
-
+  /// 공지 등록
+  /// POST /api/work-places/{workPlaceId}/notices
   Future<Response> createNotice({
     required int workPlaceId,
     required String accessToken,
@@ -31,20 +14,29 @@ class NoticeApi {
     required String content,
     required bool representative,
     required List<String> imageObjectKeys,
-  }) {
-    return dio.post(
-      "/api/work-places/$workPlaceId/notices",
-      options: Options(
-        headers: {
-          "Authorization": "Bearer $accessToken",
+  }) async {
+    try {
+      final response = await dio.post(
+        "/api/work-places/$workPlaceId/notices",
+        options: Options(
+          headers: {
+            "Authorization": "Bearer $accessToken",
+            "Content-Type": "application/json",
+          },
+        ),
+        data: {
+          "title": title,
+          "content": content,
+          "representative": representative,
+          "imageObjectKeys": imageObjectKeys,
         },
-      ),
-      data: {
-        "title": title,
-        "content": content,
-        "representative": representative,
-        "imageObjectKeys": imageObjectKeys,
-      },
-    );
+      );
+
+      return response;
+    } on DioException catch (e) {
+      final message =
+      e.response?.data is Map ? e.response?.data["message"] : null;
+      throw Exception(message ?? "공지 등록 실패 (${e.response?.statusCode})");
+    }
   }
 }

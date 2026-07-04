@@ -127,7 +127,7 @@ class _EHomePageState extends State<EHomePage> {
     return 8 - now.weekday;
   }
 
-  static const HomeCardType? debugCardType = HomeCardType.substituteRequest;
+  static const HomeCardType? debugCardType = HomeCardType.weeklySchedule;
 
   HomeCardType get cardType {
     if (debugCardType != null) {

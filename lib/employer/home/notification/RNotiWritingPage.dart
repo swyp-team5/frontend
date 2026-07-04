@@ -14,6 +14,7 @@ import 'RNotificationProvider.dart';
 import 'RNotificationModel.dart';
 import 'package:dio/dio.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api/notice_api.dart';
 import 'api/notice_upload_service.dart';
@@ -38,13 +39,16 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
     try {
       final accessToken = await ServerTokenManager.getAccessToken();
 
-      print(accessToken);
-
       if (accessToken == null || accessToken.isEmpty) {
         throw Exception("로그인이 필요합니다.");
       }
 
-      debugPrint("ACCESS TOKEN = $accessToken");
+      final prefs = await SharedPreferences.getInstance();
+      final workPlaceId = prefs.getInt("selectedWorkPlaceId");
+
+      if (workPlaceId == null) {
+        throw Exception("근무지 정보를 찾을 수 없습니다. 다시 로그인해주세요.");
+      }
 
       if (titleController.text.trim().isEmpty) {
         throw Exception("제목을 입력해주세요.");
@@ -57,43 +61,30 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
       List<String> imageObjectKeys = [];
 
       //---------------------------------------------------
-      // 1. 이미지가 있으면
+      // 1. 이미지가 있으면 업로드 URL 발급 → S3 업로드
       //---------------------------------------------------
-
       if (selectedImage != null) {
-        debugPrint("Bearer $accessToken");
         final uploadInfo = await uploadService.getUploadUrl(
-          workPlaceId: 1,
+          workPlaceId: workPlaceId,
           token: accessToken,
           file: selectedImage!,
         );
 
         debugPrint(uploadInfo.toString());
 
-        //--------------------------------------------
-        // 2. S3 업로드
-        //--------------------------------------------
-
         await uploadService.uploadImageToS3(
           uploadInfo: uploadInfo,
           file: selectedImage!,
         );
 
-        //--------------------------------------------
-        // 3. objectKey 저장
-        //--------------------------------------------
-
         imageObjectKeys.add(uploadInfo["objectKey"]);
       }
 
       //---------------------------------------------------
-      // 4. 공지 등록
+      // 2. 공지 등록
       //---------------------------------------------------
-
-      final noticeApi = NoticeApi(dio);
-
       final response = await noticeApi.createNotice(
-        workPlaceId: 1,
+        workPlaceId: workPlaceId,
         accessToken: accessToken,
         title: titleController.text.trim(),
         content: contentController.text.trim(),
@@ -107,9 +98,7 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("공지가 등록되었습니다."),
-        ),
+        const SnackBar(content: Text("공지가 등록되었습니다.")),
       );
 
       Navigator.pop(context);
@@ -121,19 +110,13 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            e.response?.data.toString() ?? "등록 실패",
-          ),
-        ),
+        SnackBar(content: Text(e.response?.data.toString() ?? "등록 실패")),
       );
     } catch (e) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-        ),
+        SnackBar(content: Text(e.toString())),
       );
     }
   }

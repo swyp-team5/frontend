@@ -85,7 +85,7 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
                 const Padding(
                   padding: EdgeInsets.only(top: 100),
                   child: Center(
-                      child: Text('작성된 글이\n없어요',
+                      child: Text('작성된 글이 없어요',
                           style: TextStyle(fontSize: 18, color: Color(0xFF999999)))),
                 )
               else
