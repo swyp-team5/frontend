@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import '../RHomePage.dart';
+import 'RSubmitStatus.dart';
 
 class RScheduleCard extends StatelessWidget {
   final HomeCardType type;
   final int daysLeft;
   final VoidCallback? onMakeScheduleTap;
   final VoidCallback? onClose;
+  final int? workPlaceId;
+  final int? weekScheduleId;
 
   const RScheduleCard({
     super.key,
@@ -13,6 +16,8 @@ class RScheduleCard extends StatelessWidget {
     required this.daysLeft,
     this.onMakeScheduleTap,
     this.onClose,
+    this.workPlaceId,
+    this.weekScheduleId,
   });
 
   /// TODO : API 연결 시 교체
@@ -39,8 +44,6 @@ class RScheduleCard extends StatelessWidget {
         return "";
     }
   }
-
-
 
   String get _buttonText {
     switch (type) {
@@ -79,8 +82,7 @@ class RScheduleCard extends StatelessWidget {
     return "${nextMonday.month}월 ${nextMonday.day}일 - ${nextSunday.month}월 ${nextSunday.day}일";
   }
 
-
-    @override
+  @override
   Widget build(BuildContext context) {
     if (type == HomeCardType.none) {
       return const SizedBox.shrink();
@@ -207,7 +209,39 @@ class RScheduleCard extends StatelessWidget {
               child: SizedBox(
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: onMakeScheduleTap,
+                  onPressed: () {
+                    // ── 디버그: 버튼이 실제로 눌리는지, 값이 뭔지 확인 ──
+                    debugPrint(
+                        "[RScheduleCard] 버튼 클릭 - type=$type, workPlaceId=$workPlaceId, weekScheduleId=$weekScheduleId");
+
+                    if (type == HomeCardType.submissionStatus) {
+                      if (workPlaceId == null || weekScheduleId == null) {
+                        debugPrint(
+                            "[RScheduleCard] 이동 취소 - workPlaceId 또는 weekScheduleId가 null");
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              "스케줄 정보를 불러오지 못했어요. (workPlaceId 또는 weekScheduleId 없음)",
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => RSubmitStatusPage(
+                            workPlaceId: workPlaceId!,
+                            weekScheduleId: weekScheduleId!,
+                          ),
+                        ),
+                      );
+                    } else {
+                      onMakeScheduleTap?.call();
+                    }
+                  },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0084FF),
                     elevation: 0,

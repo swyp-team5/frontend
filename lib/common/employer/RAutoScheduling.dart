@@ -1,16 +1,27 @@
 import 'package:chack_chack/employer/home/autoschedule/RSelectAutoSchedulePage.dart';
 import 'package:flutter/material.dart';
 
-
 class RAutoSchedulingPage extends StatefulWidget {
-  const RAutoSchedulingPage({super.key});
+  final int scheduleGenerationRunId;
+  final int schedulePreviewId;
+  final int workPlaceId;
+  final int weekScheduleId;
+  final int candidateCount;
+
+  const RAutoSchedulingPage({
+    super.key,
+    required this.scheduleGenerationRunId,
+    required this.schedulePreviewId,
+    required this.workPlaceId,
+    required this.weekScheduleId,
+    required this.candidateCount,
+  });
 
   @override
   State<RAutoSchedulingPage> createState() => _RAutoSchedulingPageState();
 }
 
 class _RAutoSchedulingPageState extends State<RAutoSchedulingPage> {
-
   @override
   void initState() {
     super.initState();
@@ -21,7 +32,15 @@ class _RAutoSchedulingPageState extends State<RAutoSchedulingPage> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => const RSelectAutoSchedulePage(),
+          builder: (_) => RSelectAutoSchedulePage(
+            // RSelectAutoSchedulePage가 받는 파라미터에 맞게 전달하세요.
+            // 예시:
+            // workPlaceId: widget.workPlaceId,
+            // weekScheduleId: widget.weekScheduleId,
+            // scheduleGenerationRunId: widget.scheduleGenerationRunId,
+            // schedulePreviewId: widget.schedulePreviewId,
+            // candidateCount: widget.candidateCount,
+          ),
         ),
       );
     });
@@ -31,7 +50,6 @@ class _RAutoSchedulingPageState extends State<RAutoSchedulingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -39,14 +57,12 @@ class _RAutoSchedulingPageState extends State<RAutoSchedulingPage> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                /// 스케줄 이미지
                 Image.asset(
                   "assets/images/automatic_schedule_creation.png",
                   width: 200,
                   height: 200,
                   fit: BoxFit.contain,
                 ),
-
                 const Text(
                   "근무자들의 스케줄을 취합해",
                   style: TextStyle(
@@ -55,9 +71,7 @@ class _RAutoSchedulingPageState extends State<RAutoSchedulingPage> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-
                 const SizedBox(height: 20),
-
                 const Text(
                   "자동으로 스케줄을\n만들고 있어요",
                   textAlign: TextAlign.center,

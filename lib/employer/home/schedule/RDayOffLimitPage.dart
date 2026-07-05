@@ -1,5 +1,6 @@
 import 'package:chack_chack/employer/home/schedule/widgets/RCompleteMakingSchedule.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 import 'RMakingSchedulePage.dart'; // RegisteredSchedule
@@ -218,6 +219,12 @@ class _RDayOffLimitPageState extends State<RDayOffLimitPage> {
       debugPrint("createdAt      = ${response.createdAt}");
       debugPrint("updatedAt      = ${response.updatedAt}");
       debugPrint("=====================================");
+
+      // 홈 화면 등에서 재사용할 수 있도록 활성 weekScheduleId 저장
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt("activeWeekScheduleId", response.weekScheduleId);
+
+      debugPrint("💾 activeWeekScheduleId 저장 완료: ${response.weekScheduleId}");
 
       if (!mounted) return;
 
