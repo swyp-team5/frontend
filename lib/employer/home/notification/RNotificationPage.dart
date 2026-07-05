@@ -212,10 +212,10 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
                                         ],
                                       ),
                                     ),
-                                    const Icon(
-                                      Icons.more_horiz,
-                                      color: Colors.grey,
-                                    ),
+                                    // const Icon(
+                                    //   Icons.more_horiz,
+                                    //   color: Colors.grey,
+                                    // ),
                                   ],
                                 ),
 

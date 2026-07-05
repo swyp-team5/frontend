@@ -80,8 +80,6 @@ class NoticeApi {
 
   /// 공지 수정
   /// PATCH /api/notices/{noticeId}
-  /// ⚠️ 요청 body 필드는 POST 등록 스펙과 동일하다고 가정했습니다.
-  /// 실제 PATCH 스펙이 다르면 이 부분만 맞춰서 수정하면 됩니다.
   Future<NoticeModel> updateNotice({
     required int noticeId,
     required String accessToken,
@@ -119,6 +117,33 @@ class NoticeApi {
       final message =
       e.response?.data is Map ? e.response?.data["message"] : null;
       throw Exception(message ?? "공지 수정 실패 (${e.response?.statusCode})");
+    }
+  }
+
+  /// 공지 삭제
+  /// DELETE /api/notices/{noticeId}
+  Future<void> deleteNotice({
+    required int noticeId,
+    required String accessToken,
+  }) async {
+    debugPrint("deleteNotice 요청: noticeId=$noticeId");
+
+    try {
+      final response = await dio.delete(
+        "/api/notices/$noticeId",
+        options: Options(
+          headers: {
+            "Authorization": "Bearer $accessToken",
+          },
+        ),
+      );
+
+      debugPrint("deleteNotice 응답: statusCode=${response.statusCode}");
+    } on DioException catch (e) {
+      debugPrint("🔴 deleteNotice 실패: ${e.response?.statusCode} / ${e.response?.data}");
+      final message =
+      e.response?.data is Map ? e.response?.data["message"] : null;
+      throw Exception(message ?? "공지 삭제 실패 (${e.response?.statusCode})");
     }
   }
 }

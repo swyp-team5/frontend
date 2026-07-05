@@ -261,12 +261,38 @@ class _RNotiDetailPageState extends ConsumerState<RNotiDetailPage> {
       );
 
       if (confirm == true) {
-        // TODO: RNotificationProvider에 noticeId 기준 삭제 메서드와 연동
-        // 예: ref.read(RNotificationProvider.notifier).removeNotice(currentNotice.noticeId);
-        debugPrint("삭제 요청: noticeId=${currentNotice.noticeId} (연동 API 필요)");
+        try {
+          final accessToken = await ServerTokenManager.getAccessToken();
 
-        if (context.mounted) {
+          if (accessToken == null || accessToken.isEmpty) {
+            throw Exception("로그인이 필요합니다.");
+          }
+
+          await noticeApi.deleteNotice(
+            noticeId: currentNotice.noticeId,
+            accessToken: accessToken,
+          );
+
+          debugPrint("공지 삭제 성공: noticeId=${currentNotice.noticeId}");
+
+          // 목록 상태 갱신
+          ref.read(RNotificationProvider.notifier).fetchFirstPage();
+
+          if (!context.mounted) return;
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("공지가 삭제되었습니다.")),
+          );
+
           Navigator.pop(context);
+        } catch (e) {
+          debugPrint("🔴 공지 삭제 실패: $e");
+
+          if (!context.mounted) return;
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(e.toString().replaceFirst("Exception: ", ""))),
+          );
         }
       }
     }
