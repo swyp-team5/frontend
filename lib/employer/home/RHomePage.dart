@@ -265,11 +265,11 @@ class _RHomePageState extends State<RHomePage> {
   // static const HomeCardType? debugCardType =
   //     HomeCardType.weeklySchedule;
 
-  // static const HomeCardType? debugCardType =
-  //     HomeCardType.scheduleCreationAvailable;
-
   static const HomeCardType? debugCardType =
-      HomeCardType.submissionStatus;
+      HomeCardType.scheduleCreationAvailable;
+
+  // static const HomeCardType? debugCardType =
+  //     HomeCardType.submissionStatus;
 
   // static const HomeCardType? debugCardType =
   //     HomeCardType.none;

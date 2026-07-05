@@ -136,15 +136,15 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
 
                         return InkWell(
                           onTap: () {
-                            // Navigator.push(
-                            //   context,
-                            //   MaterialPageRoute(
-                            //     builder: (_) => RNotiDetailPage(
-                            //       notice: notice,
-                            //       noticeIndex: index,
-                            //     ),
-                            //   ),
-                            // );
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => RNotiDetailPage(
+                                  noticeId: notice.noticeId,
+                                  initialNotice: notice,
+                                ),
+                              ),
+                            );
                           },
                           child: Padding(
                             padding: const EdgeInsets.all(20),
