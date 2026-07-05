@@ -44,17 +44,19 @@ class _EHomePageState extends State<EHomePage> {
 
   String workPlaceName = "";
   int? workPlaceId;
+  String? accessToken; // ✅ 배너용 accessToken 상태 추가
+
+  // ✅ 공통 Dio 인스턴스 (여러 위젯에서 재사용)
+  final Dio _dio = Dio(
+    BaseOptions(baseUrl: "https://chackchack.shop"),
+  );
 
   Future<void> _loadMyWorkPlace() async {
     try {
       final token = await ServerTokenManager.getValidAccessToken();
       if (token == null) return;
 
-      final dio = Dio(
-        BaseOptions(baseUrl: "https://chackchack.shop"),
-      );
-
-      final response = await dio.get(
+      final response = await _dio.get(
         "/api/work-places/me",
         options: Options(
           headers: {
@@ -90,6 +92,7 @@ class _EHomePageState extends State<EHomePage> {
       setState(() {
         workPlaceId = id;
         workPlaceName = name;
+        accessToken = token; // ✅ 배너에 넘길 토큰 저장
       });
 
       debugPrint("근무지 로딩 성공: $id / $name");
@@ -176,7 +179,14 @@ class _EHomePageState extends State<EHomePage> {
               const SizedBox(height: 20),
 
               /// Notice
-              const ENoticeBanner(),
+              if (workPlaceId != null && accessToken != null)
+                ENoticeBanner(
+                  workPlaceId: workPlaceId!,
+                  accessToken: accessToken!,
+                  dio: _dio,
+                )
+              else
+                const SizedBox.shrink(), // 로딩 전엔 배너 숨김 (필요 시 스켈레톤으로 교체 가능)
               const SizedBox(height: 16),
 
               /// Schedule Card

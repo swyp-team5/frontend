@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
+import '../../../../employee/home/notification/RepresentativeNotice.dart';
 import '../RNotificationModel.dart'; // NoticeModel 경로에 맞게 수정
 
 class NoticeApi {
@@ -144,6 +145,41 @@ class NoticeApi {
       final message =
       e.response?.data is Map ? e.response?.data["message"] : null;
       throw Exception(message ?? "공지 삭제 실패 (${e.response?.statusCode})");
+    }
+  }
+
+  /// 대표 공지 조회 (없으면 null 반환)
+  /// GET /api/home/work-places/{workPlaceId}/representative-notice
+  Future<RepresentativeNotice?> getRepresentativeNotice({
+    required int workPlaceId,
+    required String accessToken,
+  }) async {
+    debugPrint("getRepresentativeNotice 요청: workPlaceId=$workPlaceId");
+
+    try {
+      final response = await dio.get(
+        "/api/home/work-places/$workPlaceId/representative-notice",
+        options: Options(
+          headers: {
+            "Authorization": "Bearer $accessToken",
+          },
+        ),
+      );
+
+      debugPrint("getRepresentativeNotice 응답: ${response.data}");
+
+      final noticeJson = response.data["notice"];
+
+      if (noticeJson == null) {
+        return null; // 대표 공지 없음
+      }
+
+      return RepresentativeNotice.fromJson(noticeJson); // ✅ NoticeModel → RepresentativeNotice
+    } on DioException catch (e) {
+      debugPrint("🔴 getRepresentativeNotice 실패: ${e.response?.statusCode} / ${e.response?.data}");
+      final message =
+      e.response?.data is Map ? e.response?.data["message"] : null;
+      throw Exception(message ?? "대표 공지 조회 실패 (${e.response?.statusCode})");
     }
   }
 }

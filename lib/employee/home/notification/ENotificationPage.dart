@@ -212,10 +212,6 @@ class _ENotificationPageState extends ConsumerState<ENotificationPage> {
                                         ],
                                       ),
                                     ),
-                                    const Icon(
-                                      Icons.more_horiz,
-                                      color: Colors.grey,
-                                    ),
                                   ],
                                 ),
 
