@@ -1,35 +1,84 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 
-import 'ENotificationModel.dart';
+import '../../../common/auth/server_token_manager.dart';
+import '../../../employer/home/notification/RNotificationModel.dart';
+import '../../../employer/home/notification/api/notice_api.dart';
 import 'ENotificationProvider.dart';
 
-class ENotiDetailPage extends ConsumerWidget {
-  final ENotificationModel notice;
-  final int noticeIndex;
+class ENotiDetailPage extends ConsumerStatefulWidget {
+  final int noticeId;
+
+  /// 목록에서 넘어올 때 바로 보여줄 초기 데이터 (선택)
+  final NoticeModel? initialNotice;
 
   const ENotiDetailPage({
     super.key,
-    required this.notice,
-    required this.noticeIndex,
+    required this.noticeId,
+    this.initialNotice,
   });
 
-  Map<String, int> getReactionCounts(List<String> reactions,) {
-    final Map<String, int> counts = {};
+  @override
+  ConsumerState<ENotiDetailPage> createState() => _ENotiDetailPageState();
+}
 
-    for (final emoji in reactions) {
-      counts[emoji] = (counts[emoji] ?? 0) + 1;
+class _ENotiDetailPageState extends ConsumerState<ENotiDetailPage> {
+  late final Dio dio;
+  late final NoticeApi noticeApi;
+
+  NoticeModel? notice;
+  bool isLoading = true;
+  String? error;
+
+  @override
+  void initState() {
+    super.initState();
+
+    dio = Dio();
+    dio.options.baseUrl = "https://chackchack.shop";
+    noticeApi = NoticeApi(dio);
+
+    notice = widget.initialNotice;
+    isLoading = widget.initialNotice == null;
+
+    _fetchDetail();
+  }
+
+  Future<void> _fetchDetail() async {
+    try {
+      final accessToken = await ServerTokenManager.getAccessToken();
+
+      if (accessToken == null || accessToken.isEmpty) {
+        throw Exception("로그인이 필요합니다.");
+      }
+
+      final result = await noticeApi.getNoticeDetail(
+        noticeId: widget.noticeId,
+        accessToken: accessToken,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        notice = result;
+        isLoading = false;
+        error = null;
+      });
+    } catch (e) {
+      debugPrint("🔴 공지 상세 조회 실패: $e");
+
+      if (!mounted) return;
+
+      setState(() {
+        isLoading = false;
+        error = notice == null ? e.toString() : null;
+      });
     }
-
-    return counts;
   }
 
   void _showEmojiMenu(
       BuildContext context,
-      WidgetRef ref,
-      int index,
       RelativeRect position,
       ) async {
     final selected = await showMenu<String>(
@@ -59,7 +108,9 @@ class ENotiDetailPage extends ConsumerWidget {
     );
 
     if (selected != null) {
-      ref.read(ENotificationProvider.notifier).addReaction(index, selected);
+      // TODO: 리액션 등록 API와 연동
+      // 예: ref.read(ENotificationProvider.notifier).addReaction(widget.noticeId, selected);
+      debugPrint("선택된 이모지: $selected (연동 API 필요)");
     }
   }
 
@@ -74,266 +125,258 @@ class ENotiDetailPage extends ConsumerWidget {
   }
 
   @override
-  Widget build(
-      BuildContext context,
-      WidgetRef ref,
-      ) {
-    final notices =
-    ref.watch(ENotificationProvider);
-
-    if (noticeIndex >= notices.length) {
+  Widget build(BuildContext context) {
+    if (isLoading && notice == null) {
       return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (notice == null) {
+      return Scaffold(
+        backgroundColor: Colors.white,
         body: Center(
-          child: Text('공지를 찾을 수 없습니다.'),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(error ?? '공지를 불러오지 못했습니다.'),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: _fetchDetail,
+                child: const Text('다시 시도'),
+              ),
+            ],
+          ),
         ),
       );
     }
 
-    final currentNotice =
-    notices[noticeIndex];
-
-    final reactionCounts =
-    getReactionCounts(
-      currentNotice.reactions,
-    );
+    final currentNotice = notice!;
+    final reactionCounts = currentNotice.reactionCounts;
 
     return Scaffold(
       backgroundColor: Colors.white,
-
       body: SafeArea(
         child: Column(
           children: [
             /// 상단바
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 30,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 30),
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: () =>
-                        Navigator.pop(context),
-                    child: const Icon(
-                      Icons.arrow_back_ios_new,
-                    ),
+                    onTap: () => Navigator.pop(context),
+                    child: const Icon(Icons.arrow_back_ios_new),
                   ),
                 ],
               ),
             ),
 
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                ),
-                child: Column(
-                  crossAxisAlignment:
-                  CrossAxisAlignment.start,
-                  children: [
-                    /// 작성자
-                    Row(
-                      children: [
-                        Container(
-                          width: 42,
-                          height: 42,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade300,
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-
-                        const SizedBox(width: 12),
-
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    currentNotice.writer,
-                                    style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-
-                                  const SizedBox(width: 6),
-
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 6,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: const Color(0xFFE6F3FF),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: const Text(
-                                      '사장님',
-                                      style: TextStyle(
-                                          fontSize: 11,
-                                          color: Color(0xFF0063BF)
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-
-                              Text(
-                                currentNotice.date,
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 30),
-
-                    /// 제목
-                    Text(
-                      currentNotice.title,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    /// 내용
-                    Text(
-                      currentNotice.content,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        height: 1.7,
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    /// 이미지
-                    if (currentNotice.imagePath !=
-                        null)
-                      ClipRRect(
-                        borderRadius:
-                        BorderRadius.circular(
-                          16,
-                        ),
-                        child: Image.file(
-                          File(
-                            currentNotice
-                                .imagePath!,
-                          ),
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-
-                    const SizedBox(height: 30),
-
-                    /// 이모지 현황
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: [
-
-                        /// 이모지 추가 버튼
-                        Builder(
-                          builder: (buttonContext) {
-                            return GestureDetector(
-                              onTap: () {
-                                final RenderBox button =
-                                buttonContext.findRenderObject() as RenderBox;
-
-                                final RenderBox overlay =
-                                Overlay.of(context)
-                                    .context
-                                    .findRenderObject() as RenderBox;
-
-                                final position = RelativeRect.fromRect(
-                                  Rect.fromPoints(
-                                    button.localToGlobal(
-                                      Offset.zero,
-                                      ancestor: overlay,
-                                    ),
-                                    button.localToGlobal(
-                                      button.size.bottomRight(
-                                        Offset.zero,
-                                      ),
-                                      ancestor: overlay,
-                                    ),
-                                  ),
-                                  Offset.zero & overlay.size,
-                                );
-
-                                _showEmojiMenu(
-                                  context,
-                                  ref,
-                                  noticeIndex,
-                                  position,
-                                );
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 14,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFFE8E8ED),
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: const Icon(
-                                  Icons.add,
-                                  size: 18,
-                                ),
-                              ),
-                            );
-                          },
-                        ),
-
-                        /// 등록된 이모지
-                        ...reactionCounts.entries.map(
-                              (entry) => Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 8,
-                            ),
+              child: RefreshIndicator(
+                onRefresh: _fetchDetail,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      /// 작성자
+                      Row(
+                        children: [
+                          Container(
+                            width: 42,
+                            height: 42,
                             decoration: BoxDecoration(
-                              color: const Color(0xFFE8E8ED),
-                              borderRadius: BorderRadius.circular(20),
+                              color: Colors.grey.shade300,
+                              borderRadius: BorderRadius.circular(16),
                             ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  entry.key,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                  ),
+                                Row(
+                                  children: [
+                                    Text(
+                                      currentNotice.writer,
+                                      style: const TextStyle(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFE6F3FF),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: const Text(
+                                        '사장님',
+                                        style: TextStyle(
+                                          fontSize: 11,
+                                          color: Color(0xFF0063BF),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 4),
                                 Text(
-                                  entry.value.toString(),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w600,
+                                  currentNotice.date,
+                                  style: TextStyle(
+                                    color: Colors.grey.shade600,
+                                    fontSize: 12,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
 
-                    const SizedBox(height: 30),
-                  ],
+                      const SizedBox(height: 30),
+
+                      /// 제목
+                      Text(
+                        currentNotice.title,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      /// 내용
+                      Text(
+                        currentNotice.content,
+                        style: const TextStyle(fontSize: 16, height: 1.7),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      /// 이미지 (서버 URL 기반, 여러 장 지원)
+                      if (currentNotice.images.isNotEmpty)
+                        Column(
+                          children: currentNotice.images.map((img) {
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: Image.network(
+                                  img.imageUrl,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                  loadingBuilder: (context, child, progress) {
+                                    if (progress == null) return child;
+                                    return Container(
+                                      height: 200,
+                                      color: Colors.grey.shade200,
+                                      alignment: Alignment.center,
+                                      child: const SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                      ),
+                                    );
+                                  },
+                                  errorBuilder: (context, error, stack) => Container(
+                                    height: 200,
+                                    color: Colors.grey.shade200,
+                                    alignment: Alignment.center,
+                                    child: const Icon(
+                                      Icons.broken_image_outlined,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+
+                      const SizedBox(height: 30),
+
+                      /// 이모지 현황
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          Builder(
+                            builder: (buttonContext) {
+                              return GestureDetector(
+                                onTap: () {
+                                  final RenderBox button = buttonContext
+                                      .findRenderObject() as RenderBox;
+                                  final RenderBox overlay = Overlay.of(context)
+                                      .context
+                                      .findRenderObject() as RenderBox;
+
+                                  final position = RelativeRect.fromRect(
+                                    Rect.fromPoints(
+                                      button.localToGlobal(
+                                        Offset.zero,
+                                        ancestor: overlay,
+                                      ),
+                                      button.localToGlobal(
+                                        button.size.bottomRight(Offset.zero),
+                                        ancestor: overlay,
+                                      ),
+                                    ),
+                                    Offset.zero & overlay.size,
+                                  );
+
+                                  _showEmojiMenu(context, position);
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 8,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE8E8ED),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: const Icon(Icons.add, size: 18),
+                                ),
+                              );
+                            },
+                          ),
+                          ...reactionCounts.entries.map(
+                                (entry) => Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE8E8ED),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(entry.key, style: const TextStyle(fontSize: 16)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    entry.value.toString(),
+                                    style: const TextStyle(fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 30),
+                    ],
+                  ),
                 ),
               ),
             ),
