@@ -174,7 +174,7 @@ class NoticeApi {
         return null; // 대표 공지 없음
       }
 
-      return RepresentativeNotice.fromJson(noticeJson); // ✅ NoticeModel → RepresentativeNotice
+      return RepresentativeNotice.fromJson(noticeJson); // NoticeModel → RepresentativeNotice
     } on DioException catch (e) {
       debugPrint("🔴 getRepresentativeNotice 실패: ${e.response?.statusCode} / ${e.response?.data}");
       final message =

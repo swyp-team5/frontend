@@ -92,7 +92,7 @@ class _EHomePageState extends State<EHomePage> {
       setState(() {
         workPlaceId = id;
         workPlaceName = name;
-        accessToken = token; // ✅ 배너에 넘길 토큰 저장
+        accessToken = token; // 배너에 넘길 토큰 저장
       });
 
       debugPrint("근무지 로딩 성공: $id / $name");

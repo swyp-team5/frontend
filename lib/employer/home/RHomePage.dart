@@ -44,9 +44,15 @@ class _RHomePageState extends State<RHomePage> {
 
   int? selectedWorkPlaceId;
   String selectedStoreName = "";
+  String? accessToken; // ✅ 배너용 accessToken 상태 추가
 
   /// schedule-conditions POST 성공 시 저장된 활성 weekScheduleId
   int? weekScheduleId;
+
+  // ✅ 공통 Dio 인스턴스 (baseUrl 지정 필수)
+  final Dio _dio = Dio(
+    BaseOptions(baseUrl: "https://chackchack.shop"),
+  );
 
   /// 카드에서 사용할 남은 일수
   int get daysLeft {
@@ -228,6 +234,7 @@ class _RHomePageState extends State<RHomePage> {
                           Navigator.pop(context);
 
                           // 매장이 바뀌었으니 해당 매장의 weekScheduleId도 다시 조회
+                          // (대표 공지는 RNoticeBanner가 workPlaceId 변경을 감지해 자동으로 다시 불러옴)
                           await _loadWeekScheduleId();
                         },
                         style: ElevatedButton.styleFrom(
@@ -447,10 +454,8 @@ class _RHomePageState extends State<RHomePage> {
         return;
       }
 
-      final dio = Dio();
-
-      final response = await dio.get(
-        "https://chackchack.shop/api/work-places/me",
+      final response = await _dio.get(
+        "/api/work-places/me", // _dio에 baseUrl이 있으므로 상대경로로 변경
         options: Options(
           headers: {
             "Authorization": "Bearer $token",
@@ -468,6 +473,7 @@ class _RHomePageState extends State<RHomePage> {
 
       setState(() {
         stores = List<Map<String, dynamic>>.from(list);
+        accessToken = token; // ✅ 배너에 넘길 토큰 저장
 
         if (stores.isNotEmpty) {
           selectedWorkPlaceId = stores.first["workPlaceId"];
@@ -592,17 +598,22 @@ class _RHomePageState extends State<RHomePage> {
               const SizedBox(height: 20),
 
               /// Notice
-              RNoticeBanner(
-                notice: "마감 때 쓰레기 비우는거 잊지 마세요",
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const RNotificationPage(),
-                    ),
-                  );
-                },
-              ),
+              if (selectedWorkPlaceId != null && accessToken != null)
+                RNoticeBanner(
+                  workPlaceId: selectedWorkPlaceId!,
+                  accessToken: accessToken!,
+                  dio: _dio,
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const RNotificationPage(),
+                      ),
+                    );
+                  },
+                )
+              else
+                const SizedBox.shrink(), // 로딩 전엔 배너 숨김
 
               const SizedBox(height: 16),
 
