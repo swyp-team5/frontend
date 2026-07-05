@@ -20,6 +20,7 @@ import '../../../common/widgets/BottomNavBar.dart';
 import '../crews/RCrewPage.dart';
 import '../mypage/RMyPage.dart';
 import '../schedule/RMainSchedulePage.dart';
+import 'api/SubmitStatusApi.dart';
 
 enum HomeCardType {
   none,
@@ -44,10 +45,12 @@ class _RHomePageState extends State<RHomePage> {
 
   int? selectedWorkPlaceId;
   String selectedStoreName = "";
-  String? accessToken; // ✅ 배너용 accessToken 상태 추가
+  String? accessToken;
 
   /// schedule-conditions POST 성공 시 저장된 활성 weekScheduleId
   int? weekScheduleId;
+
+  int? notSubmittedCount;
 
   // ✅ 공통 Dio 인스턴스 (baseUrl 지정 필수)
   final Dio _dio = Dio(
@@ -233,9 +236,10 @@ class _RHomePageState extends State<RHomePage> {
 
                           Navigator.pop(context);
 
-                          // 매장이 바뀌었으니 해당 매장의 weekScheduleId도 다시 조회
+                          // 매장이 바뀌었으니 해당 매장의 weekScheduleId, 제출 현황도 다시 조회
                           // (대표 공지는 RNoticeBanner가 workPlaceId 변경을 감지해 자동으로 다시 불러옴)
                           await _loadWeekScheduleId();
+                          await _loadSubmitStatus(); // ✅ 추가
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
@@ -323,6 +327,31 @@ class _RHomePageState extends State<RHomePage> {
     );
 
     await _loadWeekScheduleId();
+  }
+
+  /// 제출 현황(미제출 인원 수) 조회
+  Future<void> _loadSubmitStatus() async {
+    if (selectedWorkPlaceId == null || weekScheduleId == null) {
+      debugPrint("[_loadSubmitStatus] workPlaceId 또는 weekScheduleId가 없어서 조회 스킵");
+      return;
+    }
+
+    try {
+      final status = await SubmitStatusApi.getStatus(
+        workPlaceId: selectedWorkPlaceId!,
+        weekScheduleId: weekScheduleId!,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        notSubmittedCount = status.notSubmittedCount;
+      });
+
+      debugPrint("notSubmittedCount = $notSubmittedCount");
+    } catch (e) {
+      debugPrint("[_loadSubmitStatus] 조회 실패: $e");
+    }
   }
 
   void _showScheduleBottomSheet(BuildContext context) {
@@ -455,7 +484,7 @@ class _RHomePageState extends State<RHomePage> {
       }
 
       final response = await _dio.get(
-        "/api/work-places/me", // _dio에 baseUrl이 있으므로 상대경로로 변경
+        "/api/work-places/me",
         options: Options(
           headers: {
             "Authorization": "Bearer $token",
@@ -463,7 +492,6 @@ class _RHomePageState extends State<RHomePage> {
         ),
       );
 
-      // ===== 응답 전체 출력 =====
       debugPrint("========== /work-places/me ==========");
       debugPrint("statusCode = ${response.statusCode}");
       debugPrint(const JsonEncoder.withIndent("  ").convert(response.data));
@@ -473,7 +501,7 @@ class _RHomePageState extends State<RHomePage> {
 
       setState(() {
         stores = List<Map<String, dynamic>>.from(list);
-        accessToken = token; // ✅ 배너에 넘길 토큰 저장
+        accessToken = token;
 
         if (stores.isNotEmpty) {
           selectedWorkPlaceId = stores.first["workPlaceId"];
@@ -525,6 +553,7 @@ class _RHomePageState extends State<RHomePage> {
     _init();
   }
 
+  /// ✅ _init()은 이 하나만 유지 (중복 제거)
   Future<void> _init() async {
     final access = await ServerTokenManager.getAccessToken();
     final refresh = await ServerTokenManager.getRefreshToken();
@@ -536,6 +565,7 @@ class _RHomePageState extends State<RHomePage> {
 
     await _loadWorkPlaces();
     await _loadWeekScheduleId();
+    await _loadSubmitStatus();
   }
 
   @override
@@ -613,7 +643,7 @@ class _RHomePageState extends State<RHomePage> {
                   },
                 )
               else
-                const SizedBox.shrink(), // 로딩 전엔 배너 숨김
+                const SizedBox.shrink(),
 
               const SizedBox(height: 16),
 
@@ -624,6 +654,7 @@ class _RHomePageState extends State<RHomePage> {
                   daysLeft: daysLeft,
                   workPlaceId: selectedWorkPlaceId,
                   weekScheduleId: weekScheduleId,
+                  notSubmittedCount: notSubmittedCount, // ✅ 추가
                   onClose: () {
                     setState(() {
                       isCardVisible = false;

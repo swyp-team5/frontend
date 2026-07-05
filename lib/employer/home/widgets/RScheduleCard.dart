@@ -9,6 +9,7 @@ class RScheduleCard extends StatelessWidget {
   final VoidCallback? onClose;
   final int? workPlaceId;
   final int? weekScheduleId;
+  final int? notSubmittedCount; // ✅ 추가: 서버에서 받아온 미제출 인원 수
 
   const RScheduleCard({
     super.key,
@@ -18,16 +19,8 @@ class RScheduleCard extends StatelessWidget {
     this.onClose,
     this.workPlaceId,
     this.weekScheduleId,
+    this.notSubmittedCount, // ✅ 추가
   });
-
-  /// TODO : API 연결 시 교체
-  static const List<String> unsubmittedEmployees = [
-    "손흥민",
-    "김지연",
-    "모수연",
-  ];
-
-  int get unsubmittedCount => unsubmittedEmployees.length;
 
   String get _imagePath {
     switch (type) {
@@ -67,11 +60,8 @@ class RScheduleCard extends StatelessWidget {
     DateTime nextMonday;
 
     if (now.weekday == DateTime.monday) {
-      // 월요일이면 이번주가 이미 제출 대상이므로
-      // 다음다음주를 표시
       nextMonday = now.add(const Duration(days: 14));
     } else {
-      // 화~일은 가장 가까운 다음 월요일
       nextMonday = now.add(
         Duration(days: 8 - now.weekday),
       );
@@ -166,7 +156,10 @@ class RScheduleCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    "미제출 근무자 $unsubmittedCount명",
+                    // notSubmittedCount가 있으면 그 값을, 없으면 로딩 중 문구
+                    notSubmittedCount != null
+                        ? "미제출 근무자 $notSubmittedCount명"
+                        : "미제출 인원 확인 중",
                     style: const TextStyle(
                       color: Color(0xFF0084FF),
                       fontSize: 12,
@@ -210,7 +203,6 @@ class RScheduleCard extends StatelessWidget {
                 height: 52,
                 child: ElevatedButton(
                   onPressed: () {
-                    // ── 디버그: 버튼이 실제로 눌리는지, 값이 뭔지 확인 ──
                     debugPrint(
                         "[RScheduleCard] 버튼 클릭 - type=$type, workPlaceId=$workPlaceId, weekScheduleId=$weekScheduleId");
 
