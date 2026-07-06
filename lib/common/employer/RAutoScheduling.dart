@@ -1,7 +1,7 @@
 import 'package:chack_chack/employer/home/autoschedule/RSelectAutoSchedulePage.dart';
 import 'package:flutter/material.dart';
 import '../../employer/home/autoschedule/api/SchedulePreviewApi.dart';
-import '../../employer/home/autoschedule/models/SchedulePreviewRespons.dart';
+import '../../employer/home/autoschedule/models/SchedulePreviewResponse.dart';
 
 class RAutoSchedulingPage extends StatefulWidget {
   final int scheduleGenerationRunId;

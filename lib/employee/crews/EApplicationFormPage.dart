@@ -24,7 +24,13 @@ class MyWorkSchedule {
 }
 
 class EApplicationFormPage extends StatefulWidget {
-  const EApplicationFormPage({super.key});
+  /// 캘린더 활성화 정보 조회를 위한 근무지 ID
+  final int workPlaceId;
+
+  const EApplicationFormPage({
+    super.key,
+    required this.workPlaceId,
+  });
 
   @override
   State<EApplicationFormPage> createState() => _EApplicationFormPageState();
@@ -542,6 +548,7 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
 
                   ApplicationCalendar(
                     isSubstitute: isSubstitute,
+                    workPlaceId: widget.workPlaceId,
 
                     focusedMonth: _focusedMonth,
                     days: days,

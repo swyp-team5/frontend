@@ -130,7 +130,22 @@ class _EHomePageState extends State<EHomePage> {
     return 8 - now.weekday;
   }
 
+  //==========================================================
+  // 개발용
+  //==========================================================
   static const HomeCardType? debugCardType = HomeCardType.weeklySchedule;
+
+  // static const HomeCardType? debugCardType = HomeCardType.scheduleCompleted;
+
+  // static const HomeCardType? debugCardType = HomeCardType.scheduleChanged;
+
+  // static const HomeCardType? debugCardType = HomeCardType.shiftRequest;
+
+  // static const HomeCardType? debugCardType = HomeCardType.substituteRequest;
+
+  // static const HomeCardType? debugCardType = HomeCardType.ownerWorkRequest;
+
+
 
   HomeCardType get cardType {
     if (debugCardType != null) {

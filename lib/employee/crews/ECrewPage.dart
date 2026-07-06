@@ -177,11 +177,23 @@ class _ECrewPageState extends State<ECrewPage> {
                           minHeight: 24,
                         ),
                         splashRadius: 18,
-                        onPressed: () {
+                        onPressed: () async {
+                          final prefs = await SharedPreferences.getInstance();
+                          final workPlaceId = prefs.getInt("selectedWorkPlaceId");
+
+                          if (workPlaceId == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("근무지 정보를 불러올 수 없습니다.")),
+                            );
+                            return;
+                          }
+
+                          if (!context.mounted) return;
+
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const EApplicationFormPage(),
+                              builder: (_) => EApplicationFormPage(workPlaceId: workPlaceId),
                             ),
                           );
                         },

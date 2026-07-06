@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
+import '../../home/schedule/api/CalendarActivateApi.dart';
+import '../../home/schedule/models/CalendarActivate.dart';
 
-class ApplicationCalendar extends StatelessWidget {
-
+class ApplicationCalendar extends StatefulWidget {
   final bool isSubstitute;
+
+  /// API 호출에 필요한 근무지 ID
+  final int workPlaceId;
 
   const ApplicationCalendar({
     super.key,
     required this.isSubstitute,
+    required this.workPlaceId,
     required this.focusedMonth,
     required this.days,
     required this.selectedDate,
@@ -34,7 +39,11 @@ class ApplicationCalendar extends StatelessWidget {
 
   final bool Function(DateTime) isMyWorkDay;
   final bool Function(DateTime) isSelectedWorkerWorkDay;
+
+  /// 워커모드/근무확정 등 화면 자체의 비즈니스 로직 기반 선택 가능 여부.
+  /// 최종 선택 가능 여부는 이 값 && API 기반(휴무/제한) 값을 함께 만족해야 함.
   final bool Function(DateTime) isSelectable;
+
   final bool Function(DateTime) isNextWeek;
 
   final ValueChanged<DateTime> onSelectDay;
@@ -43,7 +52,106 @@ class ApplicationCalendar extends StatelessWidget {
   final VoidCallback onNextMonth;
 
   @override
+  State<ApplicationCalendar> createState() => _ApplicationCalendarState();
+}
+
+class _ApplicationCalendarState extends State<ApplicationCalendar> {
+  CalendarActivateResponse? _calendarActivate;
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCalendarActivate();
+  }
+
+  @override
+  void didUpdateWidget(covariant ApplicationCalendar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // workPlaceId가 바뀌면 다시 불러오기
+    if (oldWidget.workPlaceId != widget.workPlaceId) {
+      _fetchCalendarActivate();
+    }
+  }
+
+  Future<void> _fetchCalendarActivate() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final result = await CalendarActivateApi.getCalendarActivate(
+        workPlaceId: widget.workPlaceId,
+      );
+
+      debugPrint("availableDates: ${result.availableDates.map((e) => '${e.date} holiday=${e.holidayStatus} limit=${e.selectLimitStatus}').toList()}");
+
+      if (!mounted) return;
+      setState(() {
+        _calendarActivate = result;
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = e.toString().replaceFirst('Exception: ', '');
+        _isLoading = false;
+      });
+    }
+  }
+
+  /// API 응답 기준: 신청 가능 목록에 있고, 휴무/선택제한이 아닌 날짜인가
+  bool _isApiSelectable(DateTime day) {
+    final data = _calendarActivate;
+    if (data == null) return false;
+
+    final info = data.findByDate(day);
+    if (info == null) return false; // 신청 가능 목록에 없는 날짜
+    if (info.holidayStatus) return false; // 휴무일
+    if (info.selectLimitStatus) return false; // 선택 제한된 날짜
+
+    return true;
+  }
+
+  /// 최종 선택 가능 여부 = API 기반 && 화면 비즈니스 로직 기반
+  bool _isSelectable(DateTime day) {
+    return _isApiSelectable(day) && widget.isSelectable(day);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const SizedBox(
+        height: 360,
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_errorMessage != null) {
+      return SizedBox(
+        height: 360,
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _errorMessage!,
+                style: const TextStyle(color: Colors.red),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton(
+                onPressed: _fetchCalendarActivate,
+                child: const Text("다시 시도"),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Column(
       children: [
 
@@ -51,7 +159,7 @@ class ApplicationCalendar extends StatelessWidget {
         Row(
           children: [
             GestureDetector(
-              onTap: onPrevMonth,
+              onTap: widget.onPrevMonth,
               child: Container(
                 width: 30,
                 height: 30,
@@ -69,7 +177,7 @@ class ApplicationCalendar extends StatelessWidget {
             Expanded(
               child: Center(
                 child: Text(
-                  "${focusedMonth.year}년 ${focusedMonth.month}월",
+                  "${widget.focusedMonth.year}년 ${widget.focusedMonth.month}월",
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
@@ -79,7 +187,7 @@ class ApplicationCalendar extends StatelessWidget {
             ),
 
             GestureDetector(
-              onTap: onNextMonth,
+              onTap: widget.onNextMonth,
               child: Container(
                 width: 30,
                 height: 30,
@@ -128,30 +236,30 @@ class ApplicationCalendar extends StatelessWidget {
             childAspectRatio: 1,
           ),
           itemBuilder: (_, index) {
-            final day = days[index];
+            final day = widget.days[index];
 
-            final isCurrent = day.month == focusedMonth.month;
+            final isCurrent = day.month == widget.focusedMonth.month;
 
             final isMySelected =
-                selectedDate != null &&
-                    day.year == selectedDate!.year &&
-                    day.month == selectedDate!.month &&
-                    day.day == selectedDate!.day;
+                widget.selectedDate != null &&
+                    day.year == widget.selectedDate!.year &&
+                    day.month == widget.selectedDate!.month &&
+                    day.day == widget.selectedDate!.day;
 
             final isWorkerSelected =
-                selectedWorkerDate != null &&
-                    day.year == selectedWorkerDate!.year &&
-                    day.month == selectedWorkerDate!.month &&
-                    day.day == selectedWorkerDate!.day;
+                widget.selectedWorkerDate != null &&
+                    day.year == widget.selectedWorkerDate!.year &&
+                    day.month == widget.selectedWorkerDate!.month &&
+                    day.day == widget.selectedWorkerDate!.day;
 
-            final selectable = isSelectable(day);
+            final selectable = _isSelectable(day);
 
-            final myWorkDay = isMyWorkDay(day);
-            final workerWorkDay = isSelectedWorkerWorkDay(day);
+            final myWorkDay = widget.isMyWorkDay(day);
+            final workerWorkDay = widget.isSelectedWorkerWorkDay(day);
 
             return GestureDetector(
               onTap: selectable
-                  ? () => onSelectDay(day)
+                  ? () => widget.onSelectDay(day)
                   : null,
               child: Center(
                 child: Container(
@@ -159,8 +267,8 @@ class ApplicationCalendar extends StatelessWidget {
                   height: 48,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: workerMode
-                        ? isSubstitute
+                    color: widget.workerMode
+                        ? widget.isSubstitute
                     // ==========================
                     // 대타 신청
                     // ==========================
@@ -171,7 +279,7 @@ class ApplicationCalendar extends StatelessWidget {
                     // ==========================
                     // 교대 신청
                     // ==========================
-                        : showWorkerSelect
+                        : widget.showWorkerSelect
                         ? (workerWorkDay
                         ? (isWorkerSelected
                         ? const Color(0xff27C840)
@@ -189,7 +297,7 @@ class ApplicationCalendar extends StatelessWidget {
 
                         : (isMySelected
                         ? const Color(0xff0084FF)
-                        : (myWorkDay && isNextWeek(day))
+                        : (myWorkDay && widget.isNextWeek(day))
                         ? const Color(0xffE6F3FF)
                         : Colors.transparent),
                     borderRadius: BorderRadius.circular(10),
@@ -204,8 +312,8 @@ class ApplicationCalendar extends StatelessWidget {
                       // ==========================
                       // 근무자 선택 단계
                       // ==========================
-                          : workerMode && showWorkerSelect
-                          ? isSubstitute
+                          : widget.workerMode && widget.showWorkerSelect
+                          ? widget.isSubstitute
                       // ---------- 대타 ----------
                           ? isMySelected
                           ? Colors.white
@@ -227,8 +335,8 @@ class ApplicationCalendar extends StatelessWidget {
                       // ==========================
                       // 근무자 확정 이후
                       // ==========================
-                          : workerMode
-                          ? isSubstitute
+                          : widget.workerMode
+                          ? widget.isSubstitute
                       // ---------- 대타 ----------
                           ? isMySelected
                           ? Colors.white

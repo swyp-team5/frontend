@@ -30,46 +30,6 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
 
   bool _isSubmitting = false;
 
-  Future<void> _onSubmit() async {
-    if (_calendar == null) return;
-
-    setState(() => _isSubmitting = true);
-
-    // 휴무 없음 체크 시에는 빈 배열로 제출
-    final allTimeDetailIds = holiday
-        ? <int>[]
-        : savedSchedules.values
-        .expand((info) => info.timeDetailIds)
-        .toSet()
-        .toList();
-
-    try {
-      await WorkerImpossibleApi.postWorkerSelect(
-        workPlaceId: widget.workPlaceId,
-        weekScheduleId: _calendar!.weekScheduleId,
-        timeDetails: allTimeDetailIds,
-      );
-
-      if (!mounted) return;
-
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => EScheduleSubmitComplete(
-            startDate: _calendar!.firstDate!,
-            endDate: _calendar!.lastDate!,
-          ),
-        ),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.toString())));
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
-    }
-  }
-
   CalendarActivateResponse? _calendar;
   bool _isLoading = true;
   String? _loadError;
@@ -110,6 +70,46 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
     }
   }
 
+  Future<void> _onSubmit() async {
+    if (_calendar == null) return;
+
+    setState(() => _isSubmitting = true);
+
+    // 휴무 없음 체크 시에는 빈 배열로 제출
+    final allTimeDetailIds = holiday
+        ? <int>[]
+        : savedSchedules.values
+        .expand((info) => info.timeDetailIds)
+        .toSet()
+        .toList();
+
+    try {
+      await WorkerImpossibleApi.postWorkerSelect(
+        workPlaceId: widget.workPlaceId,
+        weekScheduleId: _calendar!.weekScheduleId,
+        timeDetails: allTimeDetailIds,
+      );
+
+      if (!mounted) return;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => EScheduleSubmitComplete(
+            startDate: _calendar!.firstDate!,
+            endDate: _calendar!.lastDate!,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.toString())));
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
   bool _isSame(DateTime a, DateTime b) {
     return a.year == b.year &&
         a.month == b.month &&
@@ -118,6 +118,7 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
 
   AvailableDate? _availableDateOf(DateTime day) => _calendar?.findByDate(day);
 
+  /// 공휴일/일요일 여부 (스타일 강조용)
   bool isOffDay(DateTime day) {
     return _availableDateOf(day)?.holidayStatus ?? false;
   }
@@ -392,6 +393,8 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
                             }
 
                             final enable = isSelectable(day);
+                            // ✅ 공휴일/일요일 강조 표시
+                            final off = isOffDay(day);
 
                             return Center(
                               child: Text(
@@ -399,9 +402,11 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w500,
-                                  color: enable
-                                      ? Colors.black
-                                      : const Color(0xFFD5D7E2),
+                                  color: !enable
+                                      ? const Color(0xFFD5D7E2)
+                                      : off
+                                      ? const Color(0xFFFF3B30)
+                                      : Colors.black,
                                 ),
                               ),
                             );

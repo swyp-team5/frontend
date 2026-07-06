@@ -1,7 +1,11 @@
 import 'package:chack_chack/common/employer/RAutoScheduling.dart';
+import 'package:chack_chack/employer/home/autoschedule/RSelectAutoSchedulePage.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
+import '../api/SubmitStatusApi.dart';
 import '../autoschedule/api/ScheduleGenerationRunApi.dart';
+import '../autoschedule/api/SchedulePreviewApi.dart';
 
 class RAutoScheduleBottomSheet extends StatefulWidget {
   final int workPlaceId;
@@ -23,15 +27,65 @@ class RAutoScheduleBottomSheet extends StatefulWidget {
 class _RAutoScheduleBottomSheetState extends State<RAutoScheduleBottomSheet> {
   bool _isGenerating = false;
 
-  /// 자동 스케줄 생성 API
+  /// workPlaceId + weekScheduleId 조합으로 저장 키 생성
+  String get _runIdKey =>
+      "scheduleGenerationRunId_${widget.workPlaceId}_${widget.weekScheduleId}";
+  String get _previewIdKey =>
+      "schedulePreviewId_${widget.workPlaceId}_${widget.weekScheduleId}";
+  String get _candidateCountKey =>
+      "candidateCount_${widget.workPlaceId}_${widget.weekScheduleId}";
+
   Future<void> _onNextTap() async {
     setState(() => _isGenerating = true);
 
-    debugPrint("=== _onNextTap 시작 ===");
-    debugPrint(
-        "workPlaceId: ${widget.workPlaceId}, weekScheduleId: ${widget.weekScheduleId}");
-
     try {
+      final prefs = await SharedPreferences.getInstance();
+
+      final savedRunId = prefs.getInt(_runIdKey);
+      final savedPreviewId = prefs.getInt(_previewIdKey);
+      final savedCandidateCount = prefs.getInt(_candidateCountKey);
+      
+      // ✅ 추가: 저장된 값이 실제로 있는지 확인하는 로그
+      debugPrint(
+          "🔍 [_onNextTap] 저장값 확인 — runIdKey=$_runIdKey, savedRunId=$savedRunId, savedPreviewId=$savedPreviewId, savedCandidateCount=$savedCandidateCount");
+
+      if (savedRunId != null &&
+          savedPreviewId != null &&
+          savedCandidateCount != null) {
+        // ✅ 이미 POST가 완료된 상태 → 로딩 화면 없이 바로 GET preview 호출 후 RSelectAutoSchedulePage로 이동
+        debugPrint(
+            "🟡 [_onNextTap] 이미 생성된 결과 재사용 — runId=$savedRunId, previewId=$savedPreviewId");
+        debugPrint("🟡 [_onNextTap] GET preview 바로 조회 시작");
+
+        final preview = await SchedulePreviewApi.getPreview(
+          workPlaceId: widget.workPlaceId,
+          weekScheduleId: widget.weekScheduleId,
+          runId: savedRunId,
+        );
+
+        debugPrint(
+            "🟢 [_onNextTap] preview 조회 성공 — candidateCount=${preview.candidateCount}");
+
+        if (!mounted) return;
+
+        widget.onNext?.call();
+        Navigator.pop(context);
+
+        Navigator.of(context, rootNavigator: true).push(
+          MaterialPageRoute(
+            builder: (_) => RSelectAutoSchedulePage(
+              preview: preview,
+            ),
+          ),
+        );
+        return;
+      }
+
+      // ✅ 저장된 결과가 없으면 최초 1회 POST 호출 → 로딩 화면(RAutoSchedulingPage)을 거쳐 이동
+      debugPrint("=== _onNextTap 시작 (최초 생성) ===");
+      debugPrint(
+          "workPlaceId: ${widget.workPlaceId}, weekScheduleId: ${widget.weekScheduleId}");
+
       final result = await ScheduleGenerationRunApi.generate(
         workPlaceId: widget.workPlaceId,
         weekScheduleId: widget.weekScheduleId,
@@ -40,11 +94,14 @@ class _RAutoScheduleBottomSheetState extends State<RAutoScheduleBottomSheet> {
       debugPrint(
           "🟢 [_onNextTap] POST 성공! runId=${result.scheduleGenerationRunId}, previewId=${result.schedulePreviewId}, candidateCount=${result.candidateCount}, status=${result.status}");
 
+      // ✅ 결과 저장 — 다음부터는 이 값으로 GET만 호출
+      await prefs.setInt(_runIdKey, result.scheduleGenerationRunId);
+      await prefs.setInt(_previewIdKey, result.schedulePreviewId);
+      await prefs.setInt(_candidateCountKey, result.candidateCount);
+
       if (!mounted) return;
 
       widget.onNext?.call();
-
-      // 바텀시트를 먼저 닫고, 그 결과를 페이지 이동에 사용
       Navigator.pop(context);
 
       Navigator.of(context, rootNavigator: true).push(
@@ -59,12 +116,12 @@ class _RAutoScheduleBottomSheetState extends State<RAutoScheduleBottomSheet> {
         ),
       );
     } catch (e) {
-      debugPrint("🔴 [_onNextTap] POST 실패: $e");
+      debugPrint("🔴 [_onNextTap] 실패: $e");
 
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
       );
     } finally {
       if (mounted) setState(() => _isGenerating = false);

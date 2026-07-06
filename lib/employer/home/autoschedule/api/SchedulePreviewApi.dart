@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import '../../../../common/auth/server_token_manager.dart';
-import '../models/SchedulePreviewRespons.dart';
+import '../models/SchedulePreviewResponse.dart';
 
 class SchedulePreviewApi {
   static final Dio _dio = Dio(
