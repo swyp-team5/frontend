@@ -20,12 +20,12 @@ class RCrewCard extends StatelessWidget {
     return InkWell(
       onTap: onTap ??
               () {
-            // Navigator.push(
-            //   context,
-            //   MaterialPageRoute(
-            //     builder: (_) => RCrewDetailPage(crew: crew),
-            //   ),
-            // );
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => RCrewDetailPage(crew: crew),
+              ),
+            );
           },
       borderRadius: BorderRadius.circular(12),
       child: Padding(

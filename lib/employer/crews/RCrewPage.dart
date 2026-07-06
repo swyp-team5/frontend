@@ -536,29 +536,26 @@ class _RCrewPageState extends State<RCrewPage> {
 
               if (crews.isNotEmpty)
                 Column(
-                  children: workers.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final crew = entry.value;
-
+                  children: workers.map((crew) {
                     return RCrewCard(
                       crew: crew,
-                      // onTap: () async {
-                      //   final updatedCrew =
-                      //   await Navigator.push<RCrewModel>(
-                      //     context,
-                      //     MaterialPageRoute(
-                      //       builder: (_) => RCrewDetailPage(
-                      //         crew: crew,
-                      //       ),
-                      //     ),
-                      //   );
-                      //
-                      //   if (updatedCrew != null) {
-                      //     setState(() {
-                      //       crews[index] = updatedCrew;
-                      //     });
-                      //   }
-                      // },
+                      onTap: () async {
+                        final updatedCrew = await Navigator.push<RCrewModel>(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => RCrewDetailPage(crew: crew),
+                          ),
+                        );
+
+                        if (updatedCrew != null) {
+                          setState(() {
+                            final index = crews.indexOf(crew);
+                            if (index != -1) {
+                              crews[index] = updatedCrew;
+                            }
+                          });
+                        }
+                      },
                     );
                   }).toList(),
                 )
