@@ -77,6 +77,16 @@ class _RDayOffLimitPageState extends State<RDayOffLimitPage> {
     return nextMonday;
   }
 
+  /// 이번 주 월요일 (한국 시간 기준)
+  DateTime get _thisMonday {
+    final now = _koreaNow;
+    return DateTime(now.year, now.month, now.day)
+        .subtract(Duration(days: now.weekday - 1));
+  }
+
+  /// 이번 주 일요일 = 마감일
+  DateTime get _dueDate => _thisMonday.add(const Duration(days: 6));
+
   /// 다음 주 일요일
   DateTime get _weekEnd {
     return _weekStart.add(const Duration(days: 6));
@@ -200,7 +210,7 @@ class _RDayOffLimitPageState extends State<RDayOffLimitPage> {
         workPlaceCloseTime: _fmtTime(widget.closeTime),
         minPersonalWorkCount: widget.minWork,
         maxPersonalWorkCount: widget.maxWork,
-        dueDate: _fmtDate(_weekEnd), // TODO: 실제 마감일 입력값으로 교체
+        dueDate: _fmtDate(_dueDate), // 금주 일요일
         days: _buildDayConditions(),
       );
 

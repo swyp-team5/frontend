@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../employee/home/EHomePage.dart';
+
 class EScheduleSubmitComplete extends StatelessWidget {
   final DateTime startDate;
   final DateTime endDate;
@@ -73,7 +75,12 @@ class EScheduleSubmitComplete extends StatelessWidget {
                 height: 58,
                 child: ElevatedButton(
                   onPressed: () {
-
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const EHomePage(),
+                      ),
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF0084FF),
