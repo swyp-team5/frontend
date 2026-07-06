@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 
+import 'models/SchedulePreviewRespons.dart';
 import 'models/ScheduleScenario.dart';
 import 'models/ShiftCount.dart';
 import 'models/ShiftType.dart';
 import 'widgets/RWeekCalendar.dart';
 
 class RSelectAutoSchedulePage extends StatefulWidget {
-  const RSelectAutoSchedulePage({super.key});
+  final SchedulePreviewResponse preview;
+
+  const RSelectAutoSchedulePage({
+    super.key,
+    required this.preview,
+  });
 
   @override
   State<RSelectAutoSchedulePage> createState() =>
@@ -17,206 +23,84 @@ class _RSelectAutoSchedulePageState
     extends State<RSelectAutoSchedulePage> {
   int selectedScenario = 0;
 
-  late final List<ShiftCount> openDummy;
-  late final List<ShiftCount> middleDummy;
-  late final List<ShiftCount> closeDummy;
-
   late final List<ScheduleScenario> scenarios;
 
   @override
   void initState() {
     super.initState();
+    scenarios = widget.preview.candidates
+        .map((candidate) => _mapCandidateToScenario(candidate))
+        .toList();
+  }
 
-    openDummy = const [
-      ShiftCount(
-        required: 2,
-        available: 1,
-        type: ShiftType.open,
-        isOff: true,
-        workers: [],
-      ),
-      ShiftCount(
-        required: 2,
-        available: 2,
-        type: ShiftType.open,
-        workers: ["김민수", "이서연"],
-      ),
-      ShiftCount(
-        required: 2,
-        available: 1,
-        type: ShiftType.open,
-        workers: ["박지훈"],
-      ),
-      ShiftCount(
-        required: 2,
-        available: 2,
-        type: ShiftType.open,
-        workers: ["최유진", "정현우"],
-      ),
-      ShiftCount(
-        required: 4,
-        available: 3,
-        type: ShiftType.open,
-        workers: ["김민수", "이서연", "박지훈"],
-      ),
-      ShiftCount(
-        required: 4,
-        available: 4,
-        type: ShiftType.open,
-        workers: ["최유진", "정현우", "김도윤", "한소희"],
-      ),
-      ShiftCount(
-        required: 4,
-        available: 3,
-        type: ShiftType.open,
-        workers: ["이서연", "정현우", "김도윤"],
-      ),
-    ];
+  ScheduleScenario _mapCandidateToScenario(PreviewCandidate candidate) {
+    final List<ShiftCount> open = [];
+    final List<ShiftCount> middle = [];
+    final List<ShiftCount> close = [];
 
-    middleDummy = const [
-      ShiftCount(
-        required: 2,
-        available: 2,
-        type: ShiftType.middle,
-        isOff: true,
-        workers: [],
-      ),
-      ShiftCount(
-        required: 2,
-        available: 2,
-        type: ShiftType.middle,
-        workers: ["김도윤", "최유진"],
-      ),
-      ShiftCount(
-        required: 2,
-        available: 2,
-        type: ShiftType.middle,
-        workers: ["박지훈", "한소희"],
-      ),
-      ShiftCount(
-        required: 2,
-        available: 2,
-        type: ShiftType.middle,
-        workers: ["김민수", "정현우"],
-      ),
-      ShiftCount(
-        required: 2,
-        available: 1,
-        type: ShiftType.middle,
-        workers: ["이서연"],
-      ),
-      ShiftCount(
-        required: 2,
-        available: 1,
-        type: ShiftType.middle,
-        workers: ["김도윤"],
-      ),
-      ShiftCount(
-        required: 2,
-        available: 2,
-        type: ShiftType.middle,
-        workers: ["최유진", "박지훈"],
-      ),
-    ];
+    for (final day in candidate.days) {
+      // ⚠️ 가정: timeDetails 배열 순서 = [open, middle, close]
+      for (int i = 0; i < day.timeDetails.length; i++) {
+        final detail = day.timeDetails[i];
 
-    closeDummy = const [
-      ShiftCount(
-        required: 2,
-        available: 2,
-        type: ShiftType.close,
-        isOff: true,
-        workers: [],
-      ),
-      ShiftCount(
-        required: 3,
-        available: 3,
-        type: ShiftType.close,
-        workers: ["김민수", "이서연", "김도윤"],
-      ),
-      ShiftCount(
-        required: 2,
-        available: 2,
-        type: ShiftType.close,
-        workers: ["정현우", "최유진"],
-      ),
-      ShiftCount(
-        required: 3,
-        available: 2,
-        type: ShiftType.close,
-        workers: ["박지훈", "한소희"],
-      ),
-      ShiftCount(
-        required: 2,
-        available: 2,
-        type: ShiftType.close,
-        workers: ["김민수", "정현우"],
-      ),
-      ShiftCount(
-        required: 2,
-        available: 2,
-        type: ShiftType.close,
-        workers: ["이서연", "최유진"],
-      ),
-      ShiftCount(
-        required: 2,
-        available: 2,
-        type: ShiftType.close,
-        workers: ["김도윤", "박지훈"],
-      ),
-    ];
+        final shiftCount = ShiftCount(
+          // ⚠️ required(필요 인원)는 preview 응답에 없어서 0으로 임시 처리
+          required: 0,
+          available: detail.workerMemberIds.length,
+          type: _indexToShiftType(i),
+          isOff: detail.workerMemberIds.isEmpty,
+        );
 
-    scenarios = [
-      ScheduleScenario(
-        title: "시안 1",
-        open: openDummy,
-        middle: middleDummy,
-        close: closeDummy,
-      ),
+        switch (_indexToShiftType(i)) {
+          case ShiftType.open:
+            open.add(shiftCount);
+            break;
+          case ShiftType.middle:
+            middle.add(shiftCount);
+            break;
+          case ShiftType.close:
+            close.add(shiftCount);
+            break;
+        }
+      }
+    }
 
-      ScheduleScenario(
-        title: "시안 2",
-        open: openDummy,
-        middle: middleDummy,
-        close: closeDummy,
-      ),
+    return ScheduleScenario(
+      title: "시안 ${candidate.candidateNo}",
+      open: open,
+      middle: middle,
+      close: close,
+    );
+  }
 
-      ScheduleScenario(
-        title: "시안 3",
-        open: openDummy,
-        middle: middleDummy,
-        close: closeDummy,
-      ),
-
-      ScheduleScenario(
-        title: "시안 4",
-        open: openDummy,
-        middle: middleDummy,
-        close: closeDummy,
-      ),
-    ];
+  ShiftType _indexToShiftType(int index) {
+    switch (index) {
+      case 0:
+        return ShiftType.open;
+      case 1:
+        return ShiftType.middle;
+      default:
+        return ShiftType.close;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
 
-    /// 다음주 월요일
     final nextMonday = DateTime(
       now.year,
       now.month,
       now.day,
     ).add(Duration(days: 8 - now.weekday));
 
-    /// 다음주 일요일
     final nextSunday = nextMonday.add(const Duration(days: 6));
 
     return Scaffold(
       backgroundColor: Colors.white,
-
       body: SafeArea(
         child: Column(
           children: [
-            /// 헤더
             const Padding(
               padding: EdgeInsets.fromLTRB(20, 30, 20, 0),
               child: Align(
@@ -233,7 +117,6 @@ class _RSelectAutoSchedulePageState
 
             const SizedBox(height: 18),
 
-            /// 날짜 (가운데)
             Center(
               child: Text(
                 "${nextMonday.month}월 ${nextMonday.day}일 - "
@@ -247,7 +130,6 @@ class _RSelectAutoSchedulePageState
 
             const SizedBox(height: 16),
 
-            /// 안내문
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 90),
               padding: const EdgeInsets.symmetric(vertical: 5),
@@ -274,7 +156,6 @@ class _RSelectAutoSchedulePageState
               child: Row(
                 children: [
                   const SizedBox(width: 50),
-
                   ...const [
                     "월", "화", "수", "목", "금", "토", "일",
                   ].map(
@@ -297,7 +178,6 @@ class _RSelectAutoSchedulePageState
 
             Divider(height: 10),
 
-            /// 달력
             Expanded(
               child: RWeekCalendar(
                 scenarios: scenarios,

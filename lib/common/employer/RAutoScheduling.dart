@@ -1,5 +1,7 @@
 import 'package:chack_chack/employer/home/autoschedule/RSelectAutoSchedulePage.dart';
 import 'package:flutter/material.dart';
+import '../../employer/home/autoschedule/api/SchedulePreviewApi.dart';
+import '../../employer/home/autoschedule/models/SchedulePreviewRespons.dart';
 
 class RAutoSchedulingPage extends StatefulWidget {
   final int scheduleGenerationRunId;
@@ -25,25 +27,55 @@ class _RAutoSchedulingPageState extends State<RAutoSchedulingPage> {
   @override
   void initState() {
     super.initState();
+    _loadPreviewAndNavigate();
+  }
 
-    Future.delayed(const Duration(seconds: 3), () {
-      if (!mounted) return;
+  Future<void> _loadPreviewAndNavigate() async {
+    debugPrint("=== [RAutoSchedulingPage] preview 조회 시작 ===");
+    debugPrint(
+        "workPlaceId=${widget.workPlaceId}, weekScheduleId=${widget.weekScheduleId}, runId=${widget.scheduleGenerationRunId}");
+
+    try {
+      final results = await Future.wait([
+        SchedulePreviewApi.getPreview(
+          workPlaceId: widget.workPlaceId,
+          weekScheduleId: widget.weekScheduleId,
+          runId: widget.scheduleGenerationRunId,
+        ),
+        Future.delayed(const Duration(seconds: 2)),
+      ]);
+
+      if (!mounted) {
+        debugPrint("⚠️ [RAutoSchedulingPage] 위젯이 이미 dispose됨 — 이동 취소");
+        return;
+      }
+
+      final preview = results[0] as SchedulePreviewResponse;
+
+      debugPrint(
+          "🟢 [RAutoSchedulingPage] preview 조회 성공 — candidateCount=${preview.candidateCount}");
+      debugPrint("🟢 [RAutoSchedulingPage] RSelectAutoSchedulePage로 이동");
 
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (_) => RSelectAutoSchedulePage(
-            // RSelectAutoSchedulePage가 받는 파라미터에 맞게 전달하세요.
-            // 예시:
-            // workPlaceId: widget.workPlaceId,
-            // weekScheduleId: widget.weekScheduleId,
-            // scheduleGenerationRunId: widget.scheduleGenerationRunId,
-            // schedulePreviewId: widget.schedulePreviewId,
-            // candidateCount: widget.candidateCount,
+            preview: preview,
           ),
         ),
       );
-    });
+    } catch (e) {
+      debugPrint("🔴 [RAutoSchedulingPage] preview 조회 실패: $e");
+
+      if (!mounted) return;
+
+      // 실패 시 처리: 스낵바 안내 후 이전 화면으로 복귀
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+
+      Navigator.pop(context);
+    }
   }
 
   @override
