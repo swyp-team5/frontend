@@ -269,6 +269,23 @@ class _ECrewPageState extends State<ECrewPage> {
                   return ECrewCard(
                     crew: crew,
                     showArrow: true,
+                    onTap: () async {
+                      final updatedCrew = await Navigator.push<ECrewModel>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ECrewDetailPage(crew: crew),
+                        ),
+                      );
+
+                      if (updatedCrew != null) {
+                        setState(() {
+                          final index = crews.indexOf(crew);
+                          if (index != -1) {
+                            crews[index] = updatedCrew;
+                          }
+                        });
+                      }
+                    },
                   );
                 }).toList(),
               )
