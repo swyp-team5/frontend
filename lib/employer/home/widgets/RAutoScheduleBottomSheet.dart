@@ -23,6 +23,7 @@ class RAutoScheduleBottomSheet extends StatefulWidget {
 class _RAutoScheduleBottomSheetState extends State<RAutoScheduleBottomSheet> {
   bool _isGenerating = false;
 
+  /// 자동 스케줄 생성 API
   Future<void> _onNextTap() async {
     setState(() => _isGenerating = true);
 
