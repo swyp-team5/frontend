@@ -19,6 +19,7 @@ class RRecentSchedulePage extends StatefulWidget {
 class _RRecentSchedulePageState extends State<RRecentSchedulePage> {
   LatestScheduleResponse? recentSchedule;
   bool isLoading = true;
+  bool isDeleting = false;
   String? errorMessage;
 
   static const _engToKor = {
@@ -57,6 +58,68 @@ class _RRecentSchedulePageState extends State<RRecentSchedulePage> {
         errorMessage = e.toString();
         isLoading = false;
       });
+    }
+  }
+
+  /// 삭제 확인 다이얼로그 → API 호출
+  Future<void> _deleteSchedule() async {
+    final schedule = recentSchedule;
+    if (schedule == null || isDeleting) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("스케줄 삭제"),
+        content: const Text("이 스케줄을 정말 삭제하시겠어요?\n삭제 후에는 복구할 수 없어요."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("취소"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              "삭제",
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    setState(() {
+      isDeleting = true;
+    });
+
+    try {
+      await ScheduleApiService.deleteScheduleCondition(
+        workPlaceId: widget.workPlaceId,
+        weekScheduleId: schedule.weekScheduleId,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        recentSchedule = null;
+        isDeleting = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("스케줄이 삭제되었어요.")),
+      );
+    } catch (e) {
+      debugPrint("스케줄 삭제 실패: $e");
+      if (!mounted) return;
+
+      setState(() {
+        isDeleting = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("삭제 중 오류가 발생했어요.\n$e")),
+      );
     }
   }
 
@@ -234,7 +297,23 @@ class _RRecentSchedulePageState extends State<RRecentSchedulePage> {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 24),
+                  // 데이터가 있을 때만 삭제 버튼 노출
+                  if (recentSchedule != null)
+                    GestureDetector(
+                      onTap: isDeleting ? null : _deleteSchedule,
+                      child: isDeleting
+                          ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                          : const Icon(
+                        Icons.delete_outline,
+                        color: Colors.redAccent,
+                      ),
+                    )
+                  else
+                    const SizedBox(width: 24),
                 ],
               ),
             ),

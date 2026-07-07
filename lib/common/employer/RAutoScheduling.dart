@@ -4,19 +4,25 @@ import '../../employer/home/autoschedule/api/SchedulePreviewApi.dart';
 import '../../employer/home/autoschedule/models/SchedulePreviewResponse.dart';
 
 class RAutoSchedulingPage extends StatefulWidget {
-  final int scheduleGenerationRunId;
-  final int schedulePreviewId;
+  /// 후보가 없는 경우(noCandidates: true)에는 필요 없으므로 nullable
+  final int? scheduleGenerationRunId;
+  final int? schedulePreviewId;
+
   final int workPlaceId;
   final int weekScheduleId;
   final int candidateCount;
 
+  /// true면 API 조회 없이 빈 preview로 바로 다음 화면으로 이동
+  final bool noCandidates;
+
   const RAutoSchedulingPage({
     super.key,
-    required this.scheduleGenerationRunId,
-    required this.schedulePreviewId,
+    this.scheduleGenerationRunId,
+    this.schedulePreviewId,
     required this.workPlaceId,
     required this.weekScheduleId,
-    required this.candidateCount,
+    this.candidateCount = 0,
+    this.noCandidates = false,
   });
 
   @override
@@ -31,6 +37,32 @@ class _RAutoSchedulingPageState extends State<RAutoSchedulingPage> {
   }
 
   Future<void> _loadPreviewAndNavigate() async {
+    // ✅ 후보가 없는 경우: 서버 조회 없이 빈 preview로 바로 이동
+    if (widget.noCandidates) {
+      debugPrint("=== [RAutoSchedulingPage] 후보 없음 — 빈 preview로 이동 ===");
+
+      await Future.delayed(const Duration(seconds: 2));
+
+      if (!mounted) return;
+
+      final emptyPreview = SchedulePreviewResponse(
+        scheduleGenerationRunId: widget.scheduleGenerationRunId ?? 0,
+        schedulePreviewId: widget.schedulePreviewId ?? 0,
+        workPlaceId: widget.workPlaceId,
+        weekScheduleId: widget.weekScheduleId,
+        candidateCount: 0,
+        candidates: const [],
+      );
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => RSelectAutoSchedulePage(preview: emptyPreview),
+        ),
+      );
+      return;
+    }
+
     debugPrint("=== [RAutoSchedulingPage] preview 조회 시작 ===");
     debugPrint(
         "workPlaceId=${widget.workPlaceId}, weekScheduleId=${widget.weekScheduleId}, runId=${widget.scheduleGenerationRunId}");
@@ -40,7 +72,7 @@ class _RAutoSchedulingPageState extends State<RAutoSchedulingPage> {
         SchedulePreviewApi.getPreview(
           workPlaceId: widget.workPlaceId,
           weekScheduleId: widget.weekScheduleId,
-          runId: widget.scheduleGenerationRunId,
+          runId: widget.scheduleGenerationRunId!,
         ),
         Future.delayed(const Duration(seconds: 2)),
       ]);
@@ -54,14 +86,11 @@ class _RAutoSchedulingPageState extends State<RAutoSchedulingPage> {
 
       debugPrint(
           "🟢 [RAutoSchedulingPage] preview 조회 성공 — candidateCount=${preview.candidateCount}");
-      debugPrint("🟢 [RAutoSchedulingPage] RSelectAutoSchedulePage로 이동");
 
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => RSelectAutoSchedulePage(
-            preview: preview,
-          ),
+          builder: (_) => RSelectAutoSchedulePage(preview: preview),
         ),
       );
     } catch (e) {
@@ -69,7 +98,6 @@ class _RAutoSchedulingPageState extends State<RAutoSchedulingPage> {
 
       if (!mounted) return;
 
-      // 실패 시 처리: 스낵바 안내 후 이전 화면으로 복귀
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
       );

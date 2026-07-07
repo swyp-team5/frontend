@@ -36,8 +36,6 @@ class ScheduleApiService {
 
       final result = ScheduleConditionResponse.fromJson(res.data);
 
-      // ⭐ 성공 시 활성 weekScheduleId를 SharedPreferences에 저장
-      // RHomePage 등에서 이 값을 읽어 제출 현황 페이지로 이동할 때 사용됨
       await _saveActiveWeekScheduleId(result.weekScheduleId);
 
       return result;
@@ -76,14 +74,11 @@ class ScheduleApiService {
 
       final result = LatestScheduleResponse.fromJson(res.data);
 
-      // ⭐ 최신 조회 시에도 로컬 캐시를 동기화
-      // (앱 재실행, 다른 기기 진입 등으로 로컬 저장값이 없거나 오래된 경우 보완)
       await _saveActiveWeekScheduleId(result.weekScheduleId);
 
       return result;
     } on DioException catch (e) {
       if (e.response?.statusCode == 404) {
-        // 저장된 최근 스케줄이 없으므로 로컬 캐시도 함께 비워준다
         await _clearActiveWeekScheduleId();
         return null;
       }
@@ -94,6 +89,44 @@ class ScheduleApiService {
 
       throw Exception(
         message ?? "최근 스케줄 조회 실패 (${e.response?.statusCode})",
+      );
+    }
+  }
+
+  /// 스케줄 삭제
+  static Future<void> deleteScheduleCondition({
+    required int workPlaceId,
+    required int weekScheduleId,
+  }) async {
+    final token = await ServerTokenManager.getAccessToken();
+
+    if (token == null || token.isEmpty) {
+      throw Exception("인증이 필요합니다. 다시 로그인해주세요.");
+    }
+
+    final dio = Dio();
+
+    try {
+      await dio.delete(
+        "$_baseUrl/api/work-places/$workPlaceId/schedule-conditions/$weekScheduleId",
+        options: Options(
+          headers: {
+            "Authorization": "Bearer $token",
+          },
+        ),
+      );
+
+      final prefs = await SharedPreferences.getInstance();
+      final cachedId = prefs.getInt(activeWeekScheduleIdKey);
+      if (cachedId == weekScheduleId) {
+        await _clearActiveWeekScheduleId();
+      }
+    } on DioException catch (e) {
+      final code = e.response?.data is Map ? e.response?.data["code"] : null;
+      final message = e.response?.data is Map ? e.response?.data["message"] : null;
+
+      throw Exception(
+        message ?? "스케줄 삭제 실패 (${e.response?.statusCode ?? code})",
       );
     }
   }

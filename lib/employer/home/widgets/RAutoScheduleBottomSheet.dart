@@ -26,6 +26,7 @@ class RAutoScheduleBottomSheet extends StatefulWidget {
 
 class _RAutoScheduleBottomSheetState extends State<RAutoScheduleBottomSheet> {
   bool _isGenerating = false;
+  bool _isRegenerating = false;
 
   /// workPlaceId + weekScheduleId 조합으로 저장 키 생성
   String get _runIdKey =>
@@ -44,27 +45,21 @@ class _RAutoScheduleBottomSheetState extends State<RAutoScheduleBottomSheet> {
       final savedRunId = prefs.getInt(_runIdKey);
       final savedPreviewId = prefs.getInt(_previewIdKey);
       final savedCandidateCount = prefs.getInt(_candidateCountKey);
-      
-      // ✅ 추가: 저장된 값이 실제로 있는지 확인하는 로그
+
       debugPrint(
           "🔍 [_onNextTap] 저장값 확인 — runIdKey=$_runIdKey, savedRunId=$savedRunId, savedPreviewId=$savedPreviewId, savedCandidateCount=$savedCandidateCount");
 
       if (savedRunId != null &&
           savedPreviewId != null &&
           savedCandidateCount != null) {
-        // ✅ 이미 POST가 완료된 상태 → 로딩 화면 없이 바로 GET preview 호출 후 RSelectAutoSchedulePage로 이동
         debugPrint(
             "🟡 [_onNextTap] 이미 생성된 결과 재사용 — runId=$savedRunId, previewId=$savedPreviewId");
-        debugPrint("🟡 [_onNextTap] GET preview 바로 조회 시작");
 
         final preview = await SchedulePreviewApi.getPreview(
           workPlaceId: widget.workPlaceId,
           weekScheduleId: widget.weekScheduleId,
           runId: savedRunId,
         );
-
-        debugPrint(
-            "🟢 [_onNextTap] preview 조회 성공 — candidateCount=${preview.candidateCount}");
 
         if (!mounted) return;
 
@@ -73,28 +68,19 @@ class _RAutoScheduleBottomSheetState extends State<RAutoScheduleBottomSheet> {
 
         Navigator.of(context, rootNavigator: true).push(
           MaterialPageRoute(
-            builder: (_) => RSelectAutoSchedulePage(
-              preview: preview,
-            ),
+            builder: (_) => RSelectAutoSchedulePage(preview: preview),
           ),
         );
         return;
       }
 
-      // ✅ 저장된 결과가 없으면 최초 1회 POST 호출 → 로딩 화면(RAutoSchedulingPage)을 거쳐 이동
       debugPrint("=== _onNextTap 시작 (최초 생성) ===");
-      debugPrint(
-          "workPlaceId: ${widget.workPlaceId}, weekScheduleId: ${widget.weekScheduleId}");
 
       final result = await ScheduleGenerationRunApi.generate(
         workPlaceId: widget.workPlaceId,
         weekScheduleId: widget.weekScheduleId,
       );
 
-      debugPrint(
-          "🟢 [_onNextTap] POST 성공! runId=${result.scheduleGenerationRunId}, previewId=${result.schedulePreviewId}, candidateCount=${result.candidateCount}, status=${result.status}");
-
-      // ✅ 결과 저장 — 다음부터는 이 값으로 GET만 호출
       await prefs.setInt(_runIdKey, result.scheduleGenerationRunId);
       await prefs.setInt(_previewIdKey, result.schedulePreviewId);
       await prefs.setInt(_candidateCountKey, result.candidateCount);
@@ -115,6 +101,23 @@ class _RAutoScheduleBottomSheetState extends State<RAutoScheduleBottomSheet> {
           ),
         ),
       );
+    } on NoScheduleCandidateException catch (e) {
+      debugPrint("🟠 [_onNextTap] 후보 없음 — 빈 결과로 다음 화면 이동: ${e.message}");
+
+      if (!mounted) return;
+
+      widget.onNext?.call();
+      Navigator.pop(context);
+
+      Navigator.of(context, rootNavigator: true).push(
+        MaterialPageRoute(
+          builder: (_) => RAutoSchedulingPage(
+            workPlaceId: widget.workPlaceId,
+            weekScheduleId: widget.weekScheduleId,
+            noCandidates: true,
+          ),
+        ),
+      );
     } catch (e) {
       debugPrint("🔴 [_onNextTap] 실패: $e");
 
@@ -128,10 +131,74 @@ class _RAutoScheduleBottomSheetState extends State<RAutoScheduleBottomSheet> {
     }
   }
 
+  Future<void> _onRegenerateTap() async {
+    setState(() => _isRegenerating = true);
+
+    try {
+      debugPrint("=== _onRegenerateTap 시작 (재생성) ===");
+
+      final result = await ScheduleGenerationRunApi.regenerate(
+        workPlaceId: widget.workPlaceId,
+        weekScheduleId: widget.weekScheduleId,
+      );
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt(_runIdKey, result.scheduleGenerationRunId);
+      await prefs.setInt(_previewIdKey, result.schedulePreviewId);
+      await prefs.setInt(_candidateCountKey, result.candidateCount);
+
+      if (!mounted) return;
+
+      widget.onNext?.call();
+      Navigator.pop(context);
+
+      Navigator.of(context, rootNavigator: true).push(
+        MaterialPageRoute(
+          builder: (_) => RAutoSchedulingPage(
+            scheduleGenerationRunId: result.scheduleGenerationRunId,
+            schedulePreviewId: result.schedulePreviewId,
+            workPlaceId: result.workPlaceId,
+            weekScheduleId: result.weekScheduleId,
+            candidateCount: result.candidateCount,
+          ),
+        ),
+      );
+    } on NoScheduleCandidateException catch (e) {
+      debugPrint("🟠 [_onRegenerateTap] 후보 없음 — 빈 결과로 다음 화면 이동: ${e.message}");
+
+      if (!mounted) return;
+
+      widget.onNext?.call();
+      Navigator.pop(context);
+
+      Navigator.of(context, rootNavigator: true).push(
+        MaterialPageRoute(
+          builder: (_) => RAutoSchedulingPage(
+            workPlaceId: widget.workPlaceId,
+            weekScheduleId: widget.weekScheduleId,
+            noCandidates: true,
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint("🔴 [_onRegenerateTap] 실패: $e");
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) setState(() => _isRegenerating = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final bool isBusy = _isGenerating || _isRegenerating;
+
     return Container(
-      height: 280,
+      height: 340,
       decoration: const BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.vertical(
@@ -185,7 +252,7 @@ class _RAutoScheduleBottomSheetState extends State<RAutoScheduleBottomSheet> {
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                onPressed: _isGenerating ? null : _onNextTap,
+                onPressed: isBusy ? null : _onNextTap,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF0084FF),
                   disabledBackgroundColor: const Color(0xFFA9D0FB),
@@ -215,8 +282,46 @@ class _RAutoScheduleBottomSheetState extends State<RAutoScheduleBottomSheet> {
             ),
           ),
 
+          const SizedBox(height: 12),
+
+          /// 스케줄 재생성 버튼
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: SizedBox(
+              width: double.infinity,
+              height: 56,
+              child: OutlinedButton(
+                onPressed: isBusy ? null : _onRegenerateTap,
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Color(0xFF0084FF)),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: _isRegenerating
+                    ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    color: Color(0xFF0084FF),
+                    strokeWidth: 2,
+                  ),
+                )
+                    : const Text(
+                  "스케줄 재생성",
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF0084FF),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
           TextButton(
-            onPressed: _isGenerating ? null : () => Navigator.pop(context),
+            onPressed: isBusy ? null : () => Navigator.pop(context),
             child: const Text(
               "취소",
               style: TextStyle(
