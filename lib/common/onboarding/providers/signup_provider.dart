@@ -184,6 +184,7 @@ class SignupNotifier extends StateNotifier<SignupRequest> {
           await ServerTokenManager.saveTokens(
             accessToken: accessToken,
             refreshToken: refreshToken,
+            deviceId: state.device.deviceId!,
           );
           return true;
         }

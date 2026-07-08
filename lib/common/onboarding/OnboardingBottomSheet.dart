@@ -93,6 +93,7 @@ class OnboardingBottomSheet extends ConsumerWidget {
                         await ServerTokenManager.saveTokens(
                           accessToken: result["serverAccessToken"],
                           refreshToken: result["serverRefreshToken"],
+                          deviceId: result["deviceId"],
                         );
                       }
 
