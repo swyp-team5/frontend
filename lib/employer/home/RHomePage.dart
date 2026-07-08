@@ -587,7 +587,8 @@ class _RHomePageState extends State<RHomePage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => const RMainSchedulePage(),
+                builder: (_) => RMainSchedulePage(
+                  workPlaceId: selectedWorkPlaceId!,),
               ),
             );
           } else if (index == 4) {

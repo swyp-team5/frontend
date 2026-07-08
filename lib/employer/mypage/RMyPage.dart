@@ -327,7 +327,7 @@ class _RMyPageState extends State<RMyPage> {
                 MaterialPageRoute(builder: (_) => const RCrewPage()));
           } else if (index == 2) {
             Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const RMainSchedulePage()));
+                MaterialPageRoute(builder: (_) => RMainSchedulePage(workPlaceId: selectedWorkPlaceId!,)));
           } else if (index == 4) {
             Navigator.push(
                 context, MaterialPageRoute(builder: (_) => const RMyPage()));

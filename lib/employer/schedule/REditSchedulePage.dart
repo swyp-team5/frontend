@@ -48,6 +48,19 @@ class _RScheduleEditPageState extends State<RScheduleEditPage> {
         "${date.day.toString().padLeft(2, '0')}";
   }
 
+  int _colorIndexForRole(String role) {
+    switch (role) {
+      case "오픈":
+        return 0;
+      case "미들":
+        return 1;
+      case "마감":
+        return 2;
+      default:
+        return 3;
+    }
+  }
+
 
   Color roleColor(String role) {
     switch (role) {
@@ -356,6 +369,7 @@ class _RScheduleEditPageState extends State<RScheduleEditPage> {
                                         workers: result.workers
                                             .map((name) => RScheduleWorker(name: name))
                                             .toList(),
+                                        colorIndex: _colorIndexForRole(result.role), // 누락됐던 부분, 새 role 기준으로 계산
                                       );
 
                                       widget.schedules[newKey]!.add(updatedShift);

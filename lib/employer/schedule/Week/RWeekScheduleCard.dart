@@ -9,31 +9,23 @@ class RWeekScheduleCard extends StatelessWidget {
     required this.shifts,
   });
 
-  Color _backgroundColor(String role) {
-    switch (role) {
-      case "오픈":
-        return const Color(0xFFE6F3FF);
-      case "미들":
-        return const Color(0xFFEEEBFF);
-      case "마감":
-        return const Color(0xFFDCFED8);
-      default:
-        return Colors.grey.shade200;
-    }
-  }
+  // 순서 기반 색상 팔레트 (다른 화면들과 동일한 규칙)
+  static const List<Color> _bgColors = [
+    Color(0xFFE6F3FF),
+    Color(0xFFEEEBFF),
+    Color(0xFFDCFED8),
+  ];
+  static const List<Color> _textColors = [
+    Color(0xFF0063BF),
+    Color(0xFF7D67FD),
+    Color(0xFF007360),
+  ];
 
-  Color _textColor(String role) {
-    switch (role) {
-      case "오픈":
-        return const Color(0xFF0063BF);
-      case "미들":
-        return const Color(0xFF7D67FD);
-      case "마감":
-        return const Color(0xFF007360);
-      default:
-        return Colors.black87;
-    }
-  }
+  Color _bgColor(int index) =>
+      index < _bgColors.length ? _bgColors[index] : Colors.grey.shade200;
+
+  Color _txtColor(int index) =>
+      index < _textColors.length ? _textColors[index] : Colors.black87;
 
   @override
   Widget build(BuildContext context) {
@@ -41,9 +33,7 @@ class RWeekScheduleCard extends StatelessWidget {
       return const SizedBox();
     }
 
-    final first = shifts.first;
-
-    final role = first.role;
+    final colorIndex = shifts.first.colorIndex; // ⭐ role 대신 colorIndex
 
     final hasShortage = shifts.any((e) => e.shortage);
 
@@ -60,13 +50,11 @@ class RWeekScheduleCard extends StatelessWidget {
       height: double.infinity,
       color: hasShortage
           ? const Color(0xFFFF4646)
-          : _backgroundColor(role),
+          : _bgColor(colorIndex),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-
-            /// 근무자 이름
             Text(
               names,
               textAlign: TextAlign.center,
@@ -75,14 +63,11 @@ class RWeekScheduleCard extends StatelessWidget {
                 fontWeight: FontWeight.w500,
                 color: hasShortage
                     ? Colors.white
-                    : _textColor(role),
+                    : _txtColor(colorIndex),
               ),
             ),
-
-            /// 부족 인원 표시
             if (hasShortage) ...[
               const SizedBox(height: 10),
-
               const Text(
                 "인원",
                 textAlign: TextAlign.center,
@@ -92,9 +77,8 @@ class RWeekScheduleCard extends StatelessWidget {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-
               Text(
-                "${shortageCount}명 부족",
+                "$shortageCount명 부족",
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 11,

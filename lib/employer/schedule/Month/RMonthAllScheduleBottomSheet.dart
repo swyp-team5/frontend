@@ -258,6 +258,7 @@ class _RMonthAllScheduleBottomSheetState
                               startTime: result.startTime,
                               endTime: result.endTime,
                               breakTime: result.breakTime,
+                              colorIndex: shift.colorIndex,
                               required: shift.required, // 기존 필요인원 유지
                               workers: result.workers
                                   .map((e) => RScheduleWorker(name: e))
