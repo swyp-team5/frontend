@@ -4,11 +4,13 @@ import '../models/ShiftCount.dart';
 class RShiftRow extends StatelessWidget {
   final String title;
   final List<ShiftCount> counts;
+  final int colorIndex;
 
   const RShiftRow({
     super.key,
     required this.title,
     required this.counts,
+    required this.colorIndex,
   });
 
   @override

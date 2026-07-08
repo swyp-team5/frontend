@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import 'api/CrewsApi.dart';
+import 'api/ScheduleConditionsApi.dart';
+import 'models/ScheduleConditionsLatestResponse.dart';
 import 'models/SchedulePreviewResponse.dart';
 import 'models/ScheduleScenario.dart';
 import 'models/ShiftCount.dart';
-import 'models/ShiftType.dart';
 import 'widgets/RWeekCalendar.dart';
 
 class RSelectAutoSchedulePage extends StatefulWidget {
@@ -19,82 +21,154 @@ class RSelectAutoSchedulePage extends StatefulWidget {
       _RSelectAutoSchedulePageState();
 }
 
-class _RSelectAutoSchedulePageState
-    extends State<RSelectAutoSchedulePage> {
+class _RSelectAutoSchedulePageState extends State<RSelectAutoSchedulePage> {
   int selectedScenario = 0;
 
-  late final List<ScheduleScenario> scenarios;
+  bool _isLoading = true;
+  String? _error;
+  List<ScheduleScenario> scenarios = [];
+
+  late final List<DateTime> weekDays;
 
   @override
   void initState() {
     super.initState();
-    scenarios = widget.preview.candidates
-        .map((candidate) => _mapCandidateToScenario(candidate))
-        .toList();
+
+    final now = DateTime.now();
+    final nextMonday = DateTime(now.year, now.month, now.day)
+        .add(Duration(days: 8 - now.weekday));
+    weekDays = List.generate(7, (i) => nextMonday.add(Duration(days: i)));
+
+    _load();
   }
 
-  ScheduleScenario _mapCandidateToScenario(PreviewCandidate candidate) {
-    final List<ShiftCount> open = [];
-    final List<ShiftCount> middle = [];
-    final List<ShiftCount> close = [];
+  // weekday(1=월 ~ 7=일) -> 서버가 쓰는 dayName 문자열로 변환
+  String _dayName(DateTime d) {
+    const names = [
+      "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY",
+      "FRIDAY", "SATURDAY", "SUNDAY",
+    ];
+    return names[d.weekday - 1];
+  }
 
-    for (final day in candidate.days) {
-      // ⚠️ 가정: timeDetails 배열 순서 = [open, middle, close]
-      for (int i = 0; i < day.timeDetails.length; i++) {
-        final detail = day.timeDetails[i];
+  Future<void> _load() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
 
-        final shiftCount = ShiftCount(
-          // ⚠️ required(필요 인원)는 preview 응답에 없어서 0으로 임시 처리
-          required: 0,
-          available: detail.workerMemberIds.length,
-          type: _indexToShiftType(i),
-          isOff: detail.workerMemberIds.isEmpty,
-        );
+    try {
+      // 1) 최근 스케줄 조건 조회 (그룹 단위: dayNames + timeDetails)
+      final latest = await ScheduleConditionsApi.getLatest(
+        workPlaceId: widget.preview.workPlaceId,
+      );
 
-        switch (_indexToShiftType(i)) {
-          case ShiftType.open:
-            open.add(shiftCount);
-            break;
-          case ShiftType.middle:
-            middle.add(shiftCount);
-            break;
-          case ShiftType.close:
-            close.add(shiftCount);
-            break;
+      // 2) dayName("MONDAY" 등) -> 해당 그룹의 timeDetails 매핑
+      final timeDetailsByDayName = <String, List<OwnerTimeDetail>>{};
+      for (final group in latest.groups) {
+        for (final dayName in group.dayNames) {
+          timeDetailsByDayName[dayName] = group.timeDetails;
         }
       }
-    }
 
-    return ScheduleScenario(
-      title: "시안 ${candidate.candidateNo}",
-      open: open,
-      middle: middle,
-      close: close,
-    );
-  }
+      // 3) 이번 주 7일(월~일)을 dayName으로 변환해 매칭
+      //    (해당 dayName이 어떤 그룹에도 없으면 = 휴무일 -> 빈 리스트)
+      final dayTemplates = weekDays
+          .map((date) =>
+      timeDetailsByDayName[_dayName(date)] ?? <OwnerTimeDetail>[])
+          .toList();
 
-  ShiftType _indexToShiftType(int index) {
-    switch (index) {
-      case 0:
-        return ShiftType.open;
-      case 1:
-        return ShiftType.middle;
-      default:
-        return ShiftType.close;
+      // 4) 직원 목록 조회 (memberId -> name)
+      final crewsRes = await CrewsApi.getCrews(
+        workPlaceId: widget.preview.workPlaceId,
+      );
+      final nameByMemberId = <int, String>{
+        for (final c in crewsRes.crews) c.memberId: c.name,
+      };
+
+      // 5) 행(타임명) 순서 결정
+      //    타임이 가장 많은 날을 기준으로 순서를 잡고,
+      //    다른 날에만 있는 타임명이 있으면 뒤에 추가
+      final baseDay = dayTemplates.reduce(
+            (a, b) => a.length >= b.length ? a : b,
+      );
+      final rowTitles = <String>[for (final td in baseDay) td.timeName];
+      for (final details in dayTemplates) {
+        for (final td in details) {
+          if (!rowTitles.contains(td.timeName)) {
+            rowTitles.add(td.timeName);
+          }
+        }
+      }
+
+      // 6) 시안(candidate)별로 rows 구성
+      final builtScenarios = widget.preview.candidates.map((candidate) {
+        // timeDetailId -> workerMemberIds (요일 순서에 의존하지 않음)
+        final workerIdsByDetailId = <int, List<int>>{};
+        for (final day in candidate.days) {
+          for (final td in day.timeDetails) {
+            workerIdsByDetailId[td.timeDetailId] = td.workerMemberIds;
+          }
+        }
+
+        final rows = rowTitles.map((rowTitle) {
+          final counts = List.generate(7, (dayIndex) {
+            OwnerTimeDetail? matched;
+            for (final td in dayTemplates[dayIndex]) {
+              if (td.timeName == rowTitle) {
+                matched = td;
+                break;
+              }
+            }
+
+            // 이 날짜엔 해당 타임 자체가 없음 (휴무 슬롯)
+            if (matched == null) {
+              return const ShiftCount(required: 0, isOff: true);
+            }
+
+            final memberIds = workerIdsByDetailId[matched.timeDetailId] ?? [];
+            final workerNames = memberIds
+                .map((id) => nameByMemberId[id] ?? "이름없음(#$id)")
+                .toList();
+
+            return ShiftCount(
+              required: matched.workerCount,
+              workers: workerNames,
+              isOff: false,
+              startTime: matched.startTime,
+              closeTime: matched.closeTime,
+            );
+          });
+
+          return ShiftRowData(title: rowTitle, counts: counts);
+        }).toList();
+
+        return ScheduleScenario(
+          candidateNo: candidate.candidateNo,
+          title: "시안 ${candidate.candidateNo}",
+          rows: rows,
+        );
+      }).toList();
+
+      if (!mounted) return;
+      setState(() {
+        scenarios = builtScenarios;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint("스케줄 시안 구성 실패: $e");
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-
-    final nextMonday = DateTime(
-      now.year,
-      now.month,
-      now.day,
-    ).add(Duration(days: 8 - now.weekday));
-
-    final nextSunday = nextMonday.add(const Duration(days: 6));
+    final nextMonday = weekDays.first;
+    final nextSunday = weekDays.last;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -163,7 +237,7 @@ class _RSelectAutoSchedulePageState
                       child: Center(
                         child: Text(
                           day,
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: Color(0xFF767676),
                             fontSize: 12,
                             fontWeight: FontWeight.w400,
@@ -176,16 +250,27 @@ class _RSelectAutoSchedulePageState
               ),
             ),
 
-            Divider(height: 10),
+            const Divider(height: 10),
 
             Expanded(
-              child: RWeekCalendar(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                  ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    "스케줄 시안을 불러오지 못했어요\n$_error",
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Color(0xFF999999)),
+                  ),
+                ),
+              )
+                  : RWeekCalendar(
                 scenarios: scenarios,
                 selectedIndex: selectedScenario,
                 onSelect: (index) {
-                  setState(() {
-                    selectedScenario = index;
-                  });
+                  setState(() => selectedScenario = index);
                 },
               ),
             ),
@@ -195,203 +280,3 @@ class _RSelectAutoSchedulePageState
     );
   }
 }
-
-// import 'package:flutter/material.dart';
-//
-// import 'models/SchedulePreviewResponse.dart';
-// import 'models/ScheduleScenario.dart';
-// import 'models/ShiftCount.dart';
-// import 'models/ShiftType.dart';
-// import 'widgets/RWeekCalendar.dart';
-//
-// class RSelectAutoSchedulePage extends StatefulWidget {
-//   final SchedulePreviewResponse preview;
-//
-//   const RSelectAutoSchedulePage({
-//     super.key,
-//     required this.preview,
-//   });
-//
-//   @override
-//   State<RSelectAutoSchedulePage> createState() =>
-//       _RSelectAutoSchedulePageState();
-// }
-//
-// class _RSelectAutoSchedulePageState
-//     extends State<RSelectAutoSchedulePage> {
-//   int selectedScenario = 0;
-//
-//   late final List<ScheduleScenario> scenarios;
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//     scenarios = widget.preview.candidates
-//         .map((candidate) => _mapCandidateToScenario(candidate))
-//         .toList();
-//   }
-//
-//   ScheduleScenario _mapCandidateToScenario(PreviewCandidate candidate) {
-//     final List<ShiftCount> open = [];
-//     final List<ShiftCount> middle = [];
-//     final List<ShiftCount> close = [];
-//
-//     for (final day in candidate.days) {
-//       // ⚠️ 가정: timeDetails 배열 순서 = [open, middle, close]
-//       for (int i = 0; i < day.timeDetails.length; i++) {
-//         final detail = day.timeDetails[i];
-//
-//         final shiftCount = ShiftCount(
-//           // ⚠️ required(필요 인원)는 preview 응답에 없어서 0으로 임시 처리
-//           required: 0,
-//           available: detail.workerMemberIds.length,
-//           type: _indexToShiftType(i),
-//           isOff: detail.workerMemberIds.isEmpty,
-//         );
-//
-//         switch (_indexToShiftType(i)) {
-//           case ShiftType.open:
-//             open.add(shiftCount);
-//             break;
-//           case ShiftType.middle:
-//             middle.add(shiftCount);
-//             break;
-//           case ShiftType.close:
-//             close.add(shiftCount);
-//             break;
-//         }
-//       }
-//     }
-//
-//     return ScheduleScenario(
-//       candidateNo: candidate.candidateNo,
-//       title: "시안 ${candidate.candidateNo}",
-//       open: open,
-//       middle: middle,
-//       close: close,
-//     );
-//   }
-//
-//   ShiftType _indexToShiftType(int index) {
-//     switch (index) {
-//       case 0:
-//         return ShiftType.open;
-//       case 1:
-//         return ShiftType.middle;
-//       default:
-//         return ShiftType.close;
-//     }
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     final now = DateTime.now();
-//
-//     final nextMonday = DateTime(
-//       now.year,
-//       now.month,
-//       now.day,
-//     ).add(Duration(days: 8 - now.weekday));
-//
-//     final nextSunday = nextMonday.add(const Duration(days: 6));
-//
-//     return Scaffold(
-//       backgroundColor: Colors.white,
-//       body: SafeArea(
-//         child: Column(
-//           children: [
-//             const Padding(
-//               padding: EdgeInsets.fromLTRB(20, 30, 20, 0),
-//               child: Align(
-//                 alignment: Alignment.centerLeft,
-//                 child: Text(
-//                   "스케줄 선택",
-//                   style: TextStyle(
-//                     fontSize: 18,
-//                     fontWeight: FontWeight.w600,
-//                   ),
-//                 ),
-//               ),
-//             ),
-//
-//             const SizedBox(height: 18),
-//
-//             Center(
-//               child: Text(
-//                 "${nextMonday.month}월 ${nextMonday.day}일 - "
-//                     "${nextSunday.month}월 ${nextSunday.day}일",
-//                 style: const TextStyle(
-//                   fontSize: 20,
-//                   fontWeight: FontWeight.w600,
-//                 ),
-//               ),
-//             ),
-//
-//             const SizedBox(height: 16),
-//
-//             Container(
-//               margin: const EdgeInsets.symmetric(horizontal: 90),
-//               padding: const EdgeInsets.symmetric(vertical: 5),
-//               decoration: BoxDecoration(
-//                 color: const Color(0xFFF1F1F5),
-//                 borderRadius: BorderRadius.circular(4),
-//               ),
-//               child: const Center(
-//                 child: Text(
-//                   "스케줄 시안 중 1개를 선택해주세요",
-//                   style: TextStyle(
-//                     color: Color(0xFF767676),
-//                     fontSize: 14,
-//                     fontWeight: FontWeight.w500,
-//                   ),
-//                 ),
-//               ),
-//             ),
-//
-//             const SizedBox(height: 20),
-//
-//             Padding(
-//               padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-//               child: Row(
-//                 children: [
-//                   const SizedBox(width: 50),
-//                   ...const [
-//                     "월", "화", "수", "목", "금", "토", "일",
-//                   ].map(
-//                         (day) => Expanded(
-//                       child: Center(
-//                         child: Text(
-//                           day,
-//                           style: TextStyle(
-//                             color: Color(0xFF767676),
-//                             fontSize: 12,
-//                             fontWeight: FontWeight.w400,
-//                           ),
-//                         ),
-//                       ),
-//                     ),
-//                   ),
-//                 ],
-//               ),
-//             ),
-//
-//             Divider(height: 10),
-//
-//             Expanded(
-//               child: RWeekCalendar(
-//                 scenarios: scenarios,
-//                 selectedIndex: selectedScenario,
-//                 preview: widget.preview, // 추가
-//                 onSelect: (index) {
-//                   setState(() {
-//                     selectedScenario = index;
-//                   });
-//                 },
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }

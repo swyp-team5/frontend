@@ -1,7 +1,7 @@
 class DayTimeDetailsResponse {
   final int weekScheduleId;
-  final String date;
-  final String dayName;
+  final String date; // "yyyy-MM-dd"
+  final String dayName; // "MONDAY" 등
   final List<DayTimeDetail> timeDetails;
 
   DayTimeDetailsResponse({
@@ -13,11 +13,11 @@ class DayTimeDetailsResponse {
 
   factory DayTimeDetailsResponse.fromJson(Map<String, dynamic> json) {
     return DayTimeDetailsResponse(
-      weekScheduleId: json['weekScheduleId'] ?? 0,
-      date: json['date'] ?? '',
-      dayName: json['dayName'] ?? '',
-      timeDetails: (json['timeDetails'] as List? ?? [])
-          .map((e) => DayTimeDetail.fromJson(e))
+      weekScheduleId: json['weekScheduleId'] as int,
+      date: json['date'] as String,
+      dayName: json['dayName'] as String,
+      timeDetails: (json['timeDetails'] as List)
+          .map((e) => DayTimeDetail.fromJson(e as Map<String, dynamic>))
           .toList(),
     );
   }
@@ -26,8 +26,8 @@ class DayTimeDetailsResponse {
 class DayTimeDetail {
   final int timeDetailId;
   final String timeName;
-  final String startTime;
-  final String closeTime;
+  final String startTime; // "09:00"
+  final String closeTime; // "13:00"
   final int workerCount;
 
   DayTimeDetail({
@@ -40,11 +40,11 @@ class DayTimeDetail {
 
   factory DayTimeDetail.fromJson(Map<String, dynamic> json) {
     return DayTimeDetail(
-      timeDetailId: json['timeDetailId'] ?? 0,
-      timeName: json['timeName'] ?? '',
-      startTime: json['startTime'] ?? '',
-      closeTime: json['closeTime'] ?? '',
-      workerCount: json['workerCount'] ?? 0,
+      timeDetailId: json['timeDetailId'] as int,
+      timeName: json['timeName'] as String,
+      startTime: json['startTime'] as String,
+      closeTime: json['closeTime'] as String,
+      workerCount: json['workerCount'] as int,
     );
   }
 

@@ -1,35 +1,28 @@
 import 'ShiftCount.dart';
 
-class ScheduleScenario {
-  final String title; // 시안 1, 시안 2, ...
+class ShiftRowData {
+  /// 타임 이름 (예: "오픈", "미들", "마감", "오전근무" 등 — 매장마다 다름)
+  final String title;
 
-  final List<ShiftCount> open;
-  final List<ShiftCount> middle;
-  final List<ShiftCount> close;
+  /// 항상 7개 (월~일)
+  final List<ShiftCount> counts;
 
-  const ScheduleScenario({
+  const ShiftRowData({
     required this.title,
-    required this.open,
-    required this.middle,
-    required this.close,
+    required this.counts,
   });
 }
 
-// import 'ShiftCount.dart';
-//
-// class ScheduleScenario {
-//   final int candidateNo; // 추가: 서버에 confirmed 요청 시 필요
-//   final String title; // 시안 1, 시안 2, ...
-//
-//   final List<ShiftCount> open;
-//   final List<ShiftCount> middle;
-//   final List<ShiftCount> close;
-//
-//   const ScheduleScenario({
-//     required this.candidateNo,
-//     required this.title,
-//     required this.open,
-//     required this.middle,
-//     required this.close,
-//   });
-// }
+class ScheduleScenario {
+  final int candidateNo; // 서버에 confirmed 요청 시 필요
+  final String title; // "시안 1", "시안 2" ...
+
+  /// 타임 종류만큼의 행 (가변 개수)
+  final List<ShiftRowData> rows;
+
+  const ScheduleScenario({
+    required this.candidateNo,
+    required this.title,
+    required this.rows,
+  });
+}

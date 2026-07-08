@@ -2,9 +2,6 @@ import 'package:flutter/material.dart';
 
 import '../../../common/employer/RAutoScheduleComplete.dart';
 import 'models/ScheduleScenario.dart';
-import 'models/ShiftCount.dart';
-import 'models/ShiftTime.dart';
-import 'models/ShiftType.dart';
 
 class RAutoScheduleDetailPage extends StatelessWidget {
   final ScheduleScenario scenario;
@@ -16,27 +13,46 @@ class RAutoScheduleDetailPage extends StatelessWidget {
 
   static const double hourHeight = 50;
 
+  // 순서 기반 색상 팔레트 (RShiftRow의 colorIndex와 동일한 규칙)
+  static const List<Color> _bgColors = [
+    Color(0xffDCEEFF),
+    Color(0xffE7E0FF),
+    Color(0xffDDF8D7),
+  ];
+  static const List<Color> _textColors = [
+    Color(0xff2D5BD1),
+    Color(0xff6A5BEA),
+    Color(0xff2AA85A),
+  ];
+
+  Color _bgColor(int index) =>
+      index < _bgColors.length ? _bgColors[index] : Colors.grey.shade200;
+
+  Color _txtColor(int index) =>
+      index < _textColors.length ? _textColors[index] : Colors.black;
+
+  /// "09:30" -> 9.5 (그리드 위치 계산용, 분 단위까지 반영)
+  double _toHourDecimal(String time) {
+    final parts = time.split(":");
+    return int.parse(parts[0]) + int.parse(parts[1]) / 60.0;
+  }
+
   @override
   Widget build(BuildContext context) {
     final now = DateTime.now();
 
-    /// 다음주 월요일
     final nextMonday = DateTime(
       now.year,
       now.month,
       now.day,
     ).add(Duration(days: 8 - now.weekday));
 
-    /// 다음주 날짜
     final weekDays = List.generate(
       7,
-          (index) => nextMonday.add(
-        Duration(days: index),
-      ),
+          (index) => nextMonday.add(Duration(days: index)),
     );
 
     final nextSunday = weekDays.last;
-
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -77,8 +93,6 @@ class RAutoScheduleDetailPage extends StatelessWidget {
       body: SafeArea(
         child: Column(
           children: [
-            //---------------- AppBar ----------------
-
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 30, 20, 0),
               child: SizedBox(
@@ -96,7 +110,6 @@ class RAutoScheduleDetailPage extends StatelessWidget {
                         ),
                       ),
                     ),
-
                     const Center(
                       child: Text(
                         "근무 상세",
@@ -141,10 +154,8 @@ class RAutoScheduleDetailPage extends StatelessWidget {
                   ...List.generate(7, (index) {
                     const week = ["월", "화", "수", "목", "금", "토", "일"];
 
-                    final isOff =
-                        scenario.open[index].isOff &&
-                            scenario.middle[index].isOff &&
-                            scenario.close[index].isOff;
+                    final isOff = scenario.rows
+                        .every((row) => row.counts[index].isOff);
 
                     return Expanded(
                       child: Column(
@@ -153,18 +164,20 @@ class RAutoScheduleDetailPage extends StatelessWidget {
                           Text(
                             week[index],
                             style: TextStyle(
-                              color: isOff ? const Color(0xFF999999) : Colors.black,
+                              color: isOff
+                                  ? const Color(0xFF999999)
+                                  : Colors.black,
                               fontSize: 12,
                               fontWeight: FontWeight.w400,
                             ),
                           ),
-
                           const SizedBox(height: 6),
-
                           Text(
                             "${weekDays[index].day}",
                             style: TextStyle(
-                              color: isOff ? const Color(0xFF999999) : Colors.black,
+                              color: isOff
+                                  ? const Color(0xFF999999)
+                                  : Colors.black,
                               fontWeight: FontWeight.w600,
                               fontSize: 18,
                             ),
@@ -182,8 +195,7 @@ class RAutoScheduleDetailPage extends StatelessWidget {
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  final dayWidth =
-                      (constraints.maxWidth - 34) / 7;
+                  final dayWidth = (constraints.maxWidth - 34) / 7;
 
                   return SingleChildScrollView(
                     child: SizedBox(
@@ -197,33 +209,24 @@ class RAutoScheduleDetailPage extends StatelessWidget {
                               SizedBox(
                                 width: 34,
                                 child: Column(
-                                  children: List.generate(
-                                    15,
-                                        (index) {
-                                      final hour = index + 9;
-
-                                      return Container(
-                                        height: hourHeight,
-                                        alignment: Alignment.topCenter,
-                                        decoration:
-                                        const BoxDecoration(
-                                          border: Border(
-                                            bottom: BorderSide(
-                                              color: Color(
-                                                  0xffECECEC),
-                                            ),
+                                  children: List.generate(15, (index) {
+                                    final hour = index + 9;
+                                    return Container(
+                                      height: hourHeight,
+                                      alignment: Alignment.topCenter,
+                                      decoration: const BoxDecoration(
+                                        border: Border(
+                                          bottom: BorderSide(
+                                            color: Color(0xffECECEC),
                                           ),
                                         ),
-                                        child: Text(
-                                          "$hour",
-                                          style:
-                                          const TextStyle(
-                                            fontSize: 10,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
+                                      ),
+                                      child: Text(
+                                        "$hour",
+                                        style: const TextStyle(fontSize: 10),
+                                      ),
+                                    );
+                                  }),
                                 ),
                               ),
 
@@ -233,27 +236,17 @@ class RAutoScheduleDetailPage extends StatelessWidget {
                                     7,
                                         (_) => Expanded(
                                       child: Column(
-                                        children:
-                                        List.generate(
+                                        children: List.generate(
                                           15,
                                               (_) => Container(
-                                            height:
-                                            hourHeight,
-                                            decoration:
-                                            BoxDecoration(
-                                              border:
-                                              Border(
-                                                right:
-                                                BorderSide(
-                                                  color: Colors
-                                                      .grey
-                                                      .shade300,
+                                            height: hourHeight,
+                                            decoration: BoxDecoration(
+                                              border: Border(
+                                                right: BorderSide(
+                                                  color: Colors.grey.shade300,
                                                 ),
-                                                bottom:
-                                                BorderSide(
-                                                  color: Colors
-                                                      .grey
-                                                      .shade300,
+                                                bottom: BorderSide(
+                                                  color: Colors.grey.shade300,
                                                 ),
                                               ),
                                             ),
@@ -269,23 +262,14 @@ class RAutoScheduleDetailPage extends StatelessWidget {
 
                           //---------------- Shift Blocks ----------------
 
-                          ..._buildShiftBlocks(
-                            scenario.open,
-                            ShiftType.open,
-                            dayWidth,
-                          ),
-
-                          ..._buildShiftBlocks(
-                            scenario.middle,
-                            ShiftType.middle,
-                            dayWidth,
-                          ),
-
-                          ..._buildShiftBlocks(
-                            scenario.close,
-                            ShiftType.close,
-                            dayWidth,
-                          ),
+                          for (int rowIndex = 0;
+                          rowIndex < scenario.rows.length;
+                          rowIndex++)
+                            ..._buildShiftBlocks(
+                              scenario.rows[rowIndex],
+                              rowIndex,
+                              dayWidth,
+                            ),
                         ],
                       ),
                     ),
@@ -302,11 +286,11 @@ class RAutoScheduleDetailPage extends StatelessWidget {
   Widget _shift({
     required Color color,
     required int day,
-    required int start,
-    required int end,
+    required double start,
+    required double end,
     required String text,
     required double dayWidth,
-    Color textColor = const Color(0xff2D5BD1),
+    required Color textColor,
   }) {
     return Positioned(
       left: 34 + day * dayWidth,
@@ -332,64 +316,32 @@ class RAutoScheduleDetailPage extends StatelessWidget {
   }
 
   List<Widget> _buildShiftBlocks(
-      List<ShiftCount> list,
-      ShiftType type,
+      ShiftRowData row,
+      int rowIndex,
       double dayWidth,
       ) {
-    final time = getShiftTime(type);
+    return List.generate(row.counts.length, (day) {
+      final shift = row.counts[day];
 
-    return List.generate(
-      list.length,
-          (day) {
-        final shift = list[day];
+      if (shift.isOff || shift.startTime == null || shift.closeTime == null) {
+        return const SizedBox.shrink();
+      }
 
-        if (shift.isOff) {
-          return const SizedBox.shrink();
-        }
+      final start = _toHourDecimal(shift.startTime!);
+      final end = _toHourDecimal(shift.closeTime!);
 
-        return _shift(
-          day: day,
-          start: time.start,
-          end: time.end,
-          dayWidth: dayWidth,
-          color: shift.shortage
-              ? Colors.redAccent
-              : _color(type),
-          text: shift.shortage
-              ? "${shift.workers.join('\n')}\n(${shift.shortageCount}명 부족)"
-              : shift.workers.join('\n'),
-          textColor: shift.shortage
-              ? Colors.white
-              : _textColor(type),
-        );
-      },
-    );
-  }
-
-  Color _color(ShiftType type) {
-    switch (type) {
-      case ShiftType.open:
-        return const Color(0xffDCEEFF);
-
-      case ShiftType.middle:
-        return const Color(0xffE7E0FF);
-
-      case ShiftType.close:
-        return const Color(0xffDDF8D7);
-    }
-  }
-
-  Color _textColor(ShiftType type) {
-    switch (type) {
-      case ShiftType.open:
-        return const Color(0xff2D5BD1);
-
-      case ShiftType.middle:
-        return const Color(0xff6A5BEA);
-
-      case ShiftType.close:
-        return const Color(0xff2AA85A);
-    }
+      return _shift(
+        day: day,
+        start: start,
+        end: end,
+        dayWidth: dayWidth,
+        color: shift.shortage ? Colors.redAccent : _bgColor(rowIndex),
+        text: shift.shortage
+            ? "${shift.workers.join('\n')}\n(${shift.shortageCount}명 부족)"
+            : shift.workers.join('\n'),
+        textColor: shift.shortage ? Colors.white : _txtColor(rowIndex),
+      );
+    });
   }
 }
 

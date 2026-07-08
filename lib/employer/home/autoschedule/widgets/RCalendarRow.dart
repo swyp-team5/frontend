@@ -14,17 +14,16 @@ class RCalendarRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     final now = DateTime.now();
 
     final nextMonday = DateTime(
-      now.year, now.month, now.day,).add(Duration(days: 8 - now.weekday));
+      now.year, now.month, now.day,
+    ).add(Duration(days: 8 - now.weekday));
 
     final weekDays = List.generate(
       7,
           (index) => nextMonday.add(Duration(days: index)),
     );
-
 
     return Material(
       color: Colors.white,
@@ -81,24 +80,15 @@ class RCalendarRow extends StatelessWidget {
 
               const Divider(),
 
-              RShiftRow(
-                title: "오픈",
-                counts: scenario.open,
-              ),
-
-              const Divider(),
-
-              RShiftRow(
-                title: "미들",
-                counts: scenario.middle,
-              ),
-
-              const Divider(),
-
-              RShiftRow(
-                title: "마감",
-                counts: scenario.close,
-              ),
+              // ⭐ 고정 3줄 대신, scenario.rows 개수만큼 동적으로 렌더링
+              for (int i = 0; i < scenario.rows.length; i++) ...[
+                RShiftRow(
+                  title: scenario.rows[i].title,
+                  counts: scenario.rows[i].counts,
+                  colorIndex: i,
+                ),
+                if (i != scenario.rows.length - 1) const Divider(),
+              ],
             ],
           ),
         ),
