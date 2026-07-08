@@ -290,7 +290,7 @@ class _RScheduleEditPageState extends State<RScheduleEditPage> {
                                 width: 5,
                                 height: 50,
                                 decoration: BoxDecoration(
-                                  color: roleColor(shift.role),
+                                  color: roleColor(shift.timeName),
                                   borderRadius:
                                   BorderRadius.circular(999),
                                 ),
@@ -304,7 +304,7 @@ class _RScheduleEditPageState extends State<RScheduleEditPage> {
                                   CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      "${shift.role} "
+                                      "${shift.timeName} "
                                           "${shift.startTime} - ${shift.endTime}",
                                       style: const TextStyle(
                                         fontSize: 13,
@@ -331,7 +331,7 @@ class _RScheduleEditPageState extends State<RScheduleEditPage> {
                                     context,
                                     MaterialPageRoute(
                                       builder: (_) => RWorkingDetailEditPage(
-                                        role: shift.role,
+                                        role: shift.timeName,
                                         startTime: shift.startTime,
                                         endTime: shift.endTime,
                                         breakTime: shift.breakTime,
@@ -361,7 +361,7 @@ class _RScheduleEditPageState extends State<RScheduleEditPage> {
 
                                       // 수정된 그룹 생성
                                       final updatedShift = RScheduleShift(
-                                        role: result.role,
+                                        timeName: result.role,
                                         startTime: result.startTime,
                                         endTime: result.endTime,
                                         breakTime: result.breakTime,

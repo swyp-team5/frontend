@@ -10,10 +10,25 @@ class RScheduleWorker {
   });
 }
 
+int breakTimeLabelToMinutes(String label) {
+  switch (label) {
+    case "없음":
+      return 0;
+    case "30분":
+      return 30;
+    case "1시간":
+      return 60;
+    case "1시간 30분":
+      return 90;
+    default:
+      return 0;
+  }
+}
+
 class RScheduleShift {
   String startTime;
   String endTime;
-  String role;
+  String timeName;
   String breakTime;
   final int required;  // 필요한 인원
   final List<RScheduleWorker> workers;  // 실제 근무 가능한 직원
@@ -22,7 +37,7 @@ class RScheduleShift {
   RScheduleShift({
     required this.startTime,
     required this.endTime,
-    required this.role,
+    required this.timeName,
     this.breakTime = "없음",
     required this.required,
     required this.workers,
@@ -261,7 +276,7 @@ class _WorkerScheduleArea extends StatelessWidget {
       return const SizedBox();
     }
 
-    // ⭐ role 대신 colorIndex를 같이 들고 다님
+    // role 대신 colorIndex를 같이 들고 다님
     final allWorkers = <(RScheduleWorker, int)>[];
 
     for (final shift in workers) {

@@ -203,8 +203,8 @@ class RWeekGrid extends StatelessWidget {
                               final Map<String, List<RScheduleShift>> grouped = {};
 
                               for (final shift in shifts) {
-                                grouped.putIfAbsent(shift.role, () => []);
-                                grouped[shift.role]!.add(shift);
+                                grouped.putIfAbsent(shift.timeName, () => []);
+                                grouped[shift.timeName]!.add(shift);
                               }
 
                               return grouped.entries.map((entry) {

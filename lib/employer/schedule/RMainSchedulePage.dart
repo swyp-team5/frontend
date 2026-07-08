@@ -99,19 +99,6 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
     return "${parts[0]}:${parts[1]}";
   }
 
-  int _colorIndexForRole(String role) {
-    switch (role) {
-      case "오픈":
-        return 0;
-      case "미들":
-        return 1;
-      case "마감":
-        return 2;
-      default:
-        return 3; // 그 외 역할은 기본 회색 처리
-    }
-  }
-
   Map<String, List<RScheduleShift>> _mapConfirmedSchedules(
       ConfirmedSchedulesResponse response) {
     final Map<String, List<RScheduleShift>> result = {};
@@ -121,7 +108,7 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
         return RScheduleShift(
           startTime: _formatHHmm(detail.startTime),
           endTime: _formatHHmm(detail.closeTime),
-          role: detail.timeName,
+          timeName: detail.timeName,
           breakTime: detail.restTime > 0 ? "${detail.restTime}분" : "없음",
           required: detail.workers.length,
           workers: detail.workers
@@ -304,7 +291,7 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                                     RScheduleShift(
                                       startTime: schedule.startTime,
                                       endTime: schedule.endTime,
-                                      role: schedule.workName,
+                                      timeName: schedule.workName,
                                       breakTime: schedule.breakTime,
                                       required: schedule.workers.length,
                                       workers: schedule.workers

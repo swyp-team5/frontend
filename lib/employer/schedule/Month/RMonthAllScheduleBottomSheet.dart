@@ -179,7 +179,7 @@ class _RMonthAllScheduleBottomSheetState
                         CrossAxisAlignment.start,
                         children: [
                           Text(
-                            "${shift.role} ${shift.startTime} - ${shift.endTime}",
+                            "${shift.timeName} ${shift.startTime} - ${shift.endTime}",
                             style: const TextStyle(
                               fontSize: 14,
                               color: Color(0xFF767676),
@@ -228,7 +228,7 @@ class _RMonthAllScheduleBottomSheetState
                           context,
                           MaterialPageRoute(
                             builder: (_) => RWorkingDetailEditPage(
-                              role: shift.role,
+                              role: shift.timeName,
                               startTime: shift.startTime,
                               endTime: shift.endTime,
                               breakTime: shift.breakTime,
@@ -254,11 +254,11 @@ class _RMonthAllScheduleBottomSheetState
                             widget.schedules.putIfAbsent(newKey, () => []);
 
                             final updatedShift = RScheduleShift(
-                              role: result.role,
+                              timeName: result.role,
                               startTime: result.startTime,
                               endTime: result.endTime,
                               breakTime: result.breakTime,
-                              colorIndex: shift.colorIndex,
+                              colorIndex: shift.colorIndex, // 기존 colorIndex 유지 (동적 배정된 값)
                               required: shift.required, // 기존 필요인원 유지
                               workers: result.workers
                                   .map((e) => RScheduleWorker(name: e))
@@ -293,7 +293,7 @@ class _RMonthAllScheduleBottomSheetState
                         return RDeleteWorkingBottomSheet(
                           works: groups.map((shift) {
                             return DeleteWorkItem(
-                              role: shift.role,
+                              role: shift.timeName,
                               startTime: shift.startTime,
                               endTime: shift.endTime,
                               workers: shift.workers
@@ -344,24 +344,27 @@ class _RMonthAllScheduleBottomSheetState
     );
   }
 
+  /// colorIndex(0~3)에 대응하는 색상 팔레트.
+  /// ⚠️ RMainSchedulePage의 _colorIndexForTimeName()에서 배정하는 순서/개수(_colorCount)와
+  /// 반드시 일치해야 합니다.
+  static const List<Color> _shiftColors = [
+    Color(0xFFBFE1FF), // 0
+    Color(0xFFD8D1FE), // 1
+    Color(0xFFACFBC1), // 2
+    Color(0xFFBDBDBD), // 3
+  ];
+
   Color _workerColor(RScheduleShift shift) {
-    // 부족하면 빨간색
+    // 부족하면 빨간색이 최우선
     if (shift.shortage) {
       return const Color(0xFFFF5D5D);
     }
 
-    switch (shift.role) {
-      case "오픈":
-        return const Color(0xFFBFE1FF);
-
-      case "미들":
-        return const Color(0xFFD8D1FE);
-
-      case "마감":
-        return const Color(0xFFACFBC1);
-
-      default:
-        return const Color(0xFFBDBDBD);
-    }
+    // "오픈"/"미들"/"마감" 같은 role 문자열 매칭 대신,
+    // 상위(RMainSchedulePage)에서 timeName 기준으로 동적 배정한
+    // colorIndex를 사용합니다. role은 이제 API의 timeName(자유 텍스트)이라
+    // 문자열 switch로는 매칭이 안 되기 때문입니다.
+    final index = shift.colorIndex % _shiftColors.length;
+    return _shiftColors[index];
   }
 }
