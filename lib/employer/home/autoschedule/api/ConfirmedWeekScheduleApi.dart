@@ -1,13 +1,11 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/cupertino.dart';
 import '../../../../common/auth/server_token_manager.dart';
 import '../models/ConfirmedWeekScheduleResponse.dart';
 
 class ConfirmedWeekScheduleApi {
-  static final Dio _dio = Dio(
-    BaseOptions(baseUrl: "https://chackchack.shop"),
-  );
+  static const _baseUrl = "https://chackchack.shop";
 
+  /// 시안 확정
   /// POST /api/work-places/{workPlaceId}/week-schedules/{weekScheduleId}/confirmed-week-schedules
   static Future<ConfirmedWeekScheduleResponse> confirm({
     required int workPlaceId,
@@ -16,47 +14,30 @@ class ConfirmedWeekScheduleApi {
     required int schedulePreviewId,
     required int selectedCandidateNo,
   }) async {
-    final url =
-        "/api/work-places/$workPlaceId/week-schedules/$weekScheduleId/confirmed-week-schedules";
-
-    final requestBody = {
-      "scheduleGenerationRunId": scheduleGenerationRunId,
-      "schedulePreviewId": schedulePreviewId,
-      "selectedCandidateNo": selectedCandidateNo,
-    };
-
-    debugPrint("📤 [ConfirmedWeekScheduleApi] 요청 URL: ${_dio.options.baseUrl}$url");
-    debugPrint("📤 [ConfirmedWeekScheduleApi] 요청 body: $requestBody");
-
     final token = await ServerTokenManager.getAccessToken();
 
+    if (token == null || token.isEmpty) {
+      throw Exception("인증이 필요합니다. 다시 로그인해주세요.");
+    }
+
+    final dio = Dio();
+
     try {
-      final response = await _dio.post(
-        url,
-        options: Options(
-          headers: {
-            "Authorization": "Bearer $token",
-            "Content-Type": "application/json",
-          },
-        ),
-        data: requestBody,
+      final res = await dio.post(
+        "$_baseUrl/api/work-places/$workPlaceId/week-schedules/$weekScheduleId/confirmed-week-schedules",
+        data: {
+          "scheduleGenerationRunId": scheduleGenerationRunId,
+          "schedulePreviewId": schedulePreviewId,
+          "selectedCandidateNo": selectedCandidateNo,
+        },
+        options: Options(headers: {"Authorization": "Bearer $token"}),
       );
 
-      debugPrint("🟢 [ConfirmedWeekScheduleApi] 성공 — statusCode: ${response.statusCode}");
-      debugPrint("🟢 [ConfirmedWeekScheduleApi] 응답 body: ${response.data}");
-
-      return ConfirmedWeekScheduleResponse.fromJson(response.data);
+      return ConfirmedWeekScheduleResponse.fromJson(res.data);
     } on DioException catch (e) {
-      debugPrint("🔴 [ConfirmedWeekScheduleApi] 실패 — statusCode: ${e.response?.statusCode}");
-      debugPrint("🔴 [ConfirmedWeekScheduleApi] 실패 — 응답 body: ${e.response?.data}");
-
       final message =
       e.response?.data is Map ? e.response?.data["message"] : null;
-      throw Exception(message ?? "스케줄 확정 실패 (${e.response?.statusCode})");
-    } catch (e, stackTrace) {
-      debugPrint("🔴 [ConfirmedWeekScheduleApi] 알 수 없는 예외: $e");
-      debugPrint("🔴 [ConfirmedWeekScheduleApi] 스택트레이스: $stackTrace");
-      rethrow;
+      throw Exception(message ?? "시안 확정 실패 (${e.response?.statusCode})");
     }
   }
 }

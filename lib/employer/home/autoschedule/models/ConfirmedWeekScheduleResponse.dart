@@ -17,12 +17,12 @@ class ConfirmedWeekScheduleResponse {
 
   factory ConfirmedWeekScheduleResponse.fromJson(Map<String, dynamic> json) {
     return ConfirmedWeekScheduleResponse(
-      confirmedWeekScheduleId: json['confirmedWeekScheduleId'] as int,
-      workPlaceId: json['workPlaceId'] as int,
-      weekScheduleId: json['weekScheduleId'] as int,
-      selectedCandidateNo: json['selectedCandidateNo'] as int,
-      assignmentCount: json['assignmentCount'] as int,
-      status: json['status'] as String,
+      confirmedWeekScheduleId: json['confirmedWeekScheduleId'] ?? 0,
+      workPlaceId: json['workPlaceId'] ?? 0,
+      weekScheduleId: json['weekScheduleId'] ?? 0,
+      selectedCandidateNo: json['selectedCandidateNo'] ?? 0,
+      assignmentCount: json['assignmentCount'] ?? 0,
+      status: json['status'] ?? '',
     );
   }
 }

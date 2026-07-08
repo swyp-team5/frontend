@@ -267,12 +267,13 @@ class _RSelectAutoSchedulePageState extends State<RSelectAutoSchedulePage> {
                 ),
               )
                   : RWeekCalendar(
-                scenarios: scenarios,
-                selectedIndex: selectedScenario,
-                onSelect: (index) {
-                  setState(() => selectedScenario = index);
-                },
-              ),
+              scenarios: scenarios,
+              selectedIndex: selectedScenario,
+              preview: widget.preview,
+              onSelect: (index) {
+                setState(() => selectedScenario = index);
+              },
+            ),
             ),
           ],
         ),
