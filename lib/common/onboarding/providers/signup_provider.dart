@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../api/signup_api.dart';
+import '../../auth/model/social_auth_models.dart' as auth;
 import '../../auth/server_token_manager.dart';
 import '../models/signup_request.dart';
 
@@ -12,13 +13,26 @@ StateNotifierProvider<SignupNotifier, SignupRequest>(
 );
 
 class SignupNotifier extends StateNotifier<SignupRequest> {
-  SignupNotifier() : super(SignupRequest()) {
-    print("SignupNotifier 생성됨 : ${identityHashCode(this)}");
-  }
+  SignupNotifier() : super(SignupRequest());
 
   //----------------------------------------
   // 소셜 로그인
   //----------------------------------------
+
+  void prepareSocialSignup(auth.SocialCredential credential) {
+    state = SignupRequest()
+      ..provider = switch (credential.provider) {
+        auth.SocialAuthProvider.google => SocialProvider.GOOGLE,
+        auth.SocialAuthProvider.kakao => SocialProvider.KAKAO,
+      }
+      ..idToken = credential.idToken
+      ..accessToken = credential.accessToken
+      ..device = DeviceModel(
+        deviceId: credential.device.deviceId,
+        platform: credential.device.platform,
+        appVersion: credential.device.appVersion,
+      );
+  }
 
   void setProvider(SocialProvider provider) {
     state.provider = provider;
