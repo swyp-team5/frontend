@@ -3,12 +3,13 @@ import 'dart:convert';
 import 'package:chack_chack/employer/mypage/RMyPage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../mypage/api/profile_api.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
+import '../../common/workplace/selected_work_place_storage.dart';
 
 import '../home/RHomePage.dart';
+import 'RCrewInvitationHistoryPage.dart';
 import 'RCrewDetailPage.dart';
 import 'model/RCrewModel.dart';
 
@@ -50,9 +51,7 @@ class _RCrewPageState extends State<RCrewPage> {
         isCreatingInvitation = true;
       });
 
-      final prefs = await SharedPreferences.getInstance();
-
-      final workPlaceId = prefs.getInt("selectedWorkPlaceId");
+      final workPlaceId = await SelectedWorkPlaceStorage.load();
 
       if (workPlaceId == null) {
         throw Exception("workPlaceId 없음");
@@ -83,6 +82,10 @@ class _RCrewPageState extends State<RCrewPage> {
       });
     } on DioException catch (e) {
       debugPrint(e.response?.data.toString());
+
+      if (!mounted) {
+        return;
+      }
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -270,6 +273,10 @@ class _RCrewPageState extends State<RCrewPage> {
                         ),
                       );
 
+                      if (!context.mounted) {
+                        return;
+                      }
+
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('링크와 초대 코드가 복사되었습니다.'),
@@ -336,10 +343,8 @@ class _RCrewPageState extends State<RCrewPage> {
 
   Future<void> _loadCrews() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-
       final workPlaceId =
-      prefs.getInt("selectedWorkPlaceId");
+      await SelectedWorkPlaceStorage.load();
 
       if (workPlaceId == null) {
         debugPrint("workPlaceId 없음");
@@ -433,18 +438,41 @@ class _RCrewPageState extends State<RCrewPage> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  IconButton(
-                    onPressed: () async {
-                      await _createCrewInvitation();
+                  Row(
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                              const RCrewInvitationHistoryPage(),
+                            ),
+                          );
+                        },
+                        icon: const Icon(
+                          Icons.history,
+                          size: 28,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () async {
+                          await _createCrewInvitation();
 
-                      if (inviteCode.isNotEmpty) {
-                        _showInviteBottomSheet(context);
-                      }
-                    },
-                    icon: const Icon(
-                      Icons.person_add_alt_1,
-                      size: 30,
-                    ),
+                          if (!mounted || !context.mounted) {
+                            return;
+                          }
+
+                          if (inviteCode.isNotEmpty) {
+                            _showInviteBottomSheet(context);
+                          }
+                        },
+                        icon: const Icon(
+                          Icons.person_add_alt_1,
+                          size: 30,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -540,18 +568,24 @@ class _RCrewPageState extends State<RCrewPage> {
                     return RCrewCard(
                       crew: crew,
                       onTap: () async {
-                        final updatedCrew = await Navigator.push<RCrewModel>(
+                        final result = await Navigator.push<dynamic>(
                           context,
                           MaterialPageRoute(
                             builder: (_) => RCrewDetailPage(crew: crew),
                           ),
                         );
 
-                        if (updatedCrew != null) {
+                        if (!mounted) {
+                          return;
+                        }
+
+                        if (result == true) {
+                          await _loadCrews();
+                        } else if (result is RCrewModel) {
                           setState(() {
                             final index = crews.indexOf(crew);
                             if (index != -1) {
-                              crews[index] = updatedCrew;
+                              crews[index] = result;
                             }
                           });
                         }

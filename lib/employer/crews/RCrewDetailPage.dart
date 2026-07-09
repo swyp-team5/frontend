@@ -1,6 +1,8 @@
 import 'package:chack_chack/employer/crews/widgets/RInfoSectionCard.dart';
 import 'package:flutter/material.dart';
 
+import '../../common/workplace/selected_work_place_storage.dart';
+import 'api/crew_invitation_api.dart';
 import 'bottom_sheets/EmploymentStatusBottomSheet.dart';
 import 'bottom_sheets/EmploymentYearMonthBottomSheet.dart';
 import 'bottom_sheets/TagBottomSheet.dart';
@@ -25,6 +27,8 @@ class RCrewDetailPage extends StatefulWidget {
 class _RCrewDetailPageState extends State<RCrewDetailPage> {
 
   bool isEditMode = false;
+  bool isDeleting = false;
+  final CrewInvitationApi _crewInvitationApi = CrewInvitationApi();
 
 
   final TextEditingController tagController = TextEditingController();
@@ -48,6 +52,70 @@ class _RCrewDetailPageState extends State<RCrewDetailPage> {
     super.initState();
   }
 
+  Future<void> _deleteWorkerCrew() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('근무자 삭제'),
+        content: Text('${widget.crew.name} 근무자를 삭제하시겠어요?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('취소'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              '삭제',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() {
+      isDeleting = true;
+    });
+
+    try {
+      final workPlaceId = await SelectedWorkPlaceStorage.load();
+      if (workPlaceId == null) {
+        throw Exception('선택된 매장이 없어요.');
+      }
+
+      await _crewInvitationApi.deleteWorkerCrew(
+        workPlaceId: workPlaceId,
+        crewId: widget.crew.crewId,
+      );
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('근무자가 삭제되었어요.')),
+      );
+      Navigator.pop(context, true);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_messageFromError(e, '근무자 삭제에 실패했어요.'))),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          isDeleting = false;
+        });
+      }
+    }
+  }
+
+  String _messageFromError(Object error, String fallback) {
+    final text = error.toString();
+    if (text.startsWith('Exception: ')) {
+      return text.replaceFirst('Exception: ', '');
+    }
+    return fallback;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -195,11 +263,28 @@ class _RCrewDetailPageState extends State<RCrewDetailPage> {
                   arrowIndexes: const [],
                   items: [
                     ['이름', widget.crew.name],
-                    ['휴대폰 번호', ''],
+                    ['휴대폰 번호', widget.crew.phoneNumber],
                   ],
                 ),
 
                 const SizedBox(height: 16),
+
+                if (widget.crew.crewRole == "WORKER")
+                  SizedBox(
+                    width: double.infinity,
+                    height: 54,
+                    child: OutlinedButton(
+                      onPressed: isDeleting ? null : _deleteWorkerCrew,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        side: const BorderSide(color: Color(0xFFE0E0E0)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(isDeleting ? '삭제 중...' : '근무자 삭제'),
+                    ),
+                  ),
 
               ],
             ),
