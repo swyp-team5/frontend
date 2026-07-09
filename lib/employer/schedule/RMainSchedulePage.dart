@@ -119,6 +119,8 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
     for (final day in response.days) {
       final shifts = day.timeDetails.map((detail) {
         return RScheduleShift(
+          timeDetailId: detail.timeDetailId,
+          workPartNo: detail.workPartNo,
           startTime: _formatHHmm(detail.startTime),
           endTime: _formatHHmm(detail.closeTime),
           timeName: detail.timeName,
@@ -301,6 +303,7 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                                   workPlaceId: widget.workPlaceId,
                                   selectedDate: selectedDate,
                                   schedules: allSchedules,
+                                  confirmedWeekScheduleId: confirmedWeekScheduleId!,
                                 ),
                               ),
                             );
@@ -437,6 +440,7 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                           workPlaceId: widget.workPlaceId,
                           selectedDate: selectedDate,
                           schedules: allSchedules,
+                          confirmedWeekScheduleId: confirmedWeekScheduleId,
                           onDateChanged: (date) {
                             setState(() {
                               selectedDate = date;

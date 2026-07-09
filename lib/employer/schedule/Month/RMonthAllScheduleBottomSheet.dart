@@ -10,6 +10,8 @@ class RMonthAllScheduleBottomSheet extends StatefulWidget {
   final List<RScheduleShift> workers;
   final Map<String, List<RScheduleShift>> schedules;
   final int workPlaceId;
+  final int? confirmedWeekScheduleId;
+
 
   const RMonthAllScheduleBottomSheet({
     super.key,
@@ -17,6 +19,7 @@ class RMonthAllScheduleBottomSheet extends StatefulWidget {
     required this.workers,
     required this.schedules,
     required this.workPlaceId,
+    required this.confirmedWeekScheduleId,
   });
 
   @override
@@ -236,6 +239,9 @@ class _RMonthAllScheduleBottomSheetState
                               breakTime: shift.breakTime,
                               date: widget.date,
                               workPlaceId: widget.workPlaceId,
+                              confirmedWeekScheduleId: widget.confirmedWeekScheduleId!,
+                              timeDetailId: shift.timeDetailId,
+                              workPartNo: shift.workPartNo,
                               workers: shift.workers
                                   .map(
                                     (e) => WorkerItem(
@@ -263,12 +269,14 @@ class _RMonthAllScheduleBottomSheetState
                             widget.schedules.putIfAbsent(newKey, () => []);
 
                             final updatedShift = RScheduleShift(
+                              timeDetailId: shift.timeDetailId,
+                              workPartNo: shift.workPartNo,
                               timeName: result.role,
                               startTime: result.startTime,
                               endTime: result.endTime,
                               breakTime: result.breakTime,
-                              colorIndex: shift.colorIndex, // 기존 colorIndex 유지 (동적 배정된 값)
-                              required: shift.required, // 기존 필요인원 유지
+                              colorIndex: shift.colorIndex,
+                              required: shift.required,
                               workers: result.workers
                                   .map(
                                     (e) => RScheduleWorker(

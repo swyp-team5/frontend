@@ -3,6 +3,8 @@ import 'package:dio/dio.dart';
 import '../../../../common/auth/server_token_manager.dart';
 import '../models/AssignmentCreateRequest.dart';
 import '../models/AssignmentCreateResponse.dart';
+import '../models/AssignmentUpdateResponse.dart';
+import '../models/class AssignmentUpdateRequest.dart';
 
 class AssignmentApi {
   static const _baseUrl = "https://chackchack.shop";
@@ -39,6 +41,44 @@ class AssignmentApi {
 
       throw Exception(
         message ?? "근무 추가 실패 (${e.response?.statusCode})",
+      );
+    }
+  }
+
+  /// PUT /api/work-places/{workPlaceId}/confirmed-week-schedules/{confirmedWeekScheduleId}/time-details/{timeDetailId}/assignments
+  static Future<AssignmentUpdateResponse> update({
+    required int workPlaceId,
+    required int confirmedWeekScheduleId,
+    required int timeDetailId,
+    required AssignmentUpdateRequest request,
+  }) async {
+    final token = await ServerTokenManager.getAccessToken();
+
+    if (token == null || token.isEmpty) {
+      throw Exception("로그인이 필요합니다.");
+    }
+
+    final dio = Dio();
+
+    try {
+      final response = await dio.put(
+        "$_baseUrl/api/work-places/$workPlaceId/confirmed-week-schedules/$confirmedWeekScheduleId/time-details/$timeDetailId/assignments",
+        data: request.toJson(),
+        options: Options(
+          headers: {
+            "Authorization": "Bearer $token",
+          },
+        ),
+      );
+
+      return AssignmentUpdateResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      final message = e.response?.data is Map
+          ? e.response?.data["message"]
+          : null;
+
+      throw Exception(
+        message ?? "근무 수정 실패 (${e.response?.statusCode})",
       );
     }
   }
