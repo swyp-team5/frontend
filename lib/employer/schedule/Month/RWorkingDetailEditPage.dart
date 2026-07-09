@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../REditCalendarBottomSheet.dart';
 import '../RScheduleEditPage.dart';
 import '../api/AssignmentApi.dart';
+import '../api/ConfirmedSchedulesApi.dart';
 import '../models/WorkersResponse.dart';
 import '../models/class AssignmentUpdateRequest.dart';
 import '../widgets/WorkerBottomSheet.dart';
@@ -127,6 +128,60 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
         "${date.day.toString().padLeft(2, '0')}";
   }
 
+  /// 선택한 날짜(date)의 기존 확정 근무표를 조회해서
+  /// 같은 timeName이 이미 있으면 그 workPartNo를 재사용하고,
+  /// 없으면 새로운 workPartNo(기존 최댓값 + 1)를 부여한다.
+  /// 단, 지금 수정 중인 항목(widget.timeDetailId) 자신은 비교 대상에서 제외한다.
+  Future<int> _resolveWorkPartNo({
+    required DateTime date,
+    required String timeName,
+  }) async {
+    try {
+      final response = await ConfirmedSchedulesApi.getConfirmedSchedules(
+        workPlaceId: widget.workPlaceId,
+        from: date,
+        to: date,
+      );
+
+      final targetDate = _formatDate(date);
+
+      final matchedDays =
+      response.days.where((d) => d.workDate == targetDate).toList();
+
+      if (matchedDays.isEmpty || matchedDays.first.timeDetails.isEmpty) {
+        return 1;
+      }
+
+      // 자기 자신(widget.timeDetailId)은 제외하고 비교
+      final timeDetails = matchedDays.first.timeDetails
+          .where((t) => t.timeDetailId != widget.timeDetailId)
+          .toList();
+
+      if (timeDetails.isEmpty) {
+        return 1;
+      }
+
+      // 같은 timeName이 이미 있으면 그 workPartNo 재사용
+      final existing =
+      timeDetails.where((t) => t.timeName == timeName).toList();
+
+      if (existing.isNotEmpty) {
+        return existing.first.workPartNo;
+      }
+
+      // 없으면 기존 workPartNo 중 최댓값 + 1
+      final maxPartNo = timeDetails
+          .map((t) => t.workPartNo)
+          .reduce((a, b) => a > b ? a : b);
+
+      return maxPartNo + 1;
+    } catch (e) {
+      debugPrint("[_resolveWorkPartNo] 조회 실패: $e");
+      // 조회 실패 시 기존에 전달받은 workPartNo로 폴백
+      return widget.workPartNo;
+    }
+  }
+
   Future<void> _showSelectSheet({
     required String title,
     required List<String> items,
@@ -219,9 +274,14 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
       _isSubmitting = true;
     });
 
+    final workPartNo = await _resolveWorkPartNo(
+      date: selectedDate,
+      timeName: selectedWorkType,
+    );
+
     final request = AssignmentUpdateRequest(
       workDate: _formatDate(selectedDate),
-      workPartNo: widget.workPartNo,
+      workPartNo: workPartNo,
       timeName: selectedWorkType,
       startTime: selectedStartTime,
       closeTime: selectedEndTime,

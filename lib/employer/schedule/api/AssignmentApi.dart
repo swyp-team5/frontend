@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../../../common/auth/server_token_manager.dart';
 import '../models/AssignmentCreateRequest.dart';
@@ -35,6 +36,9 @@ class AssignmentApi {
 
       return AssignmentCreateResponse.fromJson(response.data);
     } on DioException catch (e) {
+      debugPrint("🔴 [AssignmentApi.create] status = ${e.response?.statusCode}");
+      debugPrint("🔴 [AssignmentApi.create] full response = ${e.response?.data}");
+
       final message = e.response?.data is Map
           ? e.response?.data["message"]
           : null;
@@ -73,6 +77,12 @@ class AssignmentApi {
 
       return AssignmentUpdateResponse.fromJson(response.data);
     } on DioException catch (e) {
+      debugPrint("🔴 [AssignmentApi.update] status = ${e.response?.statusCode}");
+      debugPrint("🔴 [AssignmentApi.update] full response = ${e.response?.data}");
+      debugPrint("🔴 [AssignmentApi.update] request path = "
+          "/api/work-places/$workPlaceId/confirmed-week-schedules/$confirmedWeekScheduleId"
+          "/time-details/$timeDetailId/assignments");
+
       final message = e.response?.data is Map
           ? e.response?.data["message"]
           : null;
