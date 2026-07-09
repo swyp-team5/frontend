@@ -22,6 +22,7 @@ import '../../../common/widgets/BottomNavBar.dart';
 import '../crews/RCrewPage.dart';
 import '../mypage/RMyPage.dart';
 import '../mypage/RTodayWorkingPage.dart';
+import '../mypage/RWorkPlaceSettingPage.dart';
 import '../schedule/RMainSchedulePage.dart';
 import 'api/SubmitStatusApi.dart';
 
@@ -211,6 +212,35 @@ class _RHomePageState extends State<RHomePage> {
                     }),
 
                     const SizedBox(height: 20),
+
+                    /// 매장 설정 이동 버튼
+                    Align(
+                      alignment: Alignment.center,
+                      child: GestureDetector(
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const RWorkPlaceSettingPage(),
+                            ),
+                          );
+                        },
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 4),
+                          child: Text(
+                            "매장 설정 >",
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                              color: Color(0xFF767676),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
 
                     SizedBox(
                       width: double.infinity,
