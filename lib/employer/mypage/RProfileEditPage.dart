@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:photo_manager/photo_manager.dart';
 
 import '../../common/auth/server_token_manager.dart';
+import 'RWorkPlaceSettingPage.dart';
 import 'api/profile_api.dart';
 import 'package:dio/dio.dart';
 
@@ -967,8 +968,12 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
 
           InkWell(
             onTap: () {
-              // TODO : 매장 설정 페이지 이동
-              // Navigator.push(...)
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const RWorkPlaceSettingPage(),
+                ),
+              );
             },
             child: const Row(
               children: [

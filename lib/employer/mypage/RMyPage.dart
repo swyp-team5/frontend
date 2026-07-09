@@ -1,10 +1,11 @@
 import 'package:chack_chack/employer/home/RHomePage.dart';
 import 'package:chack_chack/employer/mypage/RProfileEditPage.dart';
 import 'package:chack_chack/employer/mypage/RTodayWorkingPage.dart';
+import 'package:chack_chack/employer/mypage/RWorkPlaceSettingPage.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
+import '../../common/workplace/selected_work_place_storage.dart';
 import '../crews/RCrewPage.dart';
 import '../schedule/RMainSchedulePage.dart';
 
@@ -64,15 +65,30 @@ class _RMyPageState extends State<RMyPage> {
       );
 
       final List list = response.data["workPlaces"];
+      final loadedStores = List<Map<String, dynamic>>.from(list);
+      final storedWorkPlaceId = await SelectedWorkPlaceStorage.load();
+
+      Map<String, dynamic>? selectedStore;
+      if (loadedStores.isNotEmpty) {
+        selectedStore = loadedStores.firstWhere(
+          (store) => store["workPlaceId"] == storedWorkPlaceId,
+          orElse: () => loadedStores.first,
+        );
+        await SelectedWorkPlaceStorage.save(selectedStore["workPlaceId"]);
+      }
+
+      if (!mounted) {
+        return;
+      }
 
       setState(() {
-        stores = List<Map<String, dynamic>>.from(list);
+        stores = loadedStores;
 
-        if (stores.isNotEmpty) {
-          selectedWorkPlaceId = stores.first["workPlaceId"];
+        if (selectedStore != null) {
+          selectedWorkPlaceId = selectedStore["workPlaceId"];
 
-          RselectedStore = stores.first["name"];
-          RtempSelectedStore = stores.first["name"];
+          RselectedStore = selectedStore["name"];
+          RtempSelectedStore = selectedStore["name"];
         }
       });
     } catch (e) {
@@ -233,13 +249,14 @@ class _RMyPageState extends State<RMyPage> {
                       height: 56,
                       child: ElevatedButton(
                         onPressed: () async {
-                          final prefs = await SharedPreferences.getInstance();
-
                           // 선택한 매장 저장
-                          await prefs.setInt(
-                            "selected_work_place_id",
+                          await SelectedWorkPlaceStorage.save(
                             selectedWorkPlaceId!,
                           );
+
+                          if (!mounted || !context.mounted) {
+                            return;
+                          }
 
                           setState(() {
                             RselectedStore = RtempSelectedStore;
@@ -453,6 +470,19 @@ class _RMyPageState extends State<RMyPage> {
 
               _buildCard(
                 children: [
+                  _buildMenuRow(
+                    icon: Icons.storefront_outlined,
+                    title: "매장 설정",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const RWorkPlaceSettingPage(),
+                        ),
+                      ).then((_) => _loadWorkPlaces());
+                    },
+                  ),
+                  const Divider(height: 1, color: Color(0xFFF2F2F2)),
                   _buildMenuRow(
                     icon: Icons.send_outlined,
                     title: "받은 승인 내역",

@@ -13,8 +13,8 @@ import 'package:chack_chack/employer/home/widgets/RScheduleCard.dart';
 import 'package:chack_chack/employer/home/widgets/RTodayWorkCard.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../../common/auth/server_token_manager.dart';
+import '../../common/workplace/selected_work_place_storage.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
 import '../crews/RCrewPage.dart';
@@ -221,12 +221,13 @@ class _RHomePageState extends State<RHomePage> {
                                 tempSelectedWorkPlaceId,
                           );
 
-                          final prefs = await SharedPreferences.getInstance();
-
-                          await prefs.setInt(
-                            "selectedWorkPlaceId",
+                          await SelectedWorkPlaceStorage.save(
                             selectedStore["workPlaceId"],
                           );
+
+                          if (!mounted || !context.mounted) {
+                            return;
+                          }
 
                           setState(() {
                             selectedWorkPlaceId =
@@ -499,14 +500,29 @@ class _RHomePageState extends State<RHomePage> {
       debugPrint("=====================================");
 
       final List list = response.data["workPlaces"];
+      final loadedStores = List<Map<String, dynamic>>.from(list);
+      final storedWorkPlaceId = await SelectedWorkPlaceStorage.load();
+
+      Map<String, dynamic>? selectedStore;
+      if (loadedStores.isNotEmpty) {
+        selectedStore = loadedStores.firstWhere(
+          (store) => store["workPlaceId"] == storedWorkPlaceId,
+          orElse: () => loadedStores.first,
+        );
+        await SelectedWorkPlaceStorage.save(selectedStore["workPlaceId"]);
+      }
+
+      if (!mounted) {
+        return;
+      }
 
       setState(() {
-        stores = List<Map<String, dynamic>>.from(list);
+        stores = loadedStores;
         accessToken = token;
 
-        if (stores.isNotEmpty) {
-          selectedWorkPlaceId = stores.first["workPlaceId"];
-          selectedStoreName = stores.first["name"];
+        if (selectedStore != null) {
+          selectedWorkPlaceId = selectedStore["workPlaceId"];
+          selectedStoreName = selectedStore["name"];
 
           debugPrint("selectedWorkPlaceId = $selectedWorkPlaceId");
           debugPrint("selectedStoreName = $selectedStoreName");
