@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
-import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -24,35 +26,85 @@ class SocialProviderException implements Exception {
   String toString() => message;
 }
 
-class DeviceContextProvider {
-  final DeviceInfoPlugin deviceInfo;
+abstract class InstallationIdStore {
+  Future<String?> read();
 
-  DeviceContextProvider({DeviceInfoPlugin? deviceInfo})
-    : deviceInfo = deviceInfo ?? DeviceInfoPlugin();
+  Future<void> write(String installationId);
+}
+
+class SecureInstallationIdStore implements InstallationIdStore {
+  static const _key = 'social_installation_id';
+
+  final FlutterSecureStorage storage;
+
+  SecureInstallationIdStore({FlutterSecureStorage? storage})
+    : storage = storage ?? FlutterSecureStorage(aOptions: AndroidOptions());
+
+  @override
+  Future<String?> read() => storage.read(key: _key);
+
+  @override
+  Future<void> write(String installationId) {
+    return storage.write(key: _key, value: installationId);
+  }
+}
+
+class InstallationIdProvider {
+  final InstallationIdStore store;
+  final List<int> Function(int length) randomBytes;
+
+  Future<String>? _installationId;
+
+  InstallationIdProvider({
+    InstallationIdStore? store,
+    List<int> Function(int length)? randomBytes,
+  }) : store = store ?? SecureInstallationIdStore(),
+       randomBytes = randomBytes ?? _secureRandomBytes;
+
+  Future<String> load() {
+    return _installationId ??= _load();
+  }
+
+  Future<String> _load() async {
+    final existing = await store.read();
+    if (existing != null && existing.isNotEmpty) {
+      return existing;
+    }
+
+    final generated = base64UrlEncode(randomBytes(24)).replaceAll('=', '');
+    await store.write(generated);
+    return generated;
+  }
+
+  static List<int> _secureRandomBytes(int length) {
+    final random = Random.secure();
+    return List<int>.generate(length, (_) => random.nextInt(256));
+  }
+}
+
+class DeviceContextProvider {
+  final InstallationIdProvider installationIdProvider;
+
+  DeviceContextProvider({InstallationIdProvider? installationIdProvider})
+    : installationIdProvider =
+          installationIdProvider ?? InstallationIdProvider();
 
   Future<DevicePayload> load() async {
+    final platform = Platform.isAndroid
+        ? 'ANDROID'
+        : Platform.isIOS
+        ? 'IOS'
+        : null;
+    if (platform == null) {
+      throw const SocialProviderException('지원하지 않는 플랫폼이에요.');
+    }
+
     final packageInfo = await PackageInfo.fromPlatform();
-    if (Platform.isAndroid) {
-      final info = await deviceInfo.androidInfo;
-      return DevicePayload(
-        deviceId: info.id,
-        platform: 'ANDROID',
-        appVersion: packageInfo.version,
-      );
-    }
-    if (Platform.isIOS) {
-      final info = await deviceInfo.iosInfo;
-      final deviceId = info.identifierForVendor;
-      if (deviceId == null || deviceId.isEmpty) {
-        throw const SocialProviderException('기기 정보를 확인하지 못했어요.');
-      }
-      return DevicePayload(
-        deviceId: deviceId,
-        platform: 'IOS',
-        appVersion: packageInfo.version,
-      );
-    }
-    throw const SocialProviderException('지원하지 않는 플랫폼이에요.');
+    return DevicePayload(
+      deviceId: await installationIdProvider.load(),
+      platform: platform,
+      appVersion: packageInfo.version,
+    );
   }
 }
 
