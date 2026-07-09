@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:chack_chack/common/employer/RAutoScheduling.dart';
+import 'package:chack_chack/common/fcm/AlarmListPage.dart';
 import 'package:chack_chack/employer/home/notification/RNotificationPage.dart';
 import 'package:chack_chack/employer/home/schedule/RMakingSchedulePage.dart';
 import 'package:chack_chack/employer/home/schedule/RRecentSchedulePage.dart';
@@ -619,7 +620,7 @@ class _RHomePageState extends State<RHomePage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const RNotificationPage(),
+                      builder: (_) => const AlarmListPage(),
                     ),
                   );
                 },

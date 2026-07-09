@@ -9,6 +9,7 @@ import '../crews/RCrewPage.dart';
 import '../schedule/RMainSchedulePage.dart';
 
 import '../../../common/auth/server_token_manager.dart';
+import '../../common/fcm/api/NotificationSettingsApi.dart';
 import 'package:dio/dio.dart';
 import 'api/profile_api.dart';
 
@@ -42,6 +43,9 @@ class _RMyPageState extends State<RMyPage> {
 
   String RselectedStore = "";
   String RtempSelectedStore = "";
+
+  // 9.2.1 FCM 푸시 수신 여부 (서버 기본값과 동일하게 true로 시작, 로드되면 실제 값으로 갱신)
+  bool fcmPushEnabled = true;
 
   Future<void> _loadWorkPlaces() async {
     try {
@@ -279,6 +283,45 @@ class _RMyPageState extends State<RMyPage> {
 
     _loadWorkPlaces();
     _loadProfileName();
+    _loadNotificationSettings();
+  }
+
+  // 현재 푸시 수신 설정 조회
+  Future<void> _loadNotificationSettings() async {
+    try {
+      final settings = await NotificationSettingsApi.getSettings();
+
+      if (!mounted) return;
+
+      setState(() {
+        fcmPushEnabled = settings.fcmPushEnabled;
+      });
+    } catch (e) {
+      debugPrint("알림 설정 조회 실패: $e");
+    }
+  }
+
+  // 토글 탭 시 즉시 UI를 바꾸고(낙관적 업데이트), 서버 반영이 실패하면 되돌린다
+  Future<void> _toggleFcmPush(bool value) async {
+    setState(() {
+      fcmPushEnabled = value;
+    });
+
+    try {
+      await NotificationSettingsApi.updateSettings(fcmPushEnabled: value);
+    } catch (e) {
+      debugPrint("알림 설정 변경 실패: $e");
+
+      if (!mounted) return;
+
+      setState(() {
+        fcmPushEnabled = !value;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("알림 설정 변경에 실패했어요. 다시 시도해주세요.")),
+      );
+    }
   }
 
 
@@ -453,6 +496,23 @@ class _RMyPageState extends State<RMyPage> {
 
               const SizedBox(height: 32),
 
+              /// 알림 설정
+              _buildSectionTitle("알림 설정"),
+              const SizedBox(height: 14),
+
+              _buildCard(
+                children: [
+                  _buildSwitchRow(
+                    icon: Icons.notifications_none,
+                    title: "푸시 알림 받기",
+                    value: fcmPushEnabled,
+                    onChanged: _toggleFcmPush,
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 32),
+
               /// 고객 지원
               _buildSectionTitle("고객 지원"),
               const SizedBox(height: 14),
@@ -523,6 +583,42 @@ class _RMyPageState extends State<RMyPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// (아이콘, 제목, 스위치) 아이템 — _buildMenuRow와 달리 탭하면 다음 화면으로 이동하는 대신
+  /// 그 자리에서 값을 바로 켜고 끈다
+  Widget _buildSwitchRow({
+    required IconData icon,
+    required String title,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 20,
+        vertical: 12,
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 20),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          Switch(
+            value: value,
+            activeColor: const Color(0xFF0084FF),
+            onChanged: onChanged,
+          ),
+        ],
       ),
     );
   }

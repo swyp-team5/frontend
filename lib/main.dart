@@ -5,12 +5,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
+import 'package:firebase_core/firebase_core.dart';   // firebase(fcm) 알림설정 추가
+import 'firebase_options.dart'; // firebase(fcm) 알림설정 추가
 
 import 'employee/home/EHomePage.dart';
 
 void main() async {
   // Flutter 바인딩 초기화
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Firebase 초기화 (다른 초기화보다 먼저, 가장 위에)
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   // 한국어 로케일 데이터 초기화
   await initializeDateFormatting('ko_KR', null);
@@ -35,7 +42,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: RHomePage(),
+      home: OnboardingPage(),
     );
   }
 }

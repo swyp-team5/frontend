@@ -17,6 +17,7 @@ import '../../service/social_login_service.dart';
 import '../auth/server_token_manager.dart';
 import '../login/KakaoLoginService.dart';
 import 'models/signup_request.dart';
+import '../fcm/FcmSetupService.dart'; // FCM
 
 
 class OnboardingBottomSheet extends ConsumerWidget {
@@ -93,6 +94,13 @@ class OnboardingBottomSheet extends ConsumerWidget {
                         await ServerTokenManager.saveTokens(
                           accessToken: result["serverAccessToken"],
                           refreshToken: result["serverRefreshToken"],
+                        );
+
+                        // FCM 토큰 등록 (실패해도 로그인 흐름은 계속 진행)
+                        FcmSetupService.registerCurrentDevice(
+                          deviceId: result["deviceId"] ?? "",
+                          platform: result["platform"] ?? "",
+                          appVersion: result["appVersion"] ?? "",
                         );
                       }
 

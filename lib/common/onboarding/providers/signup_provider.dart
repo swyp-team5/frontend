@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../api/signup_api.dart';
 import '../../auth/server_token_manager.dart';
 import '../models/signup_request.dart';
+import '../../fcm/FcmSetupService.dart'; // FCM
 
 final signupProvider =
 StateNotifierProvider<SignupNotifier, SignupRequest>(
@@ -185,6 +186,14 @@ class SignupNotifier extends StateNotifier<SignupRequest> {
             accessToken: accessToken,
             refreshToken: refreshToken,
           );
+
+          // FCM 토큰 등록 (실패해도 가입 완료 흐름은 계속 진행)
+          FcmSetupService.registerCurrentDevice(
+            deviceId: state.device.deviceId ?? "",
+            platform: state.device.platform ?? "",
+            appVersion: state.device.appVersion ?? "",
+          );
+
           return true;
         }
         return false;
