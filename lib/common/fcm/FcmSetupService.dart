@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'api/FcmTokenApi.dart';
@@ -16,6 +17,32 @@ class FcmSetupService {
 
     try {
       await messaging.requestPermission();
+
+      if (Platform.isIOS) {
+        // iOS는 앱이 포그라운드일 때 기본적으로 알림 배너/사운드를 띄우지 않는다.
+        // 명시적으로 켜줘야 Android와 동일하게 포그라운드에서도 알림이 보인다.
+        await messaging.setForegroundNotificationPresentationOptions(
+          alert: true,
+          badge: true,
+          sound: true,
+        );
+
+        // iOS는 APNs 토큰이 먼저 발급돼야 FCM 토큰을 받을 수 있다.
+        // 앱 시작 직후엔 아직 APNs 토큰이 없을 수 있어서 잠깐 재시도하며 기다린다.
+        String? apnsToken = await messaging.getAPNSToken();
+        int retryCount = 0;
+
+        while (apnsToken == null && retryCount < 5) {
+          await Future.delayed(const Duration(seconds: 1));
+          apnsToken = await messaging.getAPNSToken();
+          retryCount++;
+        }
+
+        if (apnsToken == null) {
+          debugPrint("🔴 [FcmSetupService] APNs 토큰 발급 실패 — FCM 토큰 등록을 건너뜀");
+          return;
+        }
+      }
 
       final token = await messaging.getToken();
 
