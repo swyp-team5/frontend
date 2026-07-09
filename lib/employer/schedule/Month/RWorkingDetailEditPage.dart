@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
 import '../REditCalendarBottomSheet.dart';
-import '../REditSchedulePage.dart';
-import '../widgets/CalendarBottomSheet.dart';
+import '../RScheduleEditPage.dart';
+import '../api/AssignmentApi.dart';
+import '../models/WorkersResponse.dart';
+import '../models/class AssignmentUpdateRequest.dart';
 import '../widgets/WorkerBottomSheet.dart';
+import '../widgets/WorkingTImeInputBottomSheet.dart';
 
 /// 수정 결과 전달용 모델
 class WorkingEditResult {
@@ -12,7 +15,7 @@ class WorkingEditResult {
   final String endTime;
   final String breakTime;
   final DateTime date;
-  final List<String> workers;
+  final List<WorkerItem> workers;
 
   const WorkingEditResult({
     required this.role,
@@ -28,20 +31,29 @@ class RWorkingDetailEditPage extends StatefulWidget {
   final String role;
   final String startTime;
   final String endTime;
-  final List<String> workerNames;
+  final List<WorkerItem> workers;
   final String breakTime;
   final DateTime date;
+  final int workPlaceId;
+
+  /// PUT /confirmed-week-schedules/{confirmedWeekScheduleId}/time-details/{timeDetailId}/assignments 에 필요한 값
+  final int confirmedWeekScheduleId;
+  final int timeDetailId;
+  final int workPartNo;
 
   const RWorkingDetailEditPage({
     super.key,
     required this.role,
     required this.startTime,
     required this.endTime,
-    required this.workerNames,
+    required this.workers,
     required this.breakTime,
     required this.date,
+    required this.workPlaceId,
+    required this.confirmedWeekScheduleId,
+    required this.timeDetailId,
+    required this.workPartNo,
   });
-
 
   @override
   State<RWorkingDetailEditPage> createState() =>
@@ -54,16 +66,17 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
   late String selectedStartTime;
   late String selectedEndTime;
 
-  String selectedBreakTime = "30분";
+  late String selectedBreakTime;
 
   late DateTime selectedDate;
 
-  late List<String> workers;
+  late List<WorkerItem> workers;
+
+  bool _isSubmitting = false;
 
   final List<String> workTypes = ["오픈", "미들", "마감",];
 
   final List<String> breakTimes = ["없음", "30분", "1시간", "1시간 30분",];
-
 
   @override
   void initState() {
@@ -76,9 +89,42 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
 
     selectedBreakTime = widget.breakTime;
 
-    workers = List.from(widget.workerNames);
+    workers = List.from(widget.workers);
 
     selectedDate = widget.date;
+  }
+
+  TimeOfDay _toTimeOfDay(String time) {
+    final parts = time.split(":");
+
+    return TimeOfDay(
+      hour: int.parse(parts[0]),
+      minute: int.parse(parts[1]),
+    );
+  }
+
+  /// "없음" -> 0, "30분" -> 30, "1시간" -> 60, "1시간 30분" -> 90
+  int _parseBreakTimeToMinutes(String value) {
+    if (value == "없음" || value.trim().isEmpty) return 0;
+
+    final hourMatch = RegExp(r'(\d+)\s*시간').firstMatch(value);
+    final minuteMatch = RegExp(r'(\d+)\s*분').firstMatch(value);
+
+    final hours = hourMatch != null ? int.parse(hourMatch.group(1)!) : 0;
+    final minutes = minuteMatch != null ? int.parse(minuteMatch.group(1)!) : 0;
+
+    if (hours == 0 && minutes == 0) {
+      final numeric = RegExp(r'\d+').firstMatch(value);
+      return numeric != null ? int.parse(numeric.group(0)!) : 0;
+    }
+
+    return hours * 60 + minutes;
+  }
+
+  String _formatDate(DateTime date) {
+    return "${date.year.toString().padLeft(4, '0')}-"
+        "${date.month.toString().padLeft(2, '0')}-"
+        "${date.day.toString().padLeft(2, '0')}";
   }
 
   Future<void> _showSelectSheet({
@@ -151,6 +197,85 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
     }
   }
 
+  Future<void> _pickTime() async {
+    final result = await WorkingTimeInputBottomSheet.show(
+      context,
+      initialOpenTime: _toTimeOfDay(selectedStartTime),
+      initialCloseTime: _toTimeOfDay(selectedEndTime),
+    );
+
+    if (result != null) {
+      setState(() {
+        selectedStartTime =
+        "${result.openTime.hour.toString().padLeft(2, '0')}:${result.openTime.minute.toString().padLeft(2, '0')}";
+        selectedEndTime =
+        "${result.closeTime.hour.toString().padLeft(2, '0')}:${result.closeTime.minute.toString().padLeft(2, '0')}";
+      });
+    }
+  }
+
+  Future<void> _submitEdit() async {
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    final request = AssignmentUpdateRequest(
+      workDate: _formatDate(selectedDate),
+      workPartNo: widget.workPartNo,
+      timeName: selectedWorkType,
+      startTime: selectedStartTime,
+      closeTime: selectedEndTime,
+      restTime: _parseBreakTimeToMinutes(selectedBreakTime),
+      workerMemberIds: workers.map((w) => w.memberId).toList(),
+    );
+
+    // 디버그용 로그
+    debugPrint(
+      "PUT /api/work-places/${widget.workPlaceId}"
+          "/confirmed-week-schedules/${widget.confirmedWeekScheduleId}"
+          "/time-details/${widget.timeDetailId}/assignments",
+    );
+    debugPrint("body: ${request.toJson()}");
+
+    try {
+      final response = await AssignmentApi.update(
+        workPlaceId: widget.workPlaceId,
+        confirmedWeekScheduleId: widget.confirmedWeekScheduleId,
+        timeDetailId: widget.timeDetailId,
+        request: request,
+      );
+
+      if (!mounted) return;
+
+      Navigator.pop(
+        context,
+        WorkingEditResult(
+          role: response.timeName,
+          startTime: response.startTime.length >= 5
+              ? response.startTime.substring(0, 5)
+              : response.startTime,
+          endTime: response.closeTime.length >= 5
+              ? response.closeTime.substring(0, 5)
+              : response.closeTime,
+          breakTime: selectedBreakTime,
+          date: selectedDate,
+          workers: workers,
+        ),
+      );
+    } catch (e) {
+      debugPrint("근무 수정 실패 : $e");
+
+      if (!mounted) return;
+
+      setState(() {
+        _isSubmitting = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst("Exception: ", ""))),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -165,31 +290,20 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
           child: SizedBox(
             height: 52,
             child: ElevatedButton(
-              onPressed: () {
-                // TODO : 수정 완료 API
-                Navigator.pop(
-                  context,
-                  WorkingEditResult(
-                    role: selectedWorkType,
-                    startTime: selectedStartTime,
-                    endTime: selectedEndTime,
-                    breakTime: selectedBreakTime,
-                    date: selectedDate,
-                    workers: workers,
-                  ),
-                );
-              },
+              onPressed: _isSubmitting ? null : _submitEdit,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1976FF),
+                disabledBackgroundColor:
+                const Color(0xFF1976FF).withOpacity(0.5),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius:
                   BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                "수정 완료",
-                style: TextStyle(
+              child: Text(
+                _isSubmitting ? "수정 중..." : "수정 완료",
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: Colors.white,
@@ -291,6 +405,7 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
                           child: _TimeField(
                             label: "출근 시간",
                             value: selectedStartTime,
+                            onTap: _pickTime,
                           ),
                         ),
 
@@ -300,6 +415,7 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
                           child: _TimeField(
                             label: "퇴근 시간",
                             value: selectedEndTime,
+                            onTap: _pickTime,
                           ),
                         ),
                       ],
@@ -387,12 +503,7 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
                           onTap: () async {
                             final result = await WorkerBottomSheet.show(
                               context,
-                              workers: const [
-                                "모수연",
-                                "박춘식",
-                                "윤서준",
-                                "이다빈",
-                              ],
+                              workPlaceId: widget.workPlaceId,
                               initialSelected: workers,
                             );
 
@@ -406,7 +517,7 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
                             children: [
                               Wrap(
                                 spacing: 8,
-                                children: workers.map((name) {
+                                children: workers.map((worker) {
                                   return Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 12,
@@ -417,7 +528,7 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
-                                      name,
+                                      worker.memberName,
                                       style: const TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w500,
@@ -501,14 +612,16 @@ class _DropdownBox extends StatelessWidget {
   }
 }
 
-/// 시간 입력 박스
+/// 시간 입력 박스 (탭하면 시간 선택 바텀시트 오픈)
 class _TimeField extends StatelessWidget {
   final String label;
   final String value;
+  final VoidCallback onTap;
 
   const _TimeField({
     required this.label,
     required this.value,
+    required this.onTap,
   });
 
   @override
@@ -528,34 +641,38 @@ class _TimeField extends StatelessWidget {
 
         const SizedBox(height: 8),
 
-        Container(
-          height: 56,
-          padding:
-          const EdgeInsets.symmetric(
-            horizontal: 16,
-          ),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF1F1F5),
-            borderRadius:
-            BorderRadius.circular(16),
-          ),
-          child: Row(
-            children: [
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 16,
-                  color: Color(0xFF999999),
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            height: 56,
+            padding:
+            const EdgeInsets.symmetric(
+              horizontal: 16,
+            ),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F1F5),
+              borderRadius:
+              BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: Color(0xFF333333),
+                  ),
                 ),
-              ),
 
-              const Spacer(),
+                const Spacer(),
 
-              const Icon(
-                Icons.access_time_outlined,
-                color: Color(0xFF9DA3AF),
-              ),
-            ],
+                const Icon(
+                  Icons.access_time_outlined,
+                  color: Color(0xFF9DA3AF),
+                ),
+              ],
+            ),
           ),
         ),
       ],

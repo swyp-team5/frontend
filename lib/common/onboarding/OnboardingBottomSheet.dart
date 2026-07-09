@@ -71,7 +71,7 @@ class _OnboardingBottomSheetState extends ConsumerState<OnboardingBottomSheet> {
     } on SocialProviderException catch (error) {
       debugPrint(
         '[SocialAuth][UI] provider failure type=${error.runtimeType} '
-        'configuration=${error.isConfigurationError}',
+            'configuration=${error.isConfigurationError}',
       );
       _showError(error.message);
     } on SocialAuthException catch (error) {
@@ -92,9 +92,9 @@ class _OnboardingBottomSheetState extends ConsumerState<OnboardingBottomSheet> {
   void _openHome(AuthMember member) {
     final builder = switch (member.role) {
       AuthMemberRole.owner =>
-        widget.ownerHomeBuilder ?? (_) => const RHomePage(),
+      widget.ownerHomeBuilder ?? (_) => const RHomePage(),
       AuthMemberRole.worker =>
-        widget.workerHomeBuilder ?? (_) => const EHomePage(),
+      widget.workerHomeBuilder ?? (_) => const EHomePage(),
     };
 
     Navigator.of(
@@ -233,28 +233,28 @@ class _SocialButton extends StatelessWidget {
         ),
         child: isLoading
             ? const SizedBox.square(
-                dimension: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Color(0xFF111111),
-                ),
-              )
+          dimension: 18,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: Color(0xFF111111),
+          ),
+        )
             : Stack(
-                alignment: Alignment.center,
-                children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Image.asset(assetPath, width: 18, height: 18),
-                  ),
-                  Text(
-                    label,
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
+          alignment: Alignment.center,
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Image.asset(assetPath, width: 18, height: 18),
+            ),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
               ),
+            ),
+          ],
+        ),
       ),
     );
   }

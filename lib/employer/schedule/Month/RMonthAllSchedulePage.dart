@@ -3,26 +3,47 @@ import 'package:flutter/material.dart';
 import 'RMonthAllScheduleBottomSheet.dart';
 
 class RScheduleWorker {
+  final int memberId;
   final String name;
 
   const RScheduleWorker({
+    required this.memberId,
     required this.name,
   });
 }
 
+int breakTimeLabelToMinutes(String label) {
+  switch (label) {
+    case "없음":
+      return 0;
+    case "30분":
+      return 30;
+    case "1시간":
+      return 60;
+    case "1시간 30분":
+      return 90;
+    default:
+      return 0;
+  }
+}
+
 class RScheduleShift {
+  final int timeDetailId;
+  final int workPartNo;
   String startTime;
   String endTime;
-  String role;
+  String timeName;
   String breakTime;
   final int required;  // 필요한 인원
   final List<RScheduleWorker> workers;  // 실제 근무 가능한 직원
   final int colorIndex;
 
   RScheduleShift({
+    required this.timeDetailId,
+    required this.workPartNo,
     required this.startTime,
     required this.endTime,
-    required this.role,
+    required this.timeName,
     this.breakTime = "없음",
     required this.required,
     required this.workers,
@@ -39,15 +60,17 @@ class RScheduleShift {
 class RMonthAllSchedulePage extends StatefulWidget {
   final DateTime selectedDate;
   final ValueChanged<DateTime> onDateChanged;
-
-  /// API 응답
-  final Map<String, List<RScheduleShift>> schedules;
+  final Map<String, List<RScheduleShift>> schedules;  // API 응답
+  final int workPlaceId;
+  final int? confirmedWeekScheduleId;
 
   const RMonthAllSchedulePage({
     super.key,
     required this.selectedDate,
     required this.onDateChanged,
     required this.schedules,
+    required this.workPlaceId,
+    required this.confirmedWeekScheduleId,
   });
 
   @override
@@ -180,6 +203,8 @@ class _RMonthAllSchedulePageState
                             date: date,
                             workers: workers,
                             schedules: widget.schedules,
+                            workPlaceId: widget.workPlaceId,
+                            confirmedWeekScheduleId: widget.confirmedWeekScheduleId,
                           ),
                         );
 
@@ -261,7 +286,7 @@ class _WorkerScheduleArea extends StatelessWidget {
       return const SizedBox();
     }
 
-    // ⭐ role 대신 colorIndex를 같이 들고 다님
+    // role 대신 colorIndex를 같이 들고 다님
     final allWorkers = <(RScheduleWorker, int)>[];
 
     for (final shift in workers) {

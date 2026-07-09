@@ -1,21 +1,24 @@
 import 'package:flutter/material.dart';
 
+import '../../home/autoschedule/api/CrewsApi.dart';
+import '../models/WorkersResponse.dart';
+
 class WorkerBottomSheet extends StatefulWidget {
-  final List<String> workers;
-  final List<String> initialSelected;
+  final int workPlaceId;
+  final List<WorkerItem> initialSelected;
 
   const WorkerBottomSheet({
     super.key,
-    required this.workers,
+    required this.workPlaceId,
     this.initialSelected = const [],
   });
 
-  static Future<List<String>?> show(
+  static Future<List<WorkerItem>?> show(
       BuildContext context, {
-        required List<String> workers,
-        List<String> initialSelected = const [],
+        required int workPlaceId,
+        List<WorkerItem> initialSelected = const [],
       }) {
-    return showModalBottomSheet<List<String>>(
+    return showModalBottomSheet<List<WorkerItem>>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
@@ -25,33 +28,69 @@ class WorkerBottomSheet extends StatefulWidget {
         ),
       ),
       builder: (_) => WorkerBottomSheet(
-        workers: workers,
+        workPlaceId: workPlaceId,
         initialSelected: initialSelected,
       ),
     );
   }
 
   @override
-  State<WorkerBottomSheet> createState() =>
-      _WorkerBottomSheetState();
+  State<WorkerBottomSheet> createState() => _WorkerBottomSheetState();
 }
 
-class _WorkerBottomSheetState
-    extends State<WorkerBottomSheet> {
+class _WorkerBottomSheetState extends State<WorkerBottomSheet> {
 
-  late List<String> selectedWorkers;
+  late List<WorkerItem> selectedWorkers;
+
+  List<WorkerItem> workers = [];
+  bool isLoading = true;
+
+  Future<void> _loadCrews() async {
+    try {
+      final result = await CrewsApi.getCrews(
+        workPlaceId: widget.workPlaceId,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        workers = result.crews
+            .map(
+              (crew) => WorkerItem(
+            memberId: crew.memberId,
+            memberName: crew.name,
+            submitted: true,
+          ),
+        )
+            .toList();
+
+        isLoading = false;
+      });
+    } catch (e) {
+      debugPrint(e.toString());
+
+      if (!mounted) return;
+
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
 
   @override
   void initState() {
     super.initState();
-    selectedWorkers =
-    List<String>.from(widget.initialSelected);
+
+    selectedWorkers = List<WorkerItem>.from(widget.initialSelected);
+
+    _loadCrews();
   }
 
-  Widget item(String worker) {
+  Widget item(WorkerItem worker) {
 
-    final selected =
-    selectedWorkers.contains(worker);
+    final selected = selectedWorkers.any(
+          (e) => e.memberId == worker.memberId,
+    );
 
     return InkWell(
       borderRadius: BorderRadius.circular(14),
@@ -60,7 +99,9 @@ class _WorkerBottomSheetState
         setState(() {
 
           if (selected) {
-            selectedWorkers.remove(worker);
+            selectedWorkers.removeWhere(
+                  (e) => e.memberId == worker.memberId,
+            );
           } else {
             selectedWorkers.add(worker);
           }
@@ -88,7 +129,7 @@ class _WorkerBottomSheetState
 
             Expanded(
               child: Text(
-                worker,
+                worker.memberName,
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -118,6 +159,7 @@ class _WorkerBottomSheetState
 
   @override
   Widget build(BuildContext context) {
+    debugPrint("BottomSheet workers : ${workers.length}");
 
     return SafeArea(
       child: Padding(
@@ -179,22 +221,26 @@ class _WorkerBottomSheetState
 
             const SizedBox(height: 24),
 
-            GridView.builder(
-              shrinkWrap: true,
-              physics:
-              const NeverScrollableScrollPhysics(),
-              itemCount: widget.workers.length,
-              gridDelegate:
-              const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                mainAxisSpacing: 12,
-                crossAxisSpacing: 12,
-                childAspectRatio: 2.1,
+            if (isLoading)
+              const Center(
+                child: CircularProgressIndicator(),
+              )
+            else
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: workers.length,
+                gridDelegate:
+                const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: 2.1,
+                ),
+                itemBuilder: (_, index) {
+                  return item(workers[index]);
+                },
               ),
-              itemBuilder: (_, index) {
-                return item(widget.workers[index]);
-              },
-            ),
 
             const SizedBox(height: 24),
 

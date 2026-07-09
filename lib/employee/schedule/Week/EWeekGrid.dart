@@ -47,7 +47,7 @@ class EWeekGrid extends StatelessWidget {
 
   String _startTime(dynamic e) => e.startTime;
 
-  String _endTime(dynamic e) => e.endTime;
+  String _closeTime(dynamic e) => e.closeTime;
 
   int get minHour {
     int min = 23;
@@ -67,7 +67,7 @@ class EWeekGrid extends StatelessWidget {
 
     for (final list in schedules.values) {
       for (final worker in list) {
-        final h = _hour(_endTime(worker));
+        final h = _hour(_closeTime(worker));
         if (h > max) max = h;
       }
     }
@@ -226,7 +226,7 @@ class EWeekGrid extends StatelessWidget {
 
                                   final end = roleWorkers
                                       .map((e) => _timeToPosition(
-                                    e.endTime,
+                                    e.closeTime,
                                     startHour,
                                   ))
                                       .reduce((a, b) => a > b ? a : b);
@@ -244,35 +244,36 @@ class EWeekGrid extends StatelessWidget {
                               }
 
                               /// =========================
-                              /// 개인보기
+                              /// 개인보기 - timeName별로 그룹핑해서 각각 별도 카드로 표시
                               /// =========================
                               final myWorkers = workers.cast<MySchedule>();
 
-                              final start = myWorkers
-                                  .map((e) => _timeToPosition(
-                                e.startTime,
-                                startHour,
-                              ))
-                                  .reduce((a, b) => a < b ? a : b);
+                              final Map<String, List<MySchedule>> grouped = {};
 
-                              final end = myWorkers
-                                  .map((e) => _timeToPosition(
-                                e.endTime,
-                                startHour,
-                              ))
-                                  .reduce((a, b) => a > b ? a : b);
+                              for (final schedule in myWorkers) {
+                                grouped.putIfAbsent(schedule.timeName, () => []);
+                                grouped[schedule.timeName]!.add(schedule);
+                              }
 
-                              return [
-                                Positioned(
+                              return grouped.entries.map((entry) {
+                                final groupWorkers = entry.value;
+
+                                final start = groupWorkers
+                                    .map((e) => _timeToPosition(e.startTime, startHour))
+                                    .reduce((a, b) => a < b ? a : b);
+
+                                final end = groupWorkers
+                                    .map((e) => _timeToPosition(e.closeTime, startHour)) // endTime -> closeTime
+                                    .reduce((a, b) => a > b ? a : b);
+
+                                return Positioned(
                                   top: start * halfHourHeight,
                                   left: 0,
                                   right: 0,
                                   height: (end - start) * halfHourHeight,
-                                  child: EWeekScheduleCard(
-                                    workers: myWorkers,
-                                  ),
-                                ),
-                              ];
+                                  child: EWeekScheduleCard(workers: groupWorkers),
+                                );
+                              }).toList();
                             })(),
                         ],
                       ),

@@ -32,7 +32,7 @@ class SecureAuthSessionStore implements AuthSessionStore {
   final FlutterSecureStorage _storage;
 
   SecureAuthSessionStore({FlutterSecureStorage? storage})
-    : _storage = storage ?? FlutterSecureStorage(aOptions: AndroidOptions());
+      : _storage = storage ?? FlutterSecureStorage(aOptions: AndroidOptions());
 
   @override
   Future<AuthSession?> read() async {

@@ -6,11 +6,12 @@ import '../home/RHomePage.dart';
 import '../mypage/RMyPage.dart';
 import 'Month/RMonthAllSchedulePage.dart';
 import 'RAddSchedulePage.dart';
-import 'REditSchedulePage.dart';
+import 'RScheduleEditPage.dart';
 import 'Week/RWeekSchedulePage.dart';
 import 'RYearMonthBottomSheet.dart';
 import 'models/schedule_model.dart';
 import 'models/ConfirmedSchedulesResponse.dart';
+import 'models/ConfirmedWeeklyScheduleResponse.dart';
 import 'api/ConfirmedSchedulesApi.dart'; // 실제 경로에 맞게 수정
 
 class RMainSchedulePage extends StatefulWidget {
@@ -40,6 +41,9 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
   /// 서버에서 받아온 확정 근무표
   Map<String, List<RScheduleShift>> allSchedules = {};
   Set<String> holidays = {}; // 이 API에는 휴무일 정보가 없어 우선 빈 값으로 둠
+
+  /// 근무 추가(RAddSchedulePage)에 필요한 값. /confirmed-schedules/weekly API로 별도 조회.
+  int? confirmedWeekScheduleId;
 
   bool isLoading = false;
   String? errorMessage;
@@ -94,22 +98,18 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
     }
   }
 
+  /// selectedDate가 속한 주의 월요일(주간/월간 모드 상관없이 "근무 추가"에 쓸 confirmedWeekScheduleId 조회용)
+  DateTime _mondayOfSelectedWeek() {
+    return DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+    ).subtract(Duration(days: selectedDate.weekday - 1));
+  }
+
   String _formatHHmm(String hhmmss) {
     final parts = hhmmss.split(":");
     return "${parts[0]}:${parts[1]}";
-  }
-
-  int _colorIndexForRole(String role) {
-    switch (role) {
-      case "오픈":
-        return 0;
-      case "미들":
-        return 1;
-      case "마감":
-        return 2;
-      default:
-        return 3; // 그 외 역할은 기본 회색 처리
-    }
   }
 
   Map<String, List<RScheduleShift>> _mapConfirmedSchedules(
@@ -119,13 +119,17 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
     for (final day in response.days) {
       final shifts = day.timeDetails.map((detail) {
         return RScheduleShift(
+          timeDetailId: detail.timeDetailId,
+          workPartNo: detail.workPartNo,
           startTime: _formatHHmm(detail.startTime),
           endTime: _formatHHmm(detail.closeTime),
-          role: detail.timeName,
+          timeName: detail.timeName,
           breakTime: detail.restTime > 0 ? "${detail.restTime}분" : "없음",
           required: detail.workers.length,
-          workers: detail.workers
-              .map((w) => RScheduleWorker(name: w.name))
+          workers: detail.workers.map((w) => RScheduleWorker(
+            memberId: w.memberId,
+            name: w.name,
+          ))
               .toList(),
           colorIndex: _colorIndexForTimeName(detail.timeName), // 동적 배정
         );
@@ -167,12 +171,41 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
         _loadedTo = range.$2;
         isLoading = false;
       });
+
+      // "근무 추가"에 필요한 confirmedWeekScheduleId는 별도 weekly API에서만 내려오므로
+      // 화면 표시를 막지 않도록 독립적으로 불러온다.
+      _loadConfirmedWeekScheduleId();
     } catch (e) {
       if (!mounted) return;
 
       setState(() {
         isLoading = false;
         errorMessage = e.toString();
+      });
+    }
+  }
+
+  /// selectedDate가 속한 주의 confirmedWeekScheduleId를 불러온다.
+  /// 실패하더라도 근무표 화면 자체는 이미 떠 있으므로 조용히 무시하고,
+  /// "추가" 버튼을 눌렀을 때 null 체크로 안내한다.
+  Future<void> _loadConfirmedWeekScheduleId() async {
+    try {
+      final weekly = await ConfirmedSchedulesApi.getConfirmedWeeklySchedule(
+        workPlaceId: widget.workPlaceId,
+        weekStartDate: _mondayOfSelectedWeek(),
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        confirmedWeekScheduleId = weekly.confirmedWeekScheduleId;
+      });
+    } catch (e) {
+      debugPrint("confirmedWeekScheduleId 조회 실패 : $e");
+      if (!mounted) return;
+
+      setState(() {
+        confirmedWeekScheduleId = null;
       });
     }
   }
@@ -267,8 +300,10 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                               context,
                               MaterialPageRoute(
                                 builder: (_) => RScheduleEditPage(
+                                  workPlaceId: widget.workPlaceId,
                                   selectedDate: selectedDate,
                                   schedules: allSchedules,
+                                  confirmedWeekScheduleId: confirmedWeekScheduleId!,
                                 ),
                               ),
                             );
@@ -277,44 +312,31 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                               setState(() {});
                             }
                           } else if (value == 'add') {
+                            if (confirmedWeekScheduleId == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("근무표 정보를 불러오는 중이에요. 잠시 후 다시 시도해주세요"),
+                                ),
+                              );
+                              return;
+                            }
+
                             final ScheduleModel? schedule =
                             await Navigator.push<ScheduleModel>(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const RAddSchedulePage(),
+                                builder: (_) => RAddSchedulePage(
+                                  workPlaceId: widget.workPlaceId,
+                                  confirmedWeekScheduleId:
+                                  confirmedWeekScheduleId!,
+                                ),
                               ),
                             );
 
                             if (schedule != null) {
-                              // 서버에 새 스케줄 등록 API가 아직 없으므로
-                              // 등록 후에는 서버 데이터를 다시 불러오는 것을 권장합니다.
-                              // 우선 로컬 상태에도 반영해 화면에 바로 보이게 처리합니다.
-                              setState(() {
-                                schedules.add(schedule);
-
-                                for (final date in schedule.dates) {
-                                  final key =
-                                      "${date.year.toString().padLeft(4, '0')}-"
-                                      "${date.month.toString().padLeft(2, '0')}-"
-                                      "${date.day.toString().padLeft(2, '0')}";
-
-                                  allSchedules.putIfAbsent(key, () => []);
-
-                                  allSchedules[key]!.add(
-                                    RScheduleShift(
-                                      startTime: schedule.startTime,
-                                      endTime: schedule.endTime,
-                                      role: schedule.workName,
-                                      breakTime: schedule.breakTime,
-                                      required: schedule.workers.length,
-                                      workers: schedule.workers
-                                          .map((name) => RScheduleWorker(name: name))
-                                          .toList(),
-                                      colorIndex: _colorIndexForTimeName(schedule.workName), // 동적 배정
-                                    ),
-                                  );
-                                }
-                              });
+                              // 서버 등록은 RAddSchedulePage에서 이미 완료되었으므로
+                              // 최신 상태를 다시 받아오기 위해 재조회합니다.
+                              _loadSchedules(force: true);
                             }
                           }
                         },
@@ -415,8 +437,10 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                         )
                             : RMonthAllSchedulePage(
                           key: const ValueKey("month"),
+                          workPlaceId: widget.workPlaceId,
                           selectedDate: selectedDate,
                           schedules: allSchedules,
+                          confirmedWeekScheduleId: confirmedWeekScheduleId,
                           onDateChanged: (date) {
                             setState(() {
                               selectedDate = date;

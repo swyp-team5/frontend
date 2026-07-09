@@ -1,12 +1,20 @@
 import 'package:chack_chack/common/auth/auth_gate.dart';
+import 'package:chack_chack/common/onboarding/OnboardingPage.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 
+import 'firebase_options.dart';
+
 void main() async {
   // Flutter 바인딩 초기화
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   // 한국어 로케일 데이터 초기화
   await initializeDateFormatting('ko_KR', null);
@@ -33,6 +41,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: home ?? const AuthGate(),
+      // home: OnboardingPage(),
     );
   }
 }

@@ -145,8 +145,8 @@ class EMonthMySchedulePage extends StatelessWidget {
                                         (worker) => MySchedule(
                                       name: worker.name,
                                       startTime: worker.startTime,
-                                      endTime: worker.endTime,
-                                          role: worker.role,
+                                      closeTime: worker.closeTime,
+                                          timeName: worker.timeName,
                                     ),
                                   )
                                       .toList(),
