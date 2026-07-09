@@ -38,7 +38,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => const OnboardingBottomSheet(),
+      builder: (_) => OnboardingBottomSheet(),
     );
   }
 

@@ -10,7 +10,9 @@ import 'RNotiWritingPage.dart';
 import 'RNotificationModel.dart';
 
 class RNotificationPage extends ConsumerStatefulWidget {
-  const RNotificationPage({super.key});
+  final int workPlaceId;
+
+  const RNotificationPage({super.key, required this.workPlaceId});
 
   @override
   ConsumerState<RNotificationPage> createState() => _RNotificationPageState();

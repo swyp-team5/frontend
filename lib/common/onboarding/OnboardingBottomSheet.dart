@@ -1,5 +1,9 @@
+import 'dart:io';
+
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../../employee/home/EHomePage.dart';
 import '../../employer/home/RHomePage.dart';
@@ -7,6 +11,7 @@ import '../auth/api/social_auth_api.dart';
 import '../auth/model/social_auth_models.dart';
 import '../auth/social/social_auth_coordinator.dart';
 import '../auth/social/social_identity_provider.dart';
+import '../fcm/FcmSetupService.dart'; // FCM
 import 'providers/signup_provider.dart';
 import 'signup/CommonSignUpPage.dart';
 
@@ -55,6 +60,8 @@ class _OnboardingBottomSheetState extends ConsumerState<OnboardingBottomSheet> {
 
       switch (outcome.type) {
         case SocialAuthOutcomeType.loginSuccess:
+        // FCM 토큰 등록 (실패해도 로그인 흐름은 계속 진행)
+          _registerFcmToken();
           _openHome(outcome.member!);
         case SocialAuthOutcomeType.signupRequired:
           ref
@@ -86,6 +93,36 @@ class _OnboardingBottomSheetState extends ConsumerState<OnboardingBottomSheet> {
       if (mounted) {
         setState(() => _loadingProvider = null);
       }
+    }
+  }
+
+  /// 로그인 성공 후 FCM 토큰을 등록합니다.
+  /// 실패하더라도 로그인/홈 이동 흐름에는 영향을 주지 않습니다.
+  Future<void> _registerFcmToken() async {
+    try {
+      final deviceInfoPlugin = DeviceInfoPlugin();
+      final packageInfo = await PackageInfo.fromPlatform();
+
+      String deviceId = '';
+      String platform = '';
+
+      if (Platform.isAndroid) {
+        final androidInfo = await deviceInfoPlugin.androidInfo;
+        deviceId = androidInfo.id;
+        platform = 'ANDROID';
+      } else if (Platform.isIOS) {
+        final iosInfo = await deviceInfoPlugin.iosInfo;
+        deviceId = iosInfo.identifierForVendor ?? '';
+        platform = 'IOS';
+      }
+
+      await FcmSetupService.registerCurrentDevice(
+        deviceId: deviceId,
+        platform: platform,
+        appVersion: packageInfo.version,
+      );
+    } catch (error) {
+      debugPrint('[FCM][UI] token registration failed: $error');
     }
   }
 

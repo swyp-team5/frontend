@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:chack_chack/common/employer/RAutoScheduling.dart';
+import 'package:chack_chack/common/fcm/AlarmListPage.dart';
 import 'package:chack_chack/employer/home/notification/RNotificationPage.dart';
 import 'package:chack_chack/employer/home/schedule/RMakingSchedulePage.dart';
 import 'package:chack_chack/employer/home/schedule/RRecentSchedulePage.dart';
@@ -512,6 +513,14 @@ class _RHomePageState extends State<RHomePage> {
           debugPrint("selectedStoreName = $selectedStoreName");
         }
       });
+
+      // ✅ 추가: 최초 로드된 근무지도 SharedPreferences에 반영
+      // (RNotificationPage 등 다른 화면에서 SharedPreferences로 workPlaceId를 읽기 때문)
+      if (selectedWorkPlaceId != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt("selectedWorkPlaceId", selectedWorkPlaceId!);
+        debugPrint("SharedPreferences에 selectedWorkPlaceId 저장 완료: $selectedWorkPlaceId");
+      }
     } on DioException catch (e) {
       debugPrint("===== DioException =====");
       debugPrint("status = ${e.response?.statusCode}");
@@ -621,7 +630,7 @@ class _RHomePageState extends State<RHomePage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const RNotificationPage(),
+                      builder: (_) => const AlarmListPage(),
                     ),
                   );
                 },
@@ -639,7 +648,9 @@ class _RHomePageState extends State<RHomePage> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const RNotificationPage(),
+                        builder: (_) => RNotificationPage(
+                          workPlaceId: selectedWorkPlaceId!,
+                        ),
                       ),
                     );
                   },
@@ -713,7 +724,9 @@ class _RHomePageState extends State<RHomePage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const RNotificationPage(),
+                      builder: (_) => RNotificationPage(
+                        workPlaceId: selectedWorkPlaceId!,
+                      ),
                     ),
                   );
                 },

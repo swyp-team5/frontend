@@ -12,6 +12,8 @@ void main() async {
   // Flutter 바인딩 초기화
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Firebase 초기화 (다른 초기화보다 먼저, 가장 위에)
+
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -40,8 +42,10 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: home ?? const AuthGate(),
-      // home: OnboardingPage(),
+
+      // home: home ?? const AuthGate(),
+      home: OnboardingPage(),
+
     );
   }
 }
