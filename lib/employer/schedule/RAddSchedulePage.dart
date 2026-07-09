@@ -5,6 +5,8 @@ import 'package:chack_chack/employer/schedule/widgets/WorkerBottomSheet.dart';
 import 'package:chack_chack/employer/schedule/widgets/WorkingTImeInputBottomSheet.dart';
 import 'package:flutter/material.dart';
 
+import 'api/WorkersApi.dart';
+import 'models/WorkersResponse.dart';
 import 'widgets/RCompleteButton.dart';
 import 'widgets/RDropdownField.dart';
 import 'widgets/RInputBox.dart';
@@ -12,7 +14,12 @@ import 'widgets/RTimeField.dart';
 import 'models/schedule_model.dart';
 
 class RAddSchedulePage extends StatefulWidget {
-  const RAddSchedulePage({super.key});
+  final int workPlaceId;
+
+  const RAddSchedulePage({
+    super.key,
+    required this.workPlaceId,
+  });
 
   @override
   State<RAddSchedulePage> createState() => _RAddSchedulePageState();
@@ -29,8 +36,8 @@ class _RAddSchedulePageState extends State<RAddSchedulePage> {
   String breakTime = "없음";
 
   List<DateTime> selectedDates = [];
+  List<WorkerItem> selectedWorkers = [];
 
-  List<String> selectedWorkers = [];
 
   bool get canSubmit {
     return workNameController.text.isNotEmpty &&
@@ -47,8 +54,39 @@ class _RAddSchedulePageState extends State<RAddSchedulePage> {
     );
   }
 
-  final List<String> workers = ["모수연", "박춘식", "윤서준", "이다빈",];
+  List<WorkerItem> workers = [];
 
+  Future<void> _loadWorkers() async {
+    try {
+      final result = await WorkersApi.getWorkers(
+        workPlaceId: widget.workPlaceId,
+      );
+
+      debugPrint("받아온 근무자 수 : ${result.workers.length}");
+
+      for (final worker in result.workers) {
+        debugPrint(worker.memberName);
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        workers = result.workers;
+      });
+
+      debugPrint("state workers : ${workers.length}");
+    } catch (e) {
+      debugPrint("근무자 조회 실패");
+      debugPrint(e.toString());
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    _loadWorkers();
+  }
 
   @override
   void dispose() {
@@ -295,7 +333,7 @@ class _RAddSchedulePageState extends State<RAddSchedulePage> {
 
                             final result = await WorkerBottomSheet.show(
                               context,
-                              workers: workers,
+                              workPlaceId: widget.workPlaceId,
                               initialSelected: selectedWorkers,
                             );
 
@@ -311,7 +349,7 @@ class _RAddSchedulePageState extends State<RAddSchedulePage> {
                               Text(
                                 selectedWorkers.isEmpty
                                     ? "근무자 선택하기"
-                                    : selectedWorkers.join(", "),
+                                    : selectedWorkers.map((e)=>e.memberName).join(", "),
                                 style: const TextStyle(
                                   fontSize: 16,
                                   color: Color(0xFF7A7A7A),
@@ -366,7 +404,7 @@ class _RAddSchedulePageState extends State<RAddSchedulePage> {
                     endTime: endTime,
                     breakTime: breakTime,
                     dates: selectedDates,
-                    workers: selectedWorkers,
+                    workers: List<WorkerItem>.from(selectedWorkers),
                   ),
                 );
               }

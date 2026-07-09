@@ -6,7 +6,7 @@ import '../home/RHomePage.dart';
 import '../mypage/RMyPage.dart';
 import 'Month/RMonthAllSchedulePage.dart';
 import 'RAddSchedulePage.dart';
-import 'REditSchedulePage.dart';
+import 'RScheduleEditPage.dart';
 import 'Week/RWeekSchedulePage.dart';
 import 'RYearMonthBottomSheet.dart';
 import 'models/schedule_model.dart';
@@ -111,8 +111,10 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
           timeName: detail.timeName,
           breakTime: detail.restTime > 0 ? "${detail.restTime}분" : "없음",
           required: detail.workers.length,
-          workers: detail.workers
-              .map((w) => RScheduleWorker(name: w.name))
+          workers: detail.workers.map((w) => RScheduleWorker(
+            memberId: w.memberId,
+            name: w.name,
+          ))
               .toList(),
           colorIndex: _colorIndexForTimeName(detail.timeName), // 동적 배정
         );
@@ -254,6 +256,7 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                               context,
                               MaterialPageRoute(
                                 builder: (_) => RScheduleEditPage(
+                                  workPlaceId: widget.workPlaceId,
                                   selectedDate: selectedDate,
                                   schedules: allSchedules,
                                 ),
@@ -268,7 +271,9 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                             await Navigator.push<ScheduleModel>(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => const RAddSchedulePage(),
+                                builder: (_) => RAddSchedulePage(
+                                  workPlaceId: widget.workPlaceId,
+                                ),
                               ),
                             );
 
@@ -295,9 +300,16 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                                       breakTime: schedule.breakTime,
                                       required: schedule.workers.length,
                                       workers: schedule.workers
-                                          .map((name) => RScheduleWorker(name: name))
+                                          .map(
+                                            (worker) => RScheduleWorker(
+                                          memberId: worker.memberId,
+                                          name: worker.memberName,
+                                        ),
+                                      )
                                           .toList(),
-                                      colorIndex: _colorIndexForTimeName(schedule.workName), // 동적 배정
+                                      colorIndex: _colorIndexForTimeName(
+                                        schedule.workName,
+                                      ),
                                     ),
                                   );
                                 }
@@ -402,6 +414,7 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                         )
                             : RMonthAllSchedulePage(
                           key: const ValueKey("month"),
+                          workPlaceId: widget.workPlaceId,
                           selectedDate: selectedDate,
                           schedules: allSchedules,
                           onDateChanged: (date) {

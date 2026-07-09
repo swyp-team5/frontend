@@ -1,6 +1,7 @@
 import 'package:chack_chack/employer/schedule/Month/RWorkingDetailEditPage.dart';
 import 'package:flutter/material.dart';
 
+import '../models/WorkersResponse.dart';
 import '../widgets/RDeleteWorkingBottomSheet.dart';
 import 'RMonthAllSchedulePage.dart';
 
@@ -8,12 +9,14 @@ class RMonthAllScheduleBottomSheet extends StatefulWidget {
   final DateTime date;
   final List<RScheduleShift> workers;
   final Map<String, List<RScheduleShift>> schedules;
+  final int workPlaceId;
 
   const RMonthAllScheduleBottomSheet({
     super.key,
     required this.date,
     required this.workers,
     required this.schedules,
+    required this.workPlaceId,
   });
 
   @override
@@ -223,8 +226,7 @@ class _RMonthAllScheduleBottomSheetState
                         color: Color(0xFF1C1C1E),
                       ),
                       onPressed: () async {
-                        final result =
-                        await Navigator.push<WorkingEditResult>(
+                        final result = await Navigator.push<WorkingEditResult>(
                           context,
                           MaterialPageRoute(
                             builder: (_) => RWorkingDetailEditPage(
@@ -233,8 +235,15 @@ class _RMonthAllScheduleBottomSheetState
                               endTime: shift.endTime,
                               breakTime: shift.breakTime,
                               date: widget.date,
-                              workerNames: shift.workers
-                                  .map((e) => e.name)
+                              workPlaceId: widget.workPlaceId,
+                              workers: shift.workers
+                                  .map(
+                                    (e) => WorkerItem(
+                                  memberId: e.memberId,
+                                  memberName: e.name,
+                                  submitted: true,
+                                ),
+                              )
                                   .toList(),
                             ),
                           ),
@@ -261,7 +270,12 @@ class _RMonthAllScheduleBottomSheetState
                               colorIndex: shift.colorIndex, // 기존 colorIndex 유지 (동적 배정된 값)
                               required: shift.required, // 기존 필요인원 유지
                               workers: result.workers
-                                  .map((e) => RScheduleWorker(name: e))
+                                  .map(
+                                    (e) => RScheduleWorker(
+                                  memberId: e.memberId,
+                                  name: e.memberName,
+                                ),
+                              )
                                   .toList(),
                             );
 

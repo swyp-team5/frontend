@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../REditCalendarBottomSheet.dart';
-import '../REditSchedulePage.dart';
+import '../RScheduleEditPage.dart';
 import '../widgets/CalendarBottomSheet.dart';
 import '../widgets/WorkerBottomSheet.dart';
+import '../models/WorkersResponse.dart';
 
 /// 수정 결과 전달용 모델
 class WorkingEditResult {
@@ -12,7 +13,7 @@ class WorkingEditResult {
   final String endTime;
   final String breakTime;
   final DateTime date;
-  final List<String> workers;
+  final List<WorkerItem> workers;
 
   const WorkingEditResult({
     required this.role,
@@ -28,20 +29,21 @@ class RWorkingDetailEditPage extends StatefulWidget {
   final String role;
   final String startTime;
   final String endTime;
-  final List<String> workerNames;
+  final List<WorkerItem> workers;
   final String breakTime;
   final DateTime date;
+  final int workPlaceId;
 
   const RWorkingDetailEditPage({
     super.key,
     required this.role,
     required this.startTime,
     required this.endTime,
-    required this.workerNames,
+    required this.workers,
     required this.breakTime,
     required this.date,
+    required this.workPlaceId,
   });
-
 
   @override
   State<RWorkingDetailEditPage> createState() =>
@@ -58,12 +60,11 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
 
   late DateTime selectedDate;
 
-  late List<String> workers;
+  late List<WorkerItem> workers;
 
   final List<String> workTypes = ["오픈", "미들", "마감",];
 
   final List<String> breakTimes = ["없음", "30분", "1시간", "1시간 30분",];
-
 
   @override
   void initState() {
@@ -76,7 +77,7 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
 
     selectedBreakTime = widget.breakTime;
 
-    workers = List.from(widget.workerNames);
+    workers = List.from(widget.workers);
 
     selectedDate = widget.date;
   }
@@ -150,7 +151,6 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
       onSelected(result);
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -387,12 +387,7 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
                           onTap: () async {
                             final result = await WorkerBottomSheet.show(
                               context,
-                              workers: const [
-                                "모수연",
-                                "박춘식",
-                                "윤서준",
-                                "이다빈",
-                              ],
+                              workPlaceId: widget.workPlaceId,
                               initialSelected: workers,
                             );
 
@@ -406,7 +401,7 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
                             children: [
                               Wrap(
                                 spacing: 8,
-                                children: workers.map((name) {
+                                children: workers.map((worker) {
                                   return Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 12,
@@ -417,7 +412,7 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                     child: Text(
-                                      name,
+                                      worker.memberName,
                                       style: const TextStyle(
                                         fontSize: 15,
                                         fontWeight: FontWeight.w500,

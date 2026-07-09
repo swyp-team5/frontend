@@ -3,9 +3,11 @@ import 'package:flutter/material.dart';
 import 'RMonthAllScheduleBottomSheet.dart';
 
 class RScheduleWorker {
+  final int memberId;
   final String name;
 
   const RScheduleWorker({
+    required this.memberId,
     required this.name,
   });
 }
@@ -54,15 +56,15 @@ class RScheduleShift {
 class RMonthAllSchedulePage extends StatefulWidget {
   final DateTime selectedDate;
   final ValueChanged<DateTime> onDateChanged;
-
-  /// API 응답
-  final Map<String, List<RScheduleShift>> schedules;
+  final Map<String, List<RScheduleShift>> schedules;  // API 응답
+  final int workPlaceId;
 
   const RMonthAllSchedulePage({
     super.key,
     required this.selectedDate,
     required this.onDateChanged,
     required this.schedules,
+    required this.workPlaceId,
   });
 
   @override
@@ -195,6 +197,7 @@ class _RMonthAllSchedulePageState
                             date: date,
                             workers: workers,
                             schedules: widget.schedules,
+                            workPlaceId: widget.workPlaceId,
                           ),
                         );
 

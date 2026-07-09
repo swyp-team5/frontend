@@ -3,13 +3,16 @@ import 'package:table_calendar/table_calendar.dart';
 
 import 'Month/RMonthAllSchedulePage.dart';
 import 'Month/RWorkingDetailEditPage.dart';
+import 'models/WorkersResponse.dart';
 
 class RScheduleEditPage extends StatefulWidget {
+  final int workPlaceId;
   final DateTime selectedDate;
   final Map<String, List<RScheduleShift>> schedules;
 
   const RScheduleEditPage({
     super.key,
+    required this.workPlaceId,
     required this.selectedDate,
     required this.schedules,
   });
@@ -331,15 +334,22 @@ class _RScheduleEditPageState extends State<RScheduleEditPage> {
                                     context,
                                     MaterialPageRoute(
                                       builder: (_) => RWorkingDetailEditPage(
+                                        workPlaceId: widget.workPlaceId,
                                         role: shift.timeName,
                                         startTime: shift.startTime,
                                         endTime: shift.endTime,
                                         breakTime: shift.breakTime,
-                                        date: selectedDay!, // 선택한 날짜 전달
-                                        workerNames: shift.workers
-                                            .map((e) => e.name)
+                                        date: selectedDay!,
+                                        workers: shift.workers
+                                            .map(
+                                              (e) => WorkerItem(
+                                            memberId: e.memberId,
+                                            memberName: e.name,
+                                            submitted: true,
+                                          ),
+                                        )
                                             .toList(),
-                                      ),
+                                      )
                                     ),
                                   );
 
@@ -367,9 +377,14 @@ class _RScheduleEditPageState extends State<RScheduleEditPage> {
                                         breakTime: result.breakTime,
                                         required: shift.required,
                                         workers: result.workers
-                                            .map((name) => RScheduleWorker(name: name))
+                                            .map(
+                                              (worker) => RScheduleWorker(
+                                            memberId: worker.memberId,
+                                            name: worker.memberName,
+                                          ),
+                                        )
                                             .toList(),
-                                        colorIndex: _colorIndexForRole(result.role), // 누락됐던 부분, 새 role 기준으로 계산
+                                        colorIndex: shift.colorIndex, // 기존 색상 유지
                                       );
 
                                       widget.schedules[newKey]!.add(updatedShift);
