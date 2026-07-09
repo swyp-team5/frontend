@@ -19,6 +19,7 @@ import '../../common/auth/server_token_manager.dart';
 import '../../../common/widgets/BottomNavBar.dart';
 import '../crews/RCrewPage.dart';
 import '../mypage/RMyPage.dart';
+import '../mypage/RTodayWorkingPage.dart';
 import '../schedule/RMainSchedulePage.dart';
 import 'api/SubmitStatusApi.dart';
 
@@ -721,9 +722,22 @@ class _RHomePageState extends State<RHomePage> {
               const SizedBox(height: 14),
 
               /// Today Work
-              RTodayWorkCard(
-                onDetailTap: () {},
-              ),
+              if (selectedWorkPlaceId != null)
+                RTodayWorkCard(
+                  workPlaceId: selectedWorkPlaceId!,
+                  onDetailTap: () {
+                    // Navigator.push(
+                    //   context,
+                    //   MaterialPageRoute(
+                    //     builder: (_) => RTodayWorkingPage(
+                    //       workPlaceId: selectedWorkPlaceId!,
+                    //     ),
+                    //   ),
+                    // );
+                  },
+                )
+              else
+                const SizedBox.shrink(),
             ],
           ),
         ),
