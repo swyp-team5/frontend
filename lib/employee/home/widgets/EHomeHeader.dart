@@ -4,10 +4,12 @@ import 'package:flutter/material.dart';
 
 class EHomeHeader extends StatelessWidget {
   final String workPlaceName;
+  final VoidCallback? onNotificationTap;
 
   const EHomeHeader({
     super.key,
     required this.workPlaceName,
+    this.onNotificationTap,
   });
 
   @override
@@ -58,7 +60,10 @@ class EHomeHeader extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            const Icon(Icons.notifications_none, size: 28),
+            GestureDetector(
+              onTap: onNotificationTap,
+              child: const Icon(Icons.notifications_none, size: 28),
+            ),
           ],
         ),
       ],

@@ -7,6 +7,7 @@ import 'package:chack_chack/employee/home/widgets/ENoticeBanner.dart';
 import 'package:chack_chack/employee/home/widgets/EScheduleCard.dart';
 import 'package:chack_chack/employee/mypage/EMyPage.dart';
 import 'package:chack_chack/employee/schedule/EMainSchedulePage.dart';
+import 'package:chack_chack/common/fcm/AlarmListPage.dart';
 import 'package:flutter/material.dart';
 
 import 'package:dio/dio.dart';
@@ -190,6 +191,14 @@ class _EHomePageState extends State<EHomePage> {
               /// Header
               EHomeHeader(
                 workPlaceName: workPlaceName,
+                onNotificationTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const AlarmListPage(),
+                    ),
+                  );
+                },
               ),
               const SizedBox(height: 20),
 
