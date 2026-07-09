@@ -226,7 +226,7 @@ class EWeekGrid extends StatelessWidget {
 
                                   final end = roleWorkers
                                       .map((e) => _timeToPosition(
-                                    e.endTime,
+                                    e.closeTime,
                                     startHour,
                                   ))
                                       .reduce((a, b) => a > b ? a : b);

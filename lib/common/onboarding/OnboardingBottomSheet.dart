@@ -155,139 +155,178 @@ class OnboardingBottomSheet extends ConsumerWidget {
 
               const SizedBox(height: 14),
 
-              // //----------------------------------
-              // // Google
-              // //----------------------------------
-              //
-              // SizedBox(
-              //   width: double.infinity,
-              //   height: 56,
-              //   child: OutlinedButton(
-              //       onPressed: () async {
-              //         // try {
-              //         //   final result = await KakaoLoginService.login();
-              //         //
-              //         //   debugPrint("===== Kakao Login Success =====");
-              //         //   debugPrint(result.toString());
-              //         //
-              //         //   // 서버 JWT 저장
-              //         //   await ServerTokenManager.saveTokens(
-              //         //     accessToken: result["serverAccessToken"],
-              //         //     refreshToken: result["serverRefreshToken"],
-              //         //   );
-              //         //
-              //         //   final notifier = ref.read(signupProvider.notifier);
-              //         //
-              //         //   notifier.setProvider(SocialProvider.KAKAO);
-              //         //
-              //         //   // Provider에도 서버 JWT 저장
-              //         //   notifier.setAccessToken(result["serverAccessToken"]);
-              //         //   notifier.setRefreshToken(result["serverRefreshToken"]);
-              //         //
-              //         //   notifier.setDevice(
-              //         //     deviceId: result["deviceId"],
-              //         //     platform: result["platform"],
-              //         //     appVersion: result["appVersion"],
-              //         //   );
-              //         //
-              //         //   // 저장 확인
-              //         //   final token = await ServerTokenManager.getAccessToken();
-              //         //   debugPrint("===== SAVED TOKEN =====");
-              //         //   debugPrint(token);
-              //         //
-              //         //   if (!context.mounted) return;
-              //         //
-              //         //   Navigator.push(
-              //         //     context,
-              //         //     MaterialPageRoute(
-              //         //       builder: (_) => const CommonSignUpPage(),
-              //         //     ),
-              //         //   );
-              //         // } catch (e) {
-              //         //   debugPrint(e.toString());
-              //         //
-              //         //   if (!context.mounted) return;
-              //         //
-              //         //   ScaffoldMessenger.of(context).showSnackBar(
-              //         //     SnackBar(
-              //         //       content: Text("카카오 로그인 실패\n$e"),
-              //         //     ),
-              //         //   );
-              //         // }
-              //       },
-              //     child: Row(
-              //       mainAxisAlignment: MainAxisAlignment.center,
-              //       children: [
-              //         Image.asset(
-              //           "assets/images/logo/google.png",
-              //           width: 22,
-              //           height: 22,
-              //         ),
-              //         const SizedBox(width: 12),
-              //         const Text(
-              //           "Google로 시작하기",
-              //           style: TextStyle(
-              //             color: Colors.black,
-              //             fontSize: 16,
-              //             fontWeight: FontWeight.w500,
-              //           ),
-              //         ),
-              //       ],
-              //     )
-              //   ),
-              // ),
-              //
-              // const SizedBox(height: 14),
-              //
-              // //----------------------------------
-              // // Apple
-              // //----------------------------------
-              //
-              // SizedBox(
-              //   width: double.infinity,
-              //   height: 56,
-              //   child: OutlinedButton(
-              //       onPressed: () async {
-              //         try {
-              //           final result = await SocialLoginService.appleLogin();
-              //
-              //           print(result);
-              //
-              //         } catch (e) {
-              //           debugPrint(e.toString());
-              //         }
-              //       },
-              //     style: OutlinedButton.styleFrom(
-              //       side: const BorderSide(
-              //         color: Color(0xffE5E5E5),
-              //       ),
-              //       shape: RoundedRectangleBorder(
-              //         borderRadius: BorderRadius.circular(8),
-              //       ),
-              //     ),
-              //     child: Row(
-              //       mainAxisAlignment: MainAxisAlignment.center,
-              //       children: [
-              //         Image.asset(
-              //           "assets/images/logo/apple.png",
-              //           width: 22,
-              //           height: 22,
-              //         ),
-              //         const SizedBox(width: 12),
-              //         const Text(
-              //           "Apple로 시작하기",
-              //           style: TextStyle(
-              //             color: Colors.black,
-              //             fontSize: 16,
-              //             fontWeight: FontWeight.w500,
-              //           ),
-              //         ),
-              //       ],
-              //     )
-              //   ),
-              // ),
-              //
-              // const SizedBox(height: 32),
+              //----------------------------------
+              // Google
+              //----------------------------------
+
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: OutlinedButton(
+                    onPressed: () async {
+                      debugPrint("🔵 Google 로그인 시작");
+                      try {
+                        final result = await SocialLoginService.googleLogin();
+                        debugPrint("🔵 googleLogin 결과: $result");
+
+                        // 1. 이미 가입된 유저인 경우 서버 토큰이 바로 오므로 저장
+                        if (result["serverAccessToken"] != null) {
+                          await ServerTokenManager.saveTokens(
+                            accessToken: result["serverAccessToken"],
+                            refreshToken: result["serverRefreshToken"],
+                          );
+                          debugPrint("🔵 토큰 저장 완료");
+                        }
+
+                        final notifier = ref.read(signupProvider.notifier);
+                        notifier.setProvider(SocialProvider.GOOGLE);
+
+                        // 2. 가입에 필요한 구글 idToken 저장
+                        notifier.setAccessToken(result["idToken"]);
+
+                        // 3. 디바이스 정보 저장
+                        notifier.setDevice(
+                          deviceId: result["deviceId"] ?? "",
+                          platform: result["platform"] ?? "",
+                          appVersion: result["appVersion"] ?? "",
+                        );
+                        debugPrint("🔵 notifier 세팅 완료, mounted=${context.mounted}");
+
+                        if (!context.mounted) return;
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const CommonSignUpPage(),
+                          ),
+                        );
+                        debugPrint("🔵 Navigator.push 호출됨");
+                      } catch (e, st) {
+                        debugPrint("🔵 Google 로그인 에러: $e");
+                        debugPrint("🔵 스택: $st");
+
+                        if (!context.mounted) return;
+
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text("Google 로그인 실패\n$e"),
+                          ),
+                        );
+                      }
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(
+                        color: Color(0xffE5E5E5),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(
+                          "assets/images/logo/google.png",
+                          width: 22,
+                          height: 22,
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          "Google로 시작하기",
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    )
+                ),
+              ),
+
+              const SizedBox(height: 14),
+
+              //----------------------------------
+              // Apple
+              //----------------------------------
+
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: OutlinedButton(
+                    onPressed: () async {
+                      debugPrint("🍎 Apple 로그인 시작");
+                      try {
+                        final result = await SocialLoginService.appleLogin();
+                        debugPrint("🍎 appleLogin 결과: $result");
+
+                        if (result["serverAccessToken"] != null) {
+                          await ServerTokenManager.saveTokens(
+                            accessToken: result["serverAccessToken"],
+                            refreshToken: result["serverRefreshToken"],
+                          );
+                          debugPrint("🍎 토큰 저장 완료");
+                        }
+
+                        final notifier = ref.read(signupProvider.notifier);
+                        notifier.setProvider(SocialProvider.APPLE);
+                        notifier.setAccessToken(result["idToken"]);
+                        notifier.setAuthorizationCode(result["authorizationCode"]);
+                        notifier.setDevice(
+                          deviceId: result["deviceId"] ?? "",
+                          platform: result["platform"] ?? "",
+                          appVersion: result["appVersion"] ?? "",
+                        );
+                        debugPrint("🍎 notifier 세팅 완료, mounted=${context.mounted}");
+
+                        if (!context.mounted) return;
+
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const CommonSignUpPage()),
+                        );
+                        debugPrint("🍎 Navigator.push 호출됨");
+                      } catch (e, st) {
+                        debugPrint("🍎 Apple 로그인 에러: $e");
+                        debugPrint("🍎 스택: $st");
+
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text("Apple 로그인 실패\n$e")),
+                        );
+                      }
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(
+                        color: Color(0xffE5E5E5),
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(
+                          "assets/images/logo/apple.png",
+                          width: 22,
+                          height: 22,
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          "Apple로 시작하기",
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    )
+                ),
+              ),
+
+              const SizedBox(height: 32),
 
               //----------------------------------
               // 로그인

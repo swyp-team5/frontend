@@ -12,14 +12,14 @@ class ScheduleWorker {
 
 class ScheduleShift {
   final String startTime;
-  final String endTime;
+  final String closeTime;
   final String role;
   final int required; // 필요한 인원
   final List<ScheduleWorker> workers; // 실제 근무 가능한 직원
 
   const ScheduleShift({
     required this.startTime,
-    required this.endTime,
+    required this.closeTime,
     required this.role,
     required this.required,
     required this.workers,

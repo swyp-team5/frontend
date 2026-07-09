@@ -1,5 +1,6 @@
 import 'package:chack_chack/common/onboarding/OnboardingPage.dart';
 import 'package:chack_chack/employer/home/RHomePage.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -7,10 +8,16 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 
 import 'employee/home/EHomePage.dart';
+import 'firebase_options.dart';
 
 void main() async {
   // Flutter 바인딩 초기화
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Firebase 초기화
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   // 한국어 로케일 데이터 초기화
   await initializeDateFormatting('ko_KR', null);
@@ -35,7 +42,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: EHomePage(),
+      home: RHomePage(),
     );
   }
 }

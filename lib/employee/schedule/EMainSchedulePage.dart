@@ -45,7 +45,7 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
       ScheduleShift(
         role: "오픈",
         startTime: "09:00",
-        endTime: "12:00",
+        closeTime: "12:00",
         required: 2,
         workers: const [
           ScheduleWorker(name: "김지연"),
@@ -55,7 +55,7 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
       ScheduleShift(
         role: "미들",
         startTime: "12:00",
-        endTime: "16:00",
+        closeTime: "16:00",
         required: 2,
         workers: const [
           ScheduleWorker(name: "박춘식"),
@@ -65,7 +65,7 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
       ScheduleShift(
         role: "마감",
         startTime: "16:00",
-        endTime: "20:00",
+        closeTime: "20:00",
         required: 1,
         workers: const [
           ScheduleWorker(name: "최민수"),
@@ -76,7 +76,7 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
       ScheduleShift(
         role: "오픈",
         startTime: "09:00",
-        endTime: "12:00",
+        closeTime: "12:00",
         required: 2,
         workers: const [
           ScheduleWorker(name: "이다빈"),
@@ -86,7 +86,7 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
       ScheduleShift(
         role: "미들",
         startTime: "12:00",
-        endTime: "16:00",
+        closeTime: "16:00",
         required: 2,
         workers: const [
           ScheduleWorker(name: "박춘식"),
@@ -96,7 +96,7 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
       ScheduleShift(
         role: "마감",
         startTime: "16:00",
-        endTime: "20:00",
+        closeTime: "20:00",
         required: 2,
         workers: const [
           ScheduleWorker(name: "서지훈"),
@@ -108,7 +108,7 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
       ScheduleShift(
         role: "오픈",
         startTime: "09:00",
-        endTime: "12:00",
+        closeTime: "12:00",
         required: 2,
         workers: const [
           ScheduleWorker(name: "이다빈"),
@@ -117,7 +117,7 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
       ScheduleShift(
         role: "미들",
         startTime: "12:00",
-        endTime: "16:00",
+        closeTime: "16:00",
         required: 2,
         workers: const [
           ScheduleWorker(name: "박춘식"),
@@ -127,7 +127,7 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
       ScheduleShift(
         role: "마감",
         startTime: "16:00",
-        endTime: "20:00",
+        closeTime: "20:00",
         required: 2,
         workers: const [
           ScheduleWorker(name: "서지훈"),

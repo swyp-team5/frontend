@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "954357709497",
+    "project_id": "chackchack-9fe40",
+    "storage_bucket": "chackchack-9fe40.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:954357709497:android:b2ae60e40d9ce0a4ca7968",
+        "android_client_info": {
+          "package_name": "com.example.chack_chack"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD8Hw41NWNp5vAYUI2tIcxy1sWWMR76wL4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
