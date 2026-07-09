@@ -195,6 +195,9 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
         weekStartDate: _mondayOfSelectedWeek(),
       );
 
+      debugPrint("weekly.confirmedWeekScheduleId = ${weekly.confirmedWeekScheduleId}");
+      debugPrint("weekly.weekScheduleId = ${weekly.weekScheduleId}");
+
       if (!mounted) return;
 
       setState(() {
@@ -296,6 +299,15 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                         icon: const Icon(Icons.edit_outlined),
                         onSelected: (value) async {
                           if (value == 'edit') {
+                            if (confirmedWeekScheduleId == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text("근무표 정보를 불러오는 중이에요. 잠시 후 다시 시도해주세요"),
+                                ),
+                              );
+                              return;
+                            }
+
                             await Navigator.push(
                               context,
                               MaterialPageRoute(
