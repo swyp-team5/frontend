@@ -166,7 +166,7 @@ class EMonthMyScheduleBottomSheet extends StatelessWidget {
 
                           const SizedBox(height: 4,),
 
-                          Text("${item.startTime} - ${item.endTime}",
+                          Text("${item.startTime} - ${item.closeTime}",
                             style: const TextStyle(
                               fontSize: 13,
                               color: Color(0xFF505050,),
@@ -186,16 +186,16 @@ class EMonthMyScheduleBottomSheet extends StatelessWidget {
   }
 }
 
-class MySchedule{
+class MySchedule {
   final String name;
   final String startTime;
-  final String endTime;
-  final String role;
+  final String closeTime;
+  final String timeName;
 
   const MySchedule({
     required this.name,
     required this.startTime,
-    required this.endTime,
-    required this.role,
+    required this.closeTime,
+    required this.timeName,
   });
 }

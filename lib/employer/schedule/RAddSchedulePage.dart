@@ -5,6 +5,10 @@ import 'package:chack_chack/employer/schedule/widgets/WorkerBottomSheet.dart';
 import 'package:chack_chack/employer/schedule/widgets/WorkingTImeInputBottomSheet.dart';
 import 'package:flutter/material.dart';
 
+import 'api/AssignmentApi.dart';
+import 'api/WorkersApi.dart';
+import 'models/AssignmentCreateRequest.dart';
+import 'models/WorkersResponse.dart';
 import 'widgets/RCompleteButton.dart';
 import 'widgets/RDropdownField.dart';
 import 'widgets/RInputBox.dart';
@@ -12,7 +16,14 @@ import 'widgets/RTimeField.dart';
 import 'models/schedule_model.dart';
 
 class RAddSchedulePage extends StatefulWidget {
-  const RAddSchedulePage({super.key});
+  final int workPlaceId;
+  final int confirmedWeekScheduleId;
+
+  const RAddSchedulePage({
+    super.key,
+    required this.workPlaceId,
+    required this.confirmedWeekScheduleId,
+  });
 
   @override
   State<RAddSchedulePage> createState() => _RAddSchedulePageState();
@@ -29,13 +40,16 @@ class _RAddSchedulePageState extends State<RAddSchedulePage> {
   String breakTime = "없음";
 
   List<DateTime> selectedDates = [];
+  List<WorkerItem> selectedWorkers = [];
 
-  List<String> selectedWorkers = [];
+  bool _isSubmitting = false;
+
 
   bool get canSubmit {
     return workNameController.text.isNotEmpty &&
         selectedWorkers.isNotEmpty &&
-        selectedDates.isNotEmpty;
+        selectedDates.isNotEmpty &&
+        !_isSubmitting;
   }
 
   TimeOfDay _toTimeOfDay(String time) {
@@ -47,8 +61,120 @@ class _RAddSchedulePageState extends State<RAddSchedulePage> {
     );
   }
 
-  final List<String> workers = ["모수연", "박춘식", "윤서준", "이다빈",];
+  /// "없음" -> 0, "30분" -> 30, "1시간" -> 60 처럼
+  /// 화면에 표시되는 휴게시간 문자열에서 분(minute) 단위 숫자만 추출.
+  int _parseBreakTimeToMinutes(String value) {
+    if (value == "없음" || value.trim().isEmpty) return 0;
 
+    final hourMatch = RegExp(r'(\d+)\s*시간').firstMatch(value);
+    final minuteMatch = RegExp(r'(\d+)\s*분').firstMatch(value);
+
+    final hours = hourMatch != null ? int.parse(hourMatch.group(1)!) : 0;
+    final minutes = minuteMatch != null ? int.parse(minuteMatch.group(1)!) : 0;
+
+    if (hours == 0 && minutes == 0) {
+      // 위 패턴에 안 걸리면 숫자만 그대로 파싱 시도
+      final numeric = RegExp(r'\d+').firstMatch(value);
+      return numeric != null ? int.parse(numeric.group(0)!) : 0;
+    }
+
+    return hours * 60 + minutes;
+  }
+
+  String _formatDate(DateTime date) {
+    return "${date.year.toString().padLeft(4, '0')}-"
+        "${date.month.toString().padLeft(2, '0')}-"
+        "${date.day.toString().padLeft(2, '0')}";
+  }
+
+  List<WorkerItem> workers = [];
+
+  Future<void> _loadWorkers() async {
+    try {
+      final result = await WorkersApi.getWorkers(
+        workPlaceId: widget.workPlaceId,
+      );
+
+      debugPrint("받아온 근무자 수 : ${result.workers.length}");
+
+      for (final worker in result.workers) {
+        debugPrint(worker.memberName);
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        workers = result.workers;
+      });
+
+      debugPrint("state workers : ${workers.length}");
+    } catch (e) {
+      debugPrint("근무자 조회 실패");
+      debugPrint(e.toString());
+    }
+  }
+
+  Future<void> _submitSchedule() async {
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      final memberIds = selectedWorkers.map((w) => w.memberId).toList();
+      final restTime = _parseBreakTimeToMinutes(breakTime);
+
+      // AssignmentCreateRequest는 날짜 하나당 요청 하나이므로,
+      // 선택된 날짜 수만큼 순차적으로 등록.
+      for (final date in selectedDates) {
+        await AssignmentApi.create(
+          workPlaceId: widget.workPlaceId,
+          confirmedWeekScheduleId: widget.confirmedWeekScheduleId,
+          request: AssignmentCreateRequest(
+            workDate: _formatDate(date),
+            workPartNo: 1, // TODO: 실제 근무 파트 순번 값으로 교체 필요
+            timeName: workNameController.text,
+            startTime: startTime,
+            closeTime: endTime,
+            restTime: restTime,
+            workerMemberIds: memberIds,
+          ),
+        );
+      }
+
+      if (!mounted) return;
+
+      Navigator.pop(
+        context,
+        ScheduleModel(
+          workName: workNameController.text,
+          startTime: startTime,
+          endTime: endTime,
+          breakTime: breakTime,
+          dates: selectedDates,
+          workers: List<WorkerItem>.from(selectedWorkers),
+        ),
+      );
+    } catch (e) {
+      debugPrint("근무 등록 실패 : $e");
+
+      if (!mounted) return;
+
+      setState(() {
+        _isSubmitting = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst("Exception: ", ""))),
+      );
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    _loadWorkers();
+  }
 
   @override
   void dispose() {
@@ -295,7 +421,7 @@ class _RAddSchedulePageState extends State<RAddSchedulePage> {
 
                             final result = await WorkerBottomSheet.show(
                               context,
-                              workers: workers,
+                              workPlaceId: widget.workPlaceId,
                               initialSelected: selectedWorkers,
                             );
 
@@ -311,7 +437,7 @@ class _RAddSchedulePageState extends State<RAddSchedulePage> {
                               Text(
                                 selectedWorkers.isEmpty
                                     ? "근무자 선택하기"
-                                    : selectedWorkers.join(", "),
+                                    : selectedWorkers.map((e)=>e.memberName).join(", "),
                                 style: const TextStyle(
                                   fontSize: 16,
                                   color: Color(0xFF7A7A7A),
@@ -348,7 +474,7 @@ class _RAddSchedulePageState extends State<RAddSchedulePage> {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
           child: RCompleteButton(
-            text: "추가 완료",
+            text: _isSubmitting ? "등록 중..." : "추가 완료",
             enabled: canSubmit,
             onPressed: canSubmit
                 ? () async {
@@ -356,19 +482,7 @@ class _RAddSchedulePageState extends State<RAddSchedulePage> {
               await RegisterScheduleBottomSheet.show(context);
 
               if (ok == true) {
-
-                /// TODO : API 호출
-                Navigator.pop(
-                  context,
-                  ScheduleModel(
-                    workName: workNameController.text,
-                    startTime: startTime,
-                    endTime: endTime,
-                    breakTime: breakTime,
-                    dates: selectedDates,
-                    workers: selectedWorkers,
-                  ),
-                );
+                await _submitSchedule();
               }
             }
                 : null,

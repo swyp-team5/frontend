@@ -164,7 +164,7 @@ class EMonthAllScheduleBottomSheet extends StatelessWidget {
                               const SizedBox(width: 8),
 
                               Text(
-                                "${shift.startTime} - ${shift.endTime}",
+                                "${shift.startTime} - ${shift.closeTime}",
                                 style: const TextStyle(
                                   fontSize: 13,
                                   color: Color(0xFF505050),

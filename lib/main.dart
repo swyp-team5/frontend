@@ -1,14 +1,14 @@
 import 'package:chack_chack/common/onboarding/OnboardingPage.dart';
 import 'package:chack_chack/employer/home/RHomePage.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
-import 'package:firebase_core/firebase_core.dart';   // firebase(fcm) 알림설정 추가
-import 'firebase_options.dart'; // firebase(fcm) 알림설정 추가
 
 import 'employee/home/EHomePage.dart';
+import 'firebase_options.dart';
 
 void main() async {
   // Flutter 바인딩 초기화

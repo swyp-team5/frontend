@@ -370,7 +370,7 @@ class _RMyPageState extends State<RMyPage> {
                 MaterialPageRoute(builder: (_) => const RCrewPage()));
           } else if (index == 2) {
             Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const RMainSchedulePage()));
+                MaterialPageRoute(builder: (_) => RMainSchedulePage(workPlaceId: selectedWorkPlaceId!,)));
           } else if (index == 4) {
             Navigator.push(
                 context, MaterialPageRoute(builder: (_) => const RMyPage()));
@@ -458,10 +458,19 @@ class _RMyPageState extends State<RMyPage> {
                     icon: Icons.calendar_today_outlined,
                     title: "오늘 근무",
                     onTap: () {
+                      if (selectedWorkPlaceId == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("매장을 먼저 선택해주세요")),
+                        );
+                        return;
+                      }
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => const RTodayWorkingPage(),
+                          builder: (_) => RTodayWorkingPage(
+                            workPlaceId: selectedWorkPlaceId!,
+                          ),
                         ),
                       );
                     },

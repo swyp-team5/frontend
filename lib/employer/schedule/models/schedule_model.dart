@@ -1,10 +1,12 @@
+import 'WorkersResponse.dart';
+
 class ScheduleModel {
   final String workName;
   final String startTime;
   final String endTime;
   final String breakTime;
   final List<DateTime> dates;
-  final List<String> workers;
+  final List<WorkerItem> workers;
 
   const ScheduleModel({
     required this.workName,

@@ -3,28 +3,51 @@ import 'package:flutter/material.dart';
 import 'RMonthAllScheduleBottomSheet.dart';
 
 class RScheduleWorker {
+  final int memberId;
   final String name;
 
   const RScheduleWorker({
+    required this.memberId,
     required this.name,
   });
 }
 
+int breakTimeLabelToMinutes(String label) {
+  switch (label) {
+    case "없음":
+      return 0;
+    case "30분":
+      return 30;
+    case "1시간":
+      return 60;
+    case "1시간 30분":
+      return 90;
+    default:
+      return 0;
+  }
+}
+
 class RScheduleShift {
+  final int timeDetailId;
+  final int workPartNo;
   String startTime;
   String endTime;
-  String role;
+  String timeName;
   String breakTime;
   final int required;  // 필요한 인원
   final List<RScheduleWorker> workers;  // 실제 근무 가능한 직원
+  final int colorIndex;
 
   RScheduleShift({
+    required this.timeDetailId,
+    required this.workPartNo,
     required this.startTime,
     required this.endTime,
-    required this.role,
+    required this.timeName,
     this.breakTime = "없음",
     required this.required,
     required this.workers,
+    required this.colorIndex,
   });
 
   int get assigned => workers.length;
@@ -37,15 +60,17 @@ class RScheduleShift {
 class RMonthAllSchedulePage extends StatefulWidget {
   final DateTime selectedDate;
   final ValueChanged<DateTime> onDateChanged;
-
-  /// API 응답
-  final Map<String, List<RScheduleShift>> schedules;
+  final Map<String, List<RScheduleShift>> schedules;  // API 응답
+  final int workPlaceId;
+  final int? confirmedWeekScheduleId;
 
   const RMonthAllSchedulePage({
     super.key,
     required this.selectedDate,
     required this.onDateChanged,
     required this.schedules,
+    required this.workPlaceId,
+    required this.confirmedWeekScheduleId,
   });
 
   @override
@@ -178,6 +203,8 @@ class _RMonthAllSchedulePageState
                             date: date,
                             workers: workers,
                             schedules: widget.schedules,
+                            workPlaceId: widget.workPlaceId,
+                            confirmedWeekScheduleId: widget.confirmedWeekScheduleId,
                           ),
                         );
 
@@ -259,13 +286,12 @@ class _WorkerScheduleArea extends StatelessWidget {
       return const SizedBox();
     }
 
-    final allWorkers = <MapEntry<RScheduleWorker, String>>[];
+    // role 대신 colorIndex를 같이 들고 다님
+    final allWorkers = <(RScheduleWorker, int)>[];
 
     for (final shift in workers) {
       for (final worker in shift.workers) {
-        allWorkers.add(
-          MapEntry(worker, shift.role),
-        );
+        allWorkers.add((worker, shift.colorIndex));
       }
     }
 
@@ -286,8 +312,8 @@ class _WorkerScheduleArea extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(bottom: 1),
             child: _WorkerChip(
-              worker: item.key,
-              role: item.value,
+              worker: item.$1,
+              colorIndex: item.$2, // role -> colorIndex
             ),
           ),
         if (remainCount > 0)
@@ -306,53 +332,39 @@ class _WorkerScheduleArea extends StatelessWidget {
 
 class _WorkerChip extends StatelessWidget {
   final RScheduleWorker worker;
-  final String role;
+  final int colorIndex; // role -> colorIndex
 
   const _WorkerChip({
     required this.worker,
-    required this.role,
+    required this.colorIndex,
   });
 
-  Color get backgroundColor {
-    switch (role) {
-      case "오픈":
-        return const Color(0xFFE6F3FF);
+  static const List<Color> _bgColors = [
+    Color(0xFFE6F3FF),
+    Color(0xFFEEEBFF),
+    Color(0xFFDCFED8),
+  ];
+  static const List<Color> _textColors = [
+    Color(0xFF0063BF),
+    Color(0xFF7D67FD),
+    Color(0xFF007360),
+  ];
 
-      case "미들":
-        return const Color(0xFFEEEBFF);
+  Color get backgroundColor =>
+      colorIndex < _bgColors.length
+          ? _bgColors[colorIndex]
+          : const Color(0xFFF2F2F5);
 
-      case "마감":
-        return const Color(0xFFDCFED8);
-
-      default:
-        return const Color(0xFFF2F2F5);
-    }
-  }
-
-  Color get textColor {
-    switch (role) {
-      case "오픈":
-        return const Color(0xFF0063BF);
-
-      case "미들":
-        return const Color(0xFF7D67FD);
-
-      case "마감":
-        return const Color(0xFF007360);
-
-      default:
-        return Colors.black87;
-    }
-  }
+  Color get textColor =>
+      colorIndex < _textColors.length
+          ? _textColors[colorIndex]
+          : Colors.black87;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       height: 18,
-      padding: const EdgeInsets.symmetric(
-        horizontal: 6,
-        vertical: 1,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(8),
