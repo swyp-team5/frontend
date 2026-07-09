@@ -17,7 +17,6 @@ class _RWorkPlaceSettingPageState extends State<RWorkPlaceSettingPage> {
   List<WorkPlaceSummary> _workPlaces = [];
   int? _selectedWorkPlaceId;
   bool _isLoading = true;
-  bool _isSavingPhone = false;
 
   WorkPlaceSummary? get _selectedWorkPlace {
     for (final workPlace in _workPlaces) {
@@ -74,6 +73,7 @@ class _RWorkPlaceSettingPageState extends State<RWorkPlaceSettingPage> {
 
   Future<void> _selectWorkPlace(WorkPlaceSummary workPlace) async {
     await SelectedWorkPlaceStorage.save(workPlace.workPlaceId);
+
     if (!mounted) {
       return;
     }
@@ -81,6 +81,7 @@ class _RWorkPlaceSettingPageState extends State<RWorkPlaceSettingPage> {
     setState(() {
       _selectedWorkPlaceId = workPlace.workPlaceId;
     });
+
     _showMessage('${workPlace.name} 매장으로 변경했어요.');
   }
 
@@ -95,13 +96,16 @@ class _RWorkPlaceSettingPageState extends State<RWorkPlaceSettingPage> {
     }
 
     await SelectedWorkPlaceStorage.save(created.workPlaceId);
+
     if (!mounted) {
       return;
     }
+
     setState(() {
       _workPlaces = [..._workPlaces, created];
       _selectedWorkPlaceId = created.workPlaceId;
     });
+
     _showMessage('매장이 추가되었어요.');
   }
 
@@ -111,9 +115,7 @@ class _RWorkPlaceSettingPageState extends State<RWorkPlaceSettingPage> {
       return;
     }
 
-    final controller = TextEditingController(text: current.phoneNumber ?? '');
-
-    await showModalBottomSheet(
+    final updated = await showModalBottomSheet<WorkPlaceSummary>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.white,
@@ -121,165 +123,46 @@ class _RWorkPlaceSettingPageState extends State<RWorkPlaceSettingPage> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 48,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFD9D9D9),
-                      borderRadius: BorderRadius.circular(100),
-                    ),
-                  ),
-                  const SizedBox(height: 22),
-                  const Text(
-                    '매장 전화번호',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 22),
-                  TextField(
-                    controller: controller,
-                    keyboardType: TextInputType.phone,
-                    decoration: InputDecoration(
-                      hintText: '예시) 0212345678',
-                      filled: true,
-                      fillColor: const Color(0xFFF7F7FB),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: const BorderSide(
-                          color: Color(0xFF0084FF),
-                          width: 1.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  if (current.phoneNumber != null &&
-                      current.phoneNumber!.isNotEmpty)
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: OutlinedButton(
-                        onPressed: _isSavingPhone
-                            ? null
-                            : () async {
-                                final deleted = await _updatePhoneNumber(
-                                  current,
-                                  null,
-                                );
-                                if (deleted && context.mounted) {
-                                  Navigator.pop(context);
-                                }
-                              },
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Colors.red,
-                          side: const BorderSide(color: Color(0xFFE0E0E0)),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text('전화번호 삭제'),
-                      ),
-                    ),
-                  if (current.phoneNumber != null &&
-                      current.phoneNumber!.isNotEmpty)
-                    const SizedBox(height: 10),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 54,
-                    child: ElevatedButton(
-                      onPressed: _isSavingPhone
-                          ? null
-                          : () async {
-                              final saved = await _updatePhoneNumber(
-                                current,
-                                controller.text,
-                              );
-                              if (saved && context.mounted) {
-                                Navigator.pop(context);
-                              }
-                            },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0084FF),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        '저장',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+        return _PhoneNumberBottomSheet(
+          current: current,
+          onUpdate: _updatePhoneNumber,
         );
       },
     );
 
-    controller.dispose();
+    if (updated == null || !mounted) {
+      return;
+    }
+
+    setState(() {
+      _workPlaces = _workPlaces
+          .map((e) => e.workPlaceId == updated.workPlaceId ? updated : e)
+          .toList();
+    });
+
+    _showMessage('전화번호가 변경되었어요.');
   }
 
-  Future<bool> _updatePhoneNumber(
+  Future<WorkPlaceSummary?> _updatePhoneNumber(
     WorkPlaceSummary current,
     String? phoneNumber,
   ) async {
     final normalized = WorkPlaceApi.normalizePhoneNumber(phoneNumber);
+
     if (normalized != null &&
         (normalized.length < 8 || normalized.length > 11)) {
       _showMessage('전화번호는 숫자 8~11자리로 입력해주세요.');
-      return false;
+      return null;
     }
 
-    setState(() {
-      _isSavingPhone = true;
-    });
-
     try {
-      final updated = await _api.updatePhoneNumber(
+      return await _api.updatePhoneNumber(
         workPlaceId: current.workPlaceId,
         phoneNumber: phoneNumber,
       );
-      if (!mounted) {
-        return false;
-      }
-
-      setState(() {
-        _workPlaces = _workPlaces
-            .map((e) => e.workPlaceId == updated.workPlaceId ? updated : e)
-            .toList();
-      });
-      _showMessage('전화번호가 변경되었어요.');
-      return true;
     } catch (e) {
       _showMessage(_messageFromError(e, '전화번호 변경에 실패했어요.'));
-      return false;
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSavingPhone = false;
-        });
-      }
+      return null;
     }
   }
 
@@ -287,6 +170,7 @@ class _RWorkPlaceSettingPageState extends State<RWorkPlaceSettingPage> {
     if (!mounted) {
       return;
     }
+
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
@@ -294,9 +178,11 @@ class _RWorkPlaceSettingPageState extends State<RWorkPlaceSettingPage> {
 
   String _messageFromError(Object error, String fallback) {
     final text = error.toString();
+
     if (text.startsWith('Exception: ')) {
       return text.replaceFirst('Exception: ', '');
     }
+
     return fallback;
   }
 
@@ -437,6 +323,7 @@ class _RWorkPlaceSettingPageState extends State<RWorkPlaceSettingPage> {
 
   Widget _workPlaceTile(WorkPlaceSummary workPlace) {
     final selected = workPlace.workPlaceId == _selectedWorkPlaceId;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: InkWell(
@@ -510,5 +397,197 @@ class _RWorkPlaceSettingPageState extends State<RWorkPlaceSettingPage> {
       default:
         return size;
     }
+  }
+}
+
+class _PhoneNumberBottomSheet extends StatefulWidget {
+  const _PhoneNumberBottomSheet({
+    required this.current,
+    required this.onUpdate,
+  });
+
+  final WorkPlaceSummary current;
+  final Future<WorkPlaceSummary?> Function(
+    WorkPlaceSummary current,
+    String? phoneNumber,
+  )
+  onUpdate;
+
+  @override
+  State<_PhoneNumberBottomSheet> createState() =>
+      _PhoneNumberBottomSheetState();
+}
+
+class _PhoneNumberBottomSheetState extends State<_PhoneNumberBottomSheet> {
+  late final TextEditingController _controller;
+  bool _isSaving = false;
+
+  bool get _hasPhoneNumber =>
+      widget.current.phoneNumber != null && widget.current.phoneNumber!.isNotEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(
+      text: widget.current.phoneNumber ?? '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit(String? phoneNumber) async {
+    if (_isSaving) {
+      return;
+    }
+
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+
+      final updated = await widget.onUpdate(
+        widget.current,
+        phoneNumber,
+      );
+
+      if (!mounted || updated == null) {
+        return;
+      }
+
+      Navigator.of(context).pop(updated);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+      ),
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 48,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFD9D9D9),
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                ),
+                const SizedBox(height: 22),
+                const Text(
+                  '매장 전화번호',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 22),
+                TextField(
+                  controller: _controller,
+                  keyboardType: TextInputType.phone,
+                  enabled: !_isSaving,
+                  decoration: InputDecoration(
+                    hintText: '예시) 0212345678',
+                    filled: true,
+                    fillColor: const Color(0xFFF7F7FB),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF0084FF),
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                if (_hasPhoneNumber)
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: OutlinedButton(
+                      onPressed: _isSaving ? null : () => _submit(null),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red,
+                        side: const BorderSide(color: Color(0xFFE0E0E0)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: _isSaving
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Text('전화번호 삭제'),
+                    ),
+                  ),
+                if (_hasPhoneNumber) const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: ElevatedButton(
+                    onPressed: _isSaving
+                        ? null
+                        : () => _submit(_controller.text),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF0084FF),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: _isSaving
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text(
+                            '저장',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
