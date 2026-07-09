@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../mypage/RTodayWorkingPage.dart';
 import '../../schedule/api/ConfirmedSchedulesApi.dart';
 import '../../schedule/models/ConfirmedSchedulesResponse.dart';
 
@@ -10,8 +11,8 @@ class RTodayWorkCard extends StatefulWidget {
   // 개발용 — 테스트하고 싶은 날짜를 지정 (null이면 실제 오늘 날짜 사용)
   //==========================================================
 
-  static final DateTime? debugDate = DateTime(2026, 7, 16);
-  // static const DateTime? debugDate = null; // 실제 오늘 날짜로 되돌릴 때는 이걸로 교체
+  // static final DateTime? debugDate = DateTime(2026, 7, 16);
+  static const DateTime? debugDate = null; // 실제 오늘 날짜로 되돌릴 때는 이걸로 교체
 
   const RTodayWorkCard({
     super.key,
@@ -136,6 +137,21 @@ class _RTodayWorkCardState extends State<RTodayWorkCard> {
     return "$start-$close";
   }
 
+  /// "자세히 보기" 탭 시 RTodayWorkingPage로 이동.
+  /// widget.onDetailTap이 별도로 주어졌다면 이동 후(또는 이동과 별개로) 함께 호출.
+  void _handleDetailTap() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => RTodayWorkingPage(
+          workPlaceId: widget.workPlaceId,
+        ),
+      ),
+    );
+
+    widget.onDetailTap?.call();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -213,7 +229,7 @@ class _RTodayWorkCardState extends State<RTodayWorkCard> {
           const SizedBox(height: 18),
 
           InkWell(
-            onTap: widget.onDetailTap,
+            onTap: _handleDetailTap,
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
