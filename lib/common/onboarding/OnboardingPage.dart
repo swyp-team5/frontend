@@ -33,6 +33,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
     ),
   ];
 
+  void _openSocialLogin() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (_) => const OnboardingBottomSheet(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -41,18 +50,16 @@ class _OnboardingPageState extends State<OnboardingPage> {
       body: SafeArea(
         child: Column(
           children: [
-
             const SizedBox(height: 24),
 
             //--------------------------------------
             // Indicator
             //--------------------------------------
-
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(
                 items.length,
-                    (index) => AnimatedContainer(
+                (index) => AnimatedContainer(
                   duration: const Duration(milliseconds: 250),
                   margin: const EdgeInsets.symmetric(horizontal: 4),
                   width: 10,
@@ -61,7 +68,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                     shape: BoxShape.circle,
                     color: currentPage == index
                         ? const Color(0xff0084FF)
-                        : const Color(0xffDDDDDD),
+                        : const Color(0xffD9D9D9),
                   ),
                 ),
               ),
@@ -72,7 +79,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
             //--------------------------------------
             // PageView
             //--------------------------------------
-
             Expanded(
               child: PageView.builder(
                 controller: _controller,
@@ -86,14 +92,12 @@ class _OnboardingPageState extends State<OnboardingPage> {
                   final item = items[index];
 
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 30),
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Column(
                       children: [
-
                         //----------------------------------
                         // 제목
                         //----------------------------------
-
                         Text(
                           item.title,
                           textAlign: TextAlign.center,
@@ -109,16 +113,13 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         //----------------------------------
                         // 휴대폰 이미지
                         //----------------------------------
-
                         Expanded(
                           child: Align(
                             alignment: Alignment.bottomCenter,
-                            child: Transform(
-                              alignment: Alignment.bottomCenter,
-                              transform: Matrix4.diagonal3Values(
-                                1.2, // width 1.2배
-                                1.2, // height 1.2배
-                                1.0,
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                maxWidth: 260,
+                                maxHeight: 250,
                               ),
                               child: Image.asset(
                                 item.image,
@@ -137,7 +138,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
             //--------------------------------------
             // 회원가입 버튼
             //--------------------------------------
-
             Padding(
               padding: const EdgeInsets.fromLTRB(30, 0, 30, 20),
               child: SizedBox(
@@ -151,14 +151,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  onPressed: () {
-                    showModalBottomSheet(
-                      context: context,
-                      backgroundColor: Colors.transparent,
-                      isScrollControlled: true,
-                      builder: (_) => const OnboardingBottomSheet(),
-                    );
-                  },
+                  onPressed: _openSocialLogin,
 
                   child: const Text(
                     "회원가입 바로가기",
@@ -177,7 +170,6 @@ class _OnboardingPageState extends State<OnboardingPage> {
             //--------------------------------------
             // 시작하기
             //--------------------------------------
-
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -191,7 +183,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                 ),
 
                 GestureDetector(
-                  onTap: () {},
+                  onTap: _openSocialLogin,
                   child: const Text(
                     "바로 시작하기",
                     style: TextStyle(
@@ -216,8 +208,5 @@ class _OnboardingItem {
   final String title;
   final String image;
 
-  const _OnboardingItem({
-    required this.title,
-    required this.image,
-  });
+  const _OnboardingItem({required this.title, required this.image});
 }

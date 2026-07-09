@@ -28,6 +28,8 @@ int breakTimeLabelToMinutes(String label) {
 }
 
 class RScheduleShift {
+  final int timeDetailId;
+  final int workPartNo;
   String startTime;
   String endTime;
   String timeName;
@@ -37,6 +39,8 @@ class RScheduleShift {
   final int colorIndex;
 
   RScheduleShift({
+    required this.timeDetailId,
+    required this.workPartNo,
     required this.startTime,
     required this.endTime,
     required this.timeName,
@@ -58,6 +62,7 @@ class RMonthAllSchedulePage extends StatefulWidget {
   final ValueChanged<DateTime> onDateChanged;
   final Map<String, List<RScheduleShift>> schedules;  // API 응답
   final int workPlaceId;
+  final int? confirmedWeekScheduleId;
 
   const RMonthAllSchedulePage({
     super.key,
@@ -65,6 +70,7 @@ class RMonthAllSchedulePage extends StatefulWidget {
     required this.onDateChanged,
     required this.schedules,
     required this.workPlaceId,
+    required this.confirmedWeekScheduleId,
   });
 
   @override
@@ -198,6 +204,7 @@ class _RMonthAllSchedulePageState
                             workers: workers,
                             schedules: widget.schedules,
                             workPlaceId: widget.workPlaceId,
+                            confirmedWeekScheduleId: widget.confirmedWeekScheduleId,
                           ),
                         );
 

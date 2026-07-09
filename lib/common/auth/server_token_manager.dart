@@ -1,54 +1,110 @@
 import 'dart:convert';
-import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-class ServerTokenManager {
-  static const _accessTokenKey = "server_access_token";
-  static const _refreshTokenKey = "server_refresh_token";
+import 'package:dio/dio.dart';
+
+import 'model/social_auth_models.dart';
+import 'session/auth_session_store.dart';
+
+class RefreshTokens {
+  final String accessToken;
+  final String refreshToken;
+
+  const RefreshTokens({required this.accessToken, required this.refreshToken});
+}
+
+abstract class TokenRefreshClient {
+  Future<RefreshTokens> refresh(String refreshToken, String deviceId);
+}
+
+class DioTokenRefreshClient implements TokenRefreshClient {
+  final Dio dio;
+
+  DioTokenRefreshClient({Dio? dio})
+      : dio = dio ??
+            Dio(
+              BaseOptions(
+                baseUrl: 'https://chackchack.shop',
+                connectTimeout: const Duration(seconds: 10),
+                receiveTimeout: const Duration(seconds: 10),
+                headers: const {
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json',
+                },
+              ),
+            );
+
+  @override
+  Future<RefreshTokens> refresh(String refreshToken, String deviceId) async {
+    final response = await dio.post(
+      '/api/auth/token/refresh',
+      data: {'refreshToken': refreshToken, 'deviceId': deviceId},
+    );
+    final data = response.data;
+    if (data is! Map) {
+      throw const FormatException('Invalid refresh response');
+    }
+    final access = data['accessToken'];
+    final rotatedRefresh = data['refreshToken'];
+    if (access is! String ||
+        access.isEmpty ||
+        rotatedRefresh is! String ||
+        rotatedRefresh.isEmpty) {
+      throw const FormatException('Invalid refresh response');
+    }
+    return RefreshTokens(accessToken: access, refreshToken: rotatedRefresh);
+  }
+}
+
+class ServerTokenManager implements AuthSessionSaver {
+  static final ServerTokenManager _defaultManager = ServerTokenManager();
+
+  final AuthSessionStore store;
+  final TokenRefreshClient refreshClient;
+
+  Future<String?>? _refreshFuture;
+
+  ServerTokenManager({
+    AuthSessionStore? store,
+    TokenRefreshClient? refreshClient,
+  }) : store = store ?? SecureAuthSessionStore(),
+       refreshClient = refreshClient ?? DioTokenRefreshClient();
+
+  @override
+  Future<void> saveSession(AuthSession session) {
+    return store.write(session);
+  }
 
   static Future<void> saveTokens({
     required String accessToken,
     required String refreshToken,
-  }) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_accessTokenKey, accessToken);
-    await prefs.setString(_refreshTokenKey, refreshToken);
+    required String deviceId,
+  }) {
+    return _defaultManager.saveSession(
+      AuthSession(
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+        deviceId: deviceId,
+      ),
+    );
   }
 
   static Future<String?> getAccessToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_accessTokenKey);
+    return (await _defaultManager.store.read())?.accessToken;
   }
 
   static Future<String?> getRefreshToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_refreshTokenKey);
+    return (await _defaultManager.store.read())?.refreshToken;
   }
 
-  static Future<void> clear() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.clear();
+  static Future<void> clear() {
+    return _defaultManager.store.clear();
   }
 
-  /// JWT의 exp(초)를 파싱해서 만료 여부 확인
   static bool isExpired(String token) {
     try {
-      final parts = token.split('.');
-      if (parts.length != 3) return true;
-
-      final payload = utf8.decode(
-        base64Url.decode(base64Url.normalize(parts[1])),
-      );
-      final Map<String, dynamic> data = jsonDecode(payload);
-      
-      // 'Null' is not a subtype of type 'int' 오류를 방지하기 위해 num으로 받고 toInt() 처리
-      final dynamic expValue = data['exp'];
-      if (expValue == null) return true;
-      
-      final int exp = (expValue as num).toInt();
-
+      final data = _decodePayload(token);
+      final exp = (data['exp'] as num).toInt();
       final expDate = DateTime.fromMillisecondsSinceEpoch(exp * 1000);
-      // 만료 10초 전이면 미리 만료로 취급 (여유 버퍼)
       return DateTime.now().isAfter(
         expDate.subtract(const Duration(seconds: 10)),
       );
@@ -57,46 +113,96 @@ class ServerTokenManager {
     }
   }
 
-  /// 유효한 accessToken 반환. 만료됐으면 자동으로 refresh 시도.
-  static Future<String?> getValidAccessToken() async {
-    final access = await getAccessToken();
-    if (access == null) return null;
-
-    if (!isExpired(access)) return access;
-
-    // 만료됐으면 refresh 시도
-    return refreshAccessToken();
-  }
-
-  /// refreshToken으로 새 accessToken 발급
-  static Future<String?> refreshAccessToken() async {
-    final refreshToken = await getRefreshToken();
-    if (refreshToken == null) return null;
-
+  static AuthMemberRole? roleFromToken(String token) {
     try {
-      // 인터셉터 없는 별도 Dio 인스턴스 사용 (무한루프 방지)
-      final refreshDio = Dio();
-
-      final response = await refreshDio.post(
-        "https://chackchack.shop/api/auth/token/refresh",
-        data: {"refreshToken": refreshToken},
-      );
-
-      final newAccessToken = response.data["accessToken"];
-      final newRefreshToken = response.data["refreshToken"] ?? refreshToken;
-
-      if (newAccessToken != null) {
-        await saveTokens(
-          accessToken: newAccessToken,
-          refreshToken: newRefreshToken,
-        );
-        return newAccessToken;
+      switch (_decodePayload(token)['role']) {
+        case 'OWNER':
+          return AuthMemberRole.owner;
+        case 'WORKER':
+          return AuthMemberRole.worker;
+        default:
+          return null;
       }
-      return null;
-    } catch (e) {
-      // refresh도 실패 → 재로그인 필요
-      await clear();
+    } catch (_) {
       return null;
     }
+  }
+
+  static Future<String?> getValidAccessToken() {
+    return _defaultManager.resolveValidAccessToken();
+  }
+
+  static Future<String?> refreshAccessToken() {
+    return _defaultManager.refreshSession();
+  }
+
+  Future<String?> resolveValidAccessToken() async {
+    final session = await store.read();
+    if (session == null) {
+      return null;
+    }
+    if (!isExpired(session.accessToken)) {
+      return session.accessToken;
+    }
+    return _refreshOnce(session);
+  }
+
+  Future<String?> refreshSession() async {
+    final session = await store.read();
+    if (session == null) {
+      return null;
+    }
+    return _refreshOnce(session);
+  }
+
+  Future<String?> _refreshOnce(AuthSession session) {
+    final running = _refreshFuture;
+    if (running != null) {
+      return running;
+    }
+
+    _refreshFuture = _refresh(session).whenComplete(() {
+      _refreshFuture = null;
+    });
+
+    return _refreshFuture!;
+  }
+
+  Future<String?> _refresh(AuthSession session) async {
+    try {
+      final tokens = await refreshClient.refresh(
+        session.refreshToken,
+        session.deviceId,
+      );
+      if (isExpired(tokens.accessToken)) {
+        throw const FormatException('Invalid refreshed access token');
+      }
+      await saveSession(
+        AuthSession(
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
+          deviceId: session.deviceId,
+        ),
+      );
+      return tokens.accessToken;
+    } catch (_) {
+      await store.clear();
+      return null;
+    }
+  }
+
+  static Map<String, dynamic> _decodePayload(String token) {
+    final parts = token.split('.');
+    if (parts.length != 3) {
+      throw const FormatException('Invalid token');
+    }
+    final payload = utf8.decode(
+      base64Url.decode(base64Url.normalize(parts[1])),
+    );
+    final data = jsonDecode(payload);
+    if (data is! Map<String, dynamic>) {
+      throw const FormatException('Invalid token payload');
+    }
+    return data;
   }
 }
