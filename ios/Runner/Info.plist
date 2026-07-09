@@ -98,6 +98,18 @@
     				<string>chack-chack</string>
     			</array>
     		</dict>
+
+    		<dict>
+                      <key>CFBundleTypeRole</key>
+                      <string>Editor</string>
+                      <key>CFBundleURLSchemes</key>
+                      <array>
+                         <string>com.googleusercontent.apps.628121456031-ceuo6vna7sttq2lqf9ln522s8ju2lhip</string>
+                      </array>
+                   </dict>
     </array>
+
+    <key>GIDClientID</key>
+        <string>628121456031-ceuo6vna7sttq2lqf9ln522s8ju2lhip.apps.googleusercontent.com</string>
 </dict>
 </plist>
