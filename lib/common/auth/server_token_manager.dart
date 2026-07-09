@@ -20,7 +20,18 @@ class DioTokenRefreshClient implements TokenRefreshClient {
   final Dio dio;
 
   DioTokenRefreshClient({Dio? dio})
-    : dio = dio ?? Dio(BaseOptions(baseUrl: 'https://chackchack.shop'));
+      : dio = dio ??
+            Dio(
+              BaseOptions(
+                baseUrl: 'https://chackchack.shop',
+                connectTimeout: const Duration(seconds: 10),
+                receiveTimeout: const Duration(seconds: 10),
+                headers: const {
+                  'Accept': 'application/json',
+                  'Content-Type': 'application/json',
+                },
+              ),
+            );
 
   @override
   Future<RefreshTokens> refresh(String refreshToken, String deviceId) async {
@@ -49,6 +60,8 @@ class ServerTokenManager implements AuthSessionSaver {
 
   final AuthSessionStore store;
   final TokenRefreshClient refreshClient;
+
+  Future<String?>? _refreshFuture;
 
   ServerTokenManager({
     AuthSessionStore? store,
@@ -131,7 +144,7 @@ class ServerTokenManager implements AuthSessionSaver {
     if (!isExpired(session.accessToken)) {
       return session.accessToken;
     }
-    return _refresh(session);
+    return _refreshOnce(session);
   }
 
   Future<String?> refreshSession() async {
@@ -139,7 +152,20 @@ class ServerTokenManager implements AuthSessionSaver {
     if (session == null) {
       return null;
     }
-    return _refresh(session);
+    return _refreshOnce(session);
+  }
+
+  Future<String?> _refreshOnce(AuthSession session) {
+    final running = _refreshFuture;
+    if (running != null) {
+      return running;
+    }
+
+    _refreshFuture = _refresh(session).whenComplete(() {
+      _refreshFuture = null;
+    });
+
+    return _refreshFuture!;
   }
 
   Future<String?> _refresh(AuthSession session) async {

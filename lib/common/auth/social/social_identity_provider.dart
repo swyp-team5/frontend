@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:chack_chack/common/auth/config/auth_environment.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
@@ -100,8 +102,10 @@ class DeviceContextProvider {
     }
 
     final packageInfo = await PackageInfo.fromPlatform();
+    final installationId = await installationIdProvider.load();
+    debugPrint('[SocialAuth][Device] context ready platform=$platform');
     return DevicePayload(
-      deviceId: await installationIdProvider.load(),
+      deviceId: installationId,
       platform: platform,
       appVersion: packageInfo.version,
     );
@@ -109,9 +113,7 @@ class DeviceContextProvider {
 }
 
 class GoogleSocialIdentityProvider implements SocialIdentityProvider {
-  static const serverClientId = String.fromEnvironment(
-    'GOOGLE_SERVER_CLIENT_ID',
-  );
+  static const serverClientId = AuthEnvironment.googleServerClientId;
 
   final GoogleSignIn googleSignIn;
   final DeviceContextProvider deviceContextProvider;
@@ -122,7 +124,7 @@ class GoogleSocialIdentityProvider implements SocialIdentityProvider {
   }) : googleSignIn =
            googleSignIn ??
            GoogleSignIn(
-             scopes: const ['email'],
+             scopes: const ['email', 'profile'],
              serverClientId: serverClientId.isEmpty ? null : serverClientId,
            ),
        deviceContextProvider = deviceContextProvider ?? DeviceContextProvider();
@@ -152,7 +154,8 @@ class GoogleSocialIdentityProvider implements SocialIdentityProvider {
       );
     } on SocialProviderException {
       rethrow;
-    } catch (_) {
+    } catch (error) {
+      debugPrint('[SocialAuth][google] failure type=${error.runtimeType}');
       throw const SocialProviderException('Google 로그인에 실패했어요.');
     }
   }
@@ -171,6 +174,7 @@ class KakaoSocialIdentityProvider implements SocialIdentityProvider {
       if (token == null) {
         return null;
       }
+      debugPrint('[SocialAuth][kakao] SDK access token acquired');
       return SocialCredential.kakao(
         accessToken: token.accessToken,
         device: await deviceContextProvider.load(),
@@ -180,6 +184,18 @@ class KakaoSocialIdentityProvider implements SocialIdentityProvider {
     } catch (error) {
       if (_isCancelled(error)) {
         return null;
+      }
+      if (error is KakaoAuthException) {
+        debugPrint(
+          '[SocialAuth][kakao] SDK auth failure '
+          'cause=${error.error.name} description=${error.errorDescription}',
+        );
+      } else if (error is KakaoClientException) {
+        debugPrint(
+          '[SocialAuth][kakao] SDK client failure reason=${error.reason.name}',
+        );
+      } else {
+        debugPrint('[SocialAuth][kakao] SDK failure type=${error.runtimeType}');
       }
       throw const SocialProviderException('카카오 로그인에 실패했어요.');
     }

@@ -13,6 +13,9 @@ void main() async {
 
   // 카카오 SDK 초기화
   KakaoSdk.init(nativeAppKey: '05952ada0dceff8e149cd664e5459465');
+  // 환경 변수로 초기화
+  /*AuthEnvironment.validateForRuntime();
+  KakaoSdk.init(nativeAppKey: AuthEnvironment.kakaoNativeAppKey);*/
 
   runApp(
     // Riverpod을 사용하기 위해 ProviderScope로 감싸줍니다.

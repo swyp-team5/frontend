@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../api/social_auth_api.dart';
 import '../model/social_auth_models.dart';
 import '../server_token_manager.dart';
@@ -65,10 +67,15 @@ class SocialAuthCoordinator implements SocialAuthFlow {
 
     final credential = await identityProvider.authenticate();
     if (credential == null) {
+      debugPrint('[SocialAuth][${provider.name}] provider cancelled');
       return const SocialAuthOutcome.cancelled();
     }
 
+    debugPrint('[SocialAuth][${provider.name}] credential acquired');
     final response = await api.login(credential);
+    debugPrint(
+      '[SocialAuth][${provider.name}] backend result=${response.status.name}',
+    );
     switch (response.status) {
       case AuthStatus.loginSuccess:
         await sessionSaver.saveSession(

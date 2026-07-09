@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 import '../model/social_auth_models.dart';
@@ -37,9 +38,16 @@ class SocialAuthApi implements SocialAuthClient {
           'Content-Type': 'application/json',
         },
         body: jsonEncode(credential.toJson()),
-      );
+      )
+      .timeout(const Duration(seconds: 10));
 
       final body = _decodeObject(response);
+
+      debugPrint(
+        '[SocialAuth][Backend] status=${response.statusCode} '
+        'result=${body?['status'] ?? body?['code'] ?? 'unknown'}',
+      );
+
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw SocialAuthException(
           body?['message']?.toString() ?? _fallbackMessage,
@@ -57,7 +65,8 @@ class SocialAuthApi implements SocialAuthClient {
       }
     } on SocialAuthException {
       rethrow;
-    } catch (_) {
+    } catch (error) {
+      debugPrint('[SocialAuth][Backend] failure type=${error.runtimeType}');
       throw const SocialAuthException(_fallbackMessage);
     }
   }

@@ -69,10 +69,18 @@ class _OnboardingBottomSheetState extends ConsumerState<OnboardingBottomSheet> {
           return;
       }
     } on SocialProviderException catch (error) {
+      debugPrint(
+        '[SocialAuth][UI] provider failure type=${error.runtimeType} '
+        'configuration=${error.isConfigurationError}',
+      );
       _showError(error.message);
-    } on SocialAuthException {
+    } on SocialAuthException catch (error) {
+      debugPrint('[SocialAuth][UI] backend failure status=${error.statusCode}');
       _showError('소셜 로그인에 실패했어요. 잠시 후 다시 시도해주세요.');
-    } catch (_) {
+    } catch (error) {
+      debugPrint(
+        '[SocialAuth][UI] unexpected failure type=${error.runtimeType}',
+      );
       _showError('소셜 로그인에 실패했어요. 잠시 후 다시 시도해주세요.');
     } finally {
       if (mounted) {
