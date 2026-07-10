@@ -1,6 +1,5 @@
 class AssignmentCreateRequest {
   final String workDate;
-  final int workPartNo;
   final String timeName;
   final String startTime;
   final String closeTime;
@@ -9,7 +8,6 @@ class AssignmentCreateRequest {
 
   AssignmentCreateRequest({
     required this.workDate,
-    required this.workPartNo,
     required this.timeName,
     required this.startTime,
     required this.closeTime,
@@ -20,7 +18,6 @@ class AssignmentCreateRequest {
   Map<String, dynamic> toJson() {
     return {
       "workDate": workDate,
-      "workPartNo": workPartNo,
       "timeName": timeName,
       "startTime": startTime,
       "closeTime": closeTime,

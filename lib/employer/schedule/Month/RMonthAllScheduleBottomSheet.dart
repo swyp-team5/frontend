@@ -313,11 +313,14 @@ class _RMonthAllScheduleBottomSheetState
                       backgroundColor: Colors.transparent,
                       builder: (_) {
                         return RDeleteWorkingBottomSheet(
+                          workPlaceId: widget.workPlaceId,
+                          confirmedWeekScheduleId: widget.confirmedWeekScheduleId!,
                           works: groups.map((shift) {
                             return DeleteWorkItem(
                               role: shift.timeName,
                               startTime: shift.startTime,
                               endTime: shift.endTime,
+                              timeDetailId: shift.timeDetailId,
                               workers: shift.workers
                                   .map((e) => e.name)
                                   .toList(),

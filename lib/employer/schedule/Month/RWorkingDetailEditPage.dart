@@ -5,7 +5,7 @@ import '../RScheduleEditPage.dart';
 import '../api/AssignmentApi.dart';
 import '../api/ConfirmedSchedulesApi.dart';
 import '../models/WorkersResponse.dart';
-import '../models/class AssignmentUpdateRequest.dart';
+import '../models/AssignmentUpdateRequest.dart';
 import '../widgets/WorkerBottomSheet.dart';
 import '../widgets/WorkingTImeInputBottomSheet.dart';
 

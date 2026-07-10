@@ -5,7 +5,8 @@ import '../../../../common/auth/server_token_manager.dart';
 import '../models/AssignmentCreateRequest.dart';
 import '../models/AssignmentCreateResponse.dart';
 import '../models/AssignmentUpdateResponse.dart';
-import '../models/class AssignmentUpdateRequest.dart';
+import '../models/DeleteAssignmentResponse.dart';
+import '../models/AssignmentUpdateRequest.dart';
 
 class AssignmentApi {
   static const _baseUrl = "https://chackchack.shop";
@@ -89,6 +90,45 @@ class AssignmentApi {
 
       throw Exception(
         message ?? "근무 수정 실패 (${e.response?.statusCode})",
+      );
+    }
+  }
+
+  /// DELETE /api/work-places/{workPlaceId}/confirmed-week-schedules/{confirmedWeekScheduleId}/time-details/{timeDetailId}/assignments
+  static Future<DeleteAssignmentResponse> delete({
+    required int workPlaceId,
+    required int confirmedWeekScheduleId,
+    required int timeDetailId,
+  }) async {
+    final token = await ServerTokenManager.getAccessToken();
+
+    if (token == null || token.isEmpty) {
+      throw Exception("로그인이 필요합니다.");
+    }
+
+    final dio = Dio();
+
+    try {
+      final response = await dio.delete(
+        "$_baseUrl/api/work-places/$workPlaceId/confirmed-week-schedules/$confirmedWeekScheduleId/time-details/$timeDetailId/assignments",
+        options: Options(
+          headers: {
+            "Authorization": "Bearer $token",
+          },
+        ),
+      );
+
+      return DeleteAssignmentResponse.fromJson(response.data);
+    } on DioException catch (e) {
+      debugPrint("🔴 [AssignmentApi.delete] status = ${e.response?.statusCode}");
+      debugPrint("🔴 [AssignmentApi.delete] full response = ${e.response?.data}");
+
+      final message = e.response?.data is Map
+          ? e.response?.data["message"]
+          : null;
+
+      throw Exception(
+        message ?? "근무 삭제 실패 (${e.response?.statusCode})",
       );
     }
   }
