@@ -6,11 +6,22 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   testWidgets('shows push setting and account actions', (tester) async {
+    tester.view.devicePixelRatio = 1;
+    tester.view.physicalSize = const Size(393, 852);
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     await _pumpPage(tester, _FakeAccountSettingsActions());
 
     final title = tester.widget<Text>(find.text('계정 설정'));
+    final titleCenter = tester.getCenter(find.text('계정 설정'));
+    final backButtonLeft = tester.getTopLeft(
+      find.byKey(const Key('account-settings-back-button')),
+    );
 
     expect(find.text('계정 설정'), findsOneWidget);
+    expect(titleCenter.dx, 196.5);
+    expect(backButtonLeft.dx, 36);
     expect(title.style?.fontSize, 17);
     expect(title.style?.fontWeight, FontWeight.w600);
     expect(title.style?.height, 1.4);

@@ -417,6 +417,7 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
+      width: double.infinity,
       height: 64,
       child: Stack(
         alignment: Alignment.center,
@@ -424,6 +425,7 @@ class _Header extends StatelessWidget {
           Positioned(
             left: 36,
             child: IconButton(
+              key: const Key('account-settings-back-button'),
               icon: const Icon(Icons.chevron_left, size: 28),
               onPressed: onBack,
               padding: EdgeInsets.zero,
