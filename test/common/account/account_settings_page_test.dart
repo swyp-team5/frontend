@@ -8,7 +8,13 @@ void main() {
   testWidgets('shows push setting and account actions', (tester) async {
     await _pumpPage(tester, _FakeAccountSettingsActions());
 
+    final title = tester.widget<Text>(find.text('계정 설정'));
+
     expect(find.text('계정 설정'), findsOneWidget);
+    expect(title.style?.fontSize, 17);
+    expect(title.style?.fontWeight, FontWeight.w600);
+    expect(title.style?.height, 1.4);
+    expect(title.style?.color, const Color(0xFF111111));
     expect(find.text('연동된 소셜 계정'), findsOneWidget);
     expect(find.text('푸시 알림'), findsOneWidget);
     expect(find.text('약관 및 개인정보 처리 동의 내역'), findsOneWidget);
@@ -116,8 +122,10 @@ void main() {
     expect(handle, const Size(43, 6));
     expect(button, const Size(313, 50));
     expect(cancelCenter.dx, buttonCenter.dx);
-    expect(cancelCenter.dx, buttonCenter.dx);
-    expect(cancelCenter.dy, lessThan((buttonBottomRight.dy + sheetTopLeft.dy + sheet.height) / 2));
+    expect(
+      cancelCenter.dy,
+      lessThan((buttonBottomRight.dy + sheetTopLeft.dy + sheet.height) / 2),
+    );
     expect(title.style?.fontSize, 18);
     expect(title.style?.fontWeight, FontWeight.w600);
     expect(description.style?.fontSize, 14);

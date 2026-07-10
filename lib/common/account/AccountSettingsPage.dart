@@ -432,7 +432,12 @@ class _Header extends StatelessWidget {
           ),
           const Text(
             '계정 설정',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+            style: TextStyle(
+              color: Color(0xFF111111),
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              height: 1.4,
+            ),
           ),
         ],
       ),
