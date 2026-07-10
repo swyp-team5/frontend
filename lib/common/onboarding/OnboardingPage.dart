@@ -116,11 +116,9 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         Expanded(
                           child: Align(
                             alignment: Alignment.bottomCenter,
-                            child: ConstrainedBox(
-                              constraints: const BoxConstraints(
-                                maxWidth: 260,
-                                maxHeight: 250,
-                              ),
+                            child: SizedBox(
+                              width: 600,
+                              height: 600,
                               child: Image.asset(
                                 item.image,
                                 fit: BoxFit.contain,

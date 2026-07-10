@@ -16,6 +16,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../common/auth/server_token_manager.dart';
 import '../../common/widgets/BottomNavBar.dart';
 import '../crews/ECrewPage.dart';
+import '../crews/model/ConfirmedSchedule.dart';
 
 enum HomeCardType {
   none,
@@ -46,6 +47,8 @@ class _EHomePageState extends State<EHomePage> {
   String workPlaceName = "";
   int? workPlaceId;
   String? accessToken; // ✅ 배너용 accessToken 상태 추가
+
+  Set<DateTime> workedDates = {};
 
   // ✅ 공통 Dio 인스턴스 (여러 위젯에서 재사용)
   final Dio _dio = Dio(
@@ -102,11 +105,64 @@ class _EHomePageState extends State<EHomePage> {
     }
   }
 
+  Future<void> _loadConfirmedSchedules() async {
+    try {
+      final token = await ServerTokenManager.getValidAccessToken();
+      if (token == null) return;
+
+      final now = focusedDay;
+
+      final from =
+          "${now.year}-${now.month.toString().padLeft(2, '0')}-01";
+
+      final lastDay =
+          DateTime(now.year, now.month + 1, 0).day;
+
+      final to =
+          "${now.year}-${now.month.toString().padLeft(2, '0')}-${lastDay.toString().padLeft(2, '0')}";
+
+      final response = await _dio.get(
+        "/api/me/confirmed-schedules",
+        queryParameters: {
+          "from": from,
+          "to": to,
+        },
+        options: Options(
+          headers: {
+            "Authorization": "Bearer $token",
+          },
+        ),
+      );
+
+      final result = ConfirmedScheduleResponse.fromJson(response.data);
+
+      if (!mounted) return;
+
+      setState(() {
+        workedDates = result.schedules
+            .map(
+              (e) => DateTime(
+            e.workDate.year,
+            e.workDate.month,
+            e.workDate.day,
+          ),
+        )
+            .toSet();
+      });
+
+      debugPrint("근무 날짜 : $workedDates");
+    } catch (e) {
+      debugPrint("근무 일정 조회 실패 : $e");
+    }
+  }
+
   @override
   void initState() {
     super.initState();
+
     _checkTokens();
     _loadMyWorkPlace();
+    _loadConfirmedSchedules();
   }
 
   /// 토큰 저장 여부 확인 로그
@@ -254,6 +310,7 @@ class _EHomePageState extends State<EHomePage> {
               EHomeCalendar(
                 focusedDay: focusedDay,
                 selectedDay: selectedDay,
+                workedDates: workedDates,
                 onDaySelected: (selected, focused) {
                   setState(() {
                     selectedDay = selected;
