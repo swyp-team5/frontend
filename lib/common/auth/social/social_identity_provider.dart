@@ -8,6 +8,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 import '../model/social_auth_models.dart';
 
@@ -157,6 +158,61 @@ class GoogleSocialIdentityProvider implements SocialIdentityProvider {
     } catch (error) {
       debugPrint('[SocialAuth][google] failure type=${error.runtimeType}');
       throw const SocialProviderException('Google 로그인에 실패했어요.');
+    }
+  }
+}
+
+class AppleSocialIdentityProvider implements SocialIdentityProvider {
+  static const _androidClientId = 'com.chackchack.signin';
+  static final _androidRedirectUri = Uri.parse(
+    'https://chackchack.shop/api/auth/apple/callback',
+  );
+
+  final DeviceContextProvider deviceContextProvider;
+
+  AppleSocialIdentityProvider({DeviceContextProvider? deviceContextProvider})
+    : deviceContextProvider = deviceContextProvider ?? DeviceContextProvider();
+
+  @override
+  Future<SocialCredential?> authenticate() async {
+    try {
+      final credential = await SignInWithApple.getAppleIDCredential(
+        scopes: const [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        webAuthenticationOptions: Platform.isAndroid
+            ? WebAuthenticationOptions(
+                clientId: _androidClientId,
+                redirectUri: _androidRedirectUri,
+              )
+            : null,
+      );
+
+      final idToken = credential.identityToken;
+      final authorizationCode = credential.authorizationCode;
+      if (idToken == null || idToken.isEmpty || authorizationCode.isEmpty) {
+        throw const SocialProviderException('Apple 인증 정보를 확인하지 못했어요.');
+      }
+
+      return SocialCredential.apple(
+        idToken: idToken,
+        authorizationCode: authorizationCode,
+        device: await deviceContextProvider.load(),
+      );
+    } on SignInWithAppleAuthorizationException catch (error) {
+      if (error.code == AuthorizationErrorCode.canceled) {
+        return null;
+      }
+      debugPrint(
+        '[SocialAuth][apple] authorization failure code=${error.code.name}',
+      );
+      throw const SocialProviderException('Apple 로그인에 실패했어요.');
+    } on SocialProviderException {
+      rethrow;
+    } catch (error) {
+      debugPrint('[SocialAuth][apple] failure type=${error.runtimeType}');
+      throw const SocialProviderException('Apple 로그인에 실패했어요.');
     }
   }
 }

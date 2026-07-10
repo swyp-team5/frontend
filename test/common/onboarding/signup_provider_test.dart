@@ -17,6 +17,11 @@ void main() {
     accessToken: 'kakao-access-token',
     device: device,
   );
+  const appleCredential = SocialCredential.apple(
+    idToken: 'apple-identity-token',
+    authorizationCode: 'apple-auth-code',
+    device: device,
+  );
 
   test('prepares Google signup without server tokens', () {
     final notifier = SignupNotifier();
@@ -45,5 +50,17 @@ void main() {
     expect(notifier.state.accessToken, 'kakao-access-token');
     expect(notifier.state.name, isNull);
     expect(notifier.state.phoneNumber, isNull);
+  });
+
+  test('prepares Apple signup with authorization code', () {
+    final notifier = SignupNotifier();
+
+    notifier.prepareSocialSignup(appleCredential);
+
+    expect(notifier.state.provider, SocialProvider.APPLE);
+    expect(notifier.state.idToken, 'apple-identity-token');
+    expect(notifier.state.authorizationCode, 'apple-auth-code');
+    expect(notifier.state.accessToken, isNull);
+    expect(notifier.state.device.deviceId, 'device-1');
   });
 }

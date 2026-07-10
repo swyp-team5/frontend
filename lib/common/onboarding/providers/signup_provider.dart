@@ -8,9 +8,8 @@ import '../../auth/server_token_manager.dart';
 import '../models/signup_request.dart';
 import '../../fcm/FcmSetupService.dart'; // FCM
 
-final signupProvider =
-StateNotifierProvider<SignupNotifier, SignupRequest>(
-      (ref) => SignupNotifier(),
+final signupProvider = StateNotifierProvider<SignupNotifier, SignupRequest>(
+  (ref) => SignupNotifier(),
 );
 
 class SignupNotifier extends StateNotifier<SignupRequest> {
@@ -25,9 +24,11 @@ class SignupNotifier extends StateNotifier<SignupRequest> {
       ..provider = switch (credential.provider) {
         auth.SocialAuthProvider.google => SocialProvider.GOOGLE,
         auth.SocialAuthProvider.kakao => SocialProvider.KAKAO,
+        auth.SocialAuthProvider.apple => SocialProvider.APPLE,
       }
       ..idToken = credential.idToken
       ..accessToken = credential.accessToken
+      ..authorizationCode = credential.authorizationCode
       ..device = DeviceModel(
         deviceId: credential.device.deviceId,
         platform: credential.device.platform,
@@ -102,24 +103,14 @@ class SignupNotifier extends StateNotifier<SignupRequest> {
   }
 
   void updateTerm(int termsId, bool agreed) {
-    final index = state.termsAgreements.indexWhere(
-          (e) => e.termsId == termsId,
-    );
+    final index = state.termsAgreements.indexWhere((e) => e.termsId == termsId);
 
     final newList = List<TermsAgreement>.from(state.termsAgreements);
 
     if (index == -1) {
-      newList.add(
-        TermsAgreement(
-          termsId: termsId,
-          agreed: agreed,
-        ),
-      );
+      newList.add(TermsAgreement(termsId: termsId, agreed: agreed));
     } else {
-      newList[index] = TermsAgreement(
-        termsId: termsId,
-        agreed: agreed,
-      );
+      newList[index] = TermsAgreement(termsId: termsId, agreed: agreed);
     }
 
     state.termsAgreements = newList;
@@ -191,8 +182,12 @@ class SignupNotifier extends StateNotifier<SignupRequest> {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = result["data"];
         // 서버 응답 구조에 따라 토큰 추출 (data 객체 유무 확인)
-        final String? accessToken = data != null ? data["accessToken"] : result["accessToken"];
-        final String? refreshToken = data != null ? data["refreshToken"] : result["refreshToken"];
+        final String? accessToken = data != null
+            ? data["accessToken"]
+            : result["accessToken"];
+        final String? refreshToken = data != null
+            ? data["refreshToken"]
+            : result["refreshToken"];
 
         if (accessToken != null && refreshToken != null) {
           // 서버 JWT를 로컬 저장소에 영구 저장

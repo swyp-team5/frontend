@@ -58,6 +58,32 @@ void main() {
     expect(response.member, isNull);
   });
 
+  test('sends Apple identity token and authorization code', () async {
+    final api = SocialAuthApi(
+      client: MockClient((request) async {
+        expect(request.url.path, '/api/auth/social-login');
+        expect(request.body, contains('"provider":"APPLE"'));
+        expect(request.body, contains('"idToken":"apple-identity-token"'));
+        expect(request.body, contains('"authorizationCode":"apple-auth-code"'));
+        return http.Response(
+          '{"status":"SIGNUP_REQUIRED"}',
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }),
+    );
+
+    final response = await api.login(
+      const SocialCredential.apple(
+        idToken: 'apple-identity-token',
+        authorizationCode: 'apple-auth-code',
+        device: device,
+      ),
+    );
+
+    expect(response.status, AuthStatus.signupRequired);
+  });
+
   test('uses backend message for a failed request', () async {
     final api = SocialAuthApi(
       client: MockClient(
