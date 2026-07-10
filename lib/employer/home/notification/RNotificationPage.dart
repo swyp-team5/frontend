@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../../common/widgets/BottomNavBar.dart';
 import '../../crews/RCrewPage.dart';
 import '../../mypage/RMyPage.dart';
@@ -148,7 +149,7 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
                       separatorBuilder: (_, __) => const Divider(height: 1),
                       itemBuilder: (context, index) {
                         final notice = state.notices[index];
-                        final reactionCounts = notice.reactionCounts;
+                        final activeReactions = notice.activeReactions;
 
                         return InkWell(
                           onTap: () {
@@ -329,13 +330,13 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
                                 const SizedBox(height: 20),
 
                                 /// 이모지 집계만 표시
-                                if (reactionCounts.isNotEmpty)
+                                if (activeReactions.isNotEmpty)
                                   Wrap(
                                     spacing: 10,
                                     runSpacing: 10,
-                                    children: reactionCounts.entries
+                                    children: activeReactions
                                         .map(
-                                          (entry) => Container(
+                                          (r) => Container(
                                         padding:
                                         const EdgeInsets.symmetric(
                                           horizontal: 12,
@@ -351,15 +352,15 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            Text(
-                                              entry.key,
-                                              style: const TextStyle(
-                                                fontSize: 16,
+                                            if (reactionAssetMap[r.reactionType] != null)
+                                              SvgPicture.asset(
+                                                reactionAssetMap[r.reactionType]!,
+                                                width: 16,
+                                                height: 16,
                                               ),
-                                            ),
                                             const SizedBox(width: 4),
                                             Text(
-                                              entry.value.toString(),
+                                              r.count.toString(),
                                               style: const TextStyle(
                                                 fontSize: 14,
                                                 fontWeight: FontWeight.w500,

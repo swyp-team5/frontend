@@ -47,15 +47,39 @@ class NoticeReaction {
   }
 }
 
-/// 이모지 표시용 매핑 (필요에 맞게 조정 가능)
-const Map<String, String> reactionEmojiMap = {
-  "HEART": "❤️",
-  "CHECK": "✅",
-  "NEUTRAL": "😐",
-  "SMILE": "😊",
-  "KISS": "😘",
-  "PROUD": "👍",
+// 공감 이모지는 유니코드가 아니라 Figma에서 그린 커스텀 SVG 일러스트라서
+// 문자열 대신 에셋 경로로 매핑한다.
+const Map<String, String> reactionAssetMap = {
+  "HEART": "assets/images/reactions/heart.svg",
+  "CHECK": "assets/images/reactions/check.svg",
+  "NEUTRAL": "assets/images/reactions/neutral.svg",
+  "SMILE": "assets/images/reactions/smile.svg",
+  "KISS": "assets/images/reactions/kiss.svg",
+  "PROUD": "assets/images/reactions/proud.svg",
 };
+
+// 공감 선택/변경/취소(PUT) API 응답 — noticeId, myReactionType, reactions만 내려온다.
+class NoticeReactionResult {
+  final int noticeId;
+  final String? myReactionType;
+  final List<NoticeReaction> reactions;
+
+  NoticeReactionResult({
+    required this.noticeId,
+    required this.myReactionType,
+    required this.reactions,
+  });
+
+  factory NoticeReactionResult.fromJson(Map<String, dynamic> json) {
+    return NoticeReactionResult(
+      noticeId: json['noticeId'] ?? 0,
+      myReactionType: json['myReactionType'],
+      reactions: (json['reactions'] as List? ?? [])
+          .map((e) => NoticeReaction.fromJson(e))
+          .toList(),
+    );
+  }
+}
 
 class NoticeModel {
   final int noticeId;
@@ -113,6 +137,31 @@ class NoticeModel {
     );
   }
 
+  // 공감 API 응답(noticeId, myReactionType, reactions)으로 이 두 필드만 갱신할 때 쓴다.
+  // myReactionType은 취소 시 null이 되는 게 정상 상태라서, 다른 필드와 달리 ?? 로 기존 값을
+  // 유지하지 않고 넘어온 값을 그대로 반영한다 — 그래서 호출부는 항상 명시적으로 넘겨야 한다.
+  NoticeModel copyWith({
+    String? myReactionType,
+    List<NoticeReaction>? reactions,
+  }) {
+    return NoticeModel(
+      noticeId: noticeId,
+      workPlaceId: workPlaceId,
+      writerMemberId: writerMemberId,
+      writerMemberName: writerMemberName,
+      writerProfileImageUrl: writerProfileImageUrl,
+      title: title,
+      content: content,
+      representative: representative,
+      status: status,
+      images: images,
+      myReactionType: myReactionType,
+      reactions: reactions ?? this.reactions,
+      createdAt: createdAt,
+      updatedAt: updatedAt,
+    );
+  }
+
   String get writer => writerMemberName;
 
   /// "2026-06-14T03:00:00" → "2026.06.14"
@@ -124,17 +173,9 @@ class NoticeModel {
   /// 대표 이미지 1장의 URL
   String? get imageUrl => images.isNotEmpty ? images.first.imageUrl : null;
 
-  /// count > 0인 리액션만 {이모지: count}로 변환
-  Map<String, int> get reactionCounts {
-    final Map<String, int> map = {};
-    for (final r in reactions) {
-      if (r.count > 0) {
-        final emoji = reactionEmojiMap[r.reactionType] ?? r.reactionType;
-        map[emoji] = r.count;
-      }
-    }
-    return map;
-  }
+  /// count > 0인 리액션만 (렌더링은 위젯에서 reactionAssetMap으로 처리)
+  List<NoticeReaction> get activeReactions =>
+      reactions.where((r) => r.count > 0).toList();
 }
 
 class NoticePageResponse {

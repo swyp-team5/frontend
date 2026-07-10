@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../common/auth/server_token_manager.dart';
 import '../../../employer/home/notification/RNotificationModel.dart';
 import '../../../employer/home/notification/api/notice_list_api.dart';
+import 'api/notice_reaction_api.dart';
 
 class ENotificationState {
   final List<NoticeModel> notices;
@@ -48,6 +49,7 @@ class ENotificationNotifier extends StateNotifier<ENotificationState> {
 
   final Dio _dio = Dio()..options.baseUrl = "https://chackchack.shop";
   late final NoticeListApi _noticeListApi = NoticeListApi(_dio);
+  late final NoticeReactionApi _noticeReactionApi = NoticeReactionApi(_dio);
 
   static const int _pageSize = 20;
 
@@ -139,6 +141,41 @@ class ENotificationNotifier extends StateNotifier<ENotificationState> {
       debugPrint("🔴 ENotification fetchNextPage 실패: $e");
       state = state.copyWith(isLoadingMore: false);
     }
+  }
+
+  // 공감 선택/변경/취소 — 근무자 전용.
+  // 성공하면 목록(state.notices) 안의 해당 공지만 갱신해서, 상세에서 목록으로 돌아가도
+  // 최신 집계가 바로 보이게 한다. 호출부(상세 페이지)가 로컬 상태도 갱신할 수 있도록 결과를 반환한다.
+  Future<NoticeReactionResult> selectReaction({
+    required int noticeId,
+    required String reactionType,
+  }) async {
+    final accessToken = await ServerTokenManager.getAccessToken();
+
+    if (accessToken == null || accessToken.isEmpty) {
+      throw Exception("로그인이 필요합니다.");
+    }
+
+    final result = await _noticeReactionApi.selectReaction(
+      noticeId: noticeId,
+      accessToken: accessToken,
+      reactionType: reactionType,
+    );
+
+    state = state.copyWith(
+      notices: [
+        for (final n in state.notices)
+          if (n.noticeId == noticeId)
+            n.copyWith(
+              myReactionType: result.myReactionType,
+              reactions: result.reactions,
+            )
+          else
+            n,
+      ],
+    );
+
+    return result;
   }
 }
 

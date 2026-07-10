@@ -7,6 +7,7 @@ import 'RNotiEditPage.dart';
 import 'RNotificationModel.dart';
 import 'RNotificationProvider.dart';
 import 'api/notice_api.dart';
+import 'widgets/NoticeReactionBar.dart';
 
 class RNotiDetailPage extends ConsumerStatefulWidget {
   final int noticeId;
@@ -79,53 +80,6 @@ class _RNotiDetailPageState extends ConsumerState<RNotiDetailPage> {
         error = notice == null ? e.toString() : null;
       });
     }
-  }
-
-  void _showEmojiMenu(
-      BuildContext context,
-      RelativeRect position,
-      ) async {
-    final selected = await showMenu<String>(
-      context: context,
-      position: position,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      items: [
-        PopupMenuItem(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _emoji(context, '❤️'),
-              const SizedBox(width: 16),
-              _emoji(context, '👍'),
-              const SizedBox(width: 16),
-              _emoji(context, '✅'),
-              const SizedBox(width: 16),
-              _emoji(context, '😊'),
-            ],
-          ),
-        ),
-      ],
-    );
-
-    if (selected != null) {
-      // TODO: RNotificationProvider에 리액션 등록 메서드와 연동
-      // 예: ref.read(RNotificationProvider.notifier).addReaction(widget.noticeId, selected);
-      debugPrint("선택된 이모지: $selected (연동 API 필요)");
-    }
-  }
-
-  Widget _emoji(BuildContext context, String emoji) {
-    return GestureDetector(
-      onTap: () => Navigator.pop(context, emoji),
-      child: Text(
-        emoji,
-        style: const TextStyle(fontSize: 28),
-      ),
-    );
   }
 
   void _showMoreMenu(
@@ -327,7 +281,6 @@ class _RNotiDetailPageState extends ConsumerState<RNotiDetailPage> {
     }
 
     final currentNotice = notice!;
-    final reactionCounts = currentNotice.reactionCounts;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -507,75 +460,11 @@ class _RNotiDetailPageState extends ConsumerState<RNotiDetailPage> {
 
                       const SizedBox(height: 30),
 
-                      /// 이모지 현황
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: [
-                          Builder(
-                            builder: (buttonContext) {
-                              return GestureDetector(
-                                onTap: () {
-                                  final RenderBox button = buttonContext
-                                      .findRenderObject() as RenderBox;
-                                  final RenderBox overlay = Overlay.of(context)
-                                      .context
-                                      .findRenderObject() as RenderBox;
-
-                                  final position = RelativeRect.fromRect(
-                                    Rect.fromPoints(
-                                      button.localToGlobal(
-                                        Offset.zero,
-                                        ancestor: overlay,
-                                      ),
-                                      button.localToGlobal(
-                                        button.size.bottomRight(Offset.zero),
-                                        ancestor: overlay,
-                                      ),
-                                    ),
-                                    Offset.zero & overlay.size,
-                                  );
-
-                                  _showEmojiMenu(context, position);
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFE8E8ED),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: const Icon(Icons.add, size: 18),
-                                ),
-                              );
-                            },
-                          ),
-                          ...reactionCounts.entries.map(
-                                (entry) => Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE8E8ED),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(entry.key, style: const TextStyle(fontSize: 16)),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    entry.value.toString(),
-                                    style: const TextStyle(fontWeight: FontWeight.w600),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
+                      /// 공감 (사장님은 집계만 확인, 탭 불가)
+                      NoticeReactionBar(
+                        reactions: currentNotice.reactions,
+                        myReactionType: currentNotice.myReactionType,
+                        canReact: false,
                       ),
 
                       const SizedBox(height: 30),

@@ -44,6 +44,7 @@ dependencies:
   firebase_core: ^4.11.0
   flutter_secure_storage: 10.3.1
   firebase_messaging: ^16.4.1
+  flutter_svg: ^2.3.0
 
 
 
@@ -89,5 +90,13 @@ flutter:
     - assets/images/logo/google.png
     - assets/images/logo/apple.png
     - assets/images/logo/chackchack.png
+
+    - assets/images/reactions/heart.svg
+    - assets/images/reactions/check.svg
+    - assets/images/reactions/neutral.svg
+    - assets/images/reactions/smile.svg
+    - assets/images/reactions/kiss.svg
+    - assets/images/reactions/proud.svg
+    - assets/images/reactions/add_reaction.svg
 
   uses-material-design: true
