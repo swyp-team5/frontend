@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import '../../../common/auth/server_token_manager.dart';
 import '../../../employer/home/notification/RNotificationModel.dart';
 import '../../../employer/home/notification/api/notice_api.dart';
+import '../../../employer/home/notification/widgets/NoticeReactionBar.dart';
 import 'ENotificationProvider.dart';
 
 class ENotiDetailPage extends ConsumerStatefulWidget {
@@ -77,53 +78,6 @@ class _ENotiDetailPageState extends ConsumerState<ENotiDetailPage> {
     }
   }
 
-  void _showEmojiMenu(
-      BuildContext context,
-      RelativeRect position,
-      ) async {
-    final selected = await showMenu<String>(
-      context: context,
-      position: position,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      items: [
-        PopupMenuItem(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              _emoji(context, '❤️'),
-              const SizedBox(width: 16),
-              _emoji(context, '👍'),
-              const SizedBox(width: 16),
-              _emoji(context, '✅'),
-              const SizedBox(width: 16),
-              _emoji(context, '😊'),
-            ],
-          ),
-        ),
-      ],
-    );
-
-    if (selected != null) {
-      // TODO: 리액션 등록 API와 연동
-      // 예: ref.read(ENotificationProvider.notifier).addReaction(widget.noticeId, selected);
-      debugPrint("선택된 이모지: $selected (연동 API 필요)");
-    }
-  }
-
-  Widget _emoji(BuildContext context, String emoji) {
-    return GestureDetector(
-      onTap: () => Navigator.pop(context, emoji),
-      child: Text(
-        emoji,
-        style: const TextStyle(fontSize: 28),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     if (isLoading && notice == null) {
@@ -153,7 +107,6 @@ class _ENotiDetailPageState extends ConsumerState<ENotiDetailPage> {
     }
 
     final currentNotice = notice!;
-    final reactionCounts = currentNotice.reactionCounts;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -303,75 +256,40 @@ class _ENotiDetailPageState extends ConsumerState<ENotiDetailPage> {
 
                       const SizedBox(height: 30),
 
-                      /// 이모지 현황
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: [
-                          Builder(
-                            builder: (buttonContext) {
-                              return GestureDetector(
-                                onTap: () {
-                                  final RenderBox button = buttonContext
-                                      .findRenderObject() as RenderBox;
-                                  final RenderBox overlay = Overlay.of(context)
-                                      .context
-                                      .findRenderObject() as RenderBox;
+                      /// 공감 (근무자 화면 — 탭 가능)
+                      NoticeReactionBar(
+                        reactions: currentNotice.reactions,
+                        myReactionType: currentNotice.myReactionType,
+                        canReact: true,
+                        onSelect: (reactionType) async {
+                          try {
+                            final result = await ref
+                                .read(ENotificationProvider.notifier)
+                                .selectReaction(
+                              noticeId: currentNotice.noticeId,
+                              reactionType: reactionType,
+                            );
 
-                                  final position = RelativeRect.fromRect(
-                                    Rect.fromPoints(
-                                      button.localToGlobal(
-                                        Offset.zero,
-                                        ancestor: overlay,
-                                      ),
-                                      button.localToGlobal(
-                                        button.size.bottomRight(Offset.zero),
-                                        ancestor: overlay,
-                                      ),
-                                    ),
-                                    Offset.zero & overlay.size,
-                                  );
+                            if (!mounted) return;
 
-                                  _showEmojiMenu(context, position);
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 14,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFE8E8ED),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: const Icon(Icons.add, size: 18),
-                                ),
+                            setState(() {
+                              notice = currentNotice.copyWith(
+                                myReactionType: result.myReactionType,
+                                reactions: result.reactions,
                               );
-                            },
-                          ),
-                          ...reactionCounts.entries.map(
-                                (entry) => Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 8,
+                            });
+                          } catch (e) {
+                            if (!mounted) return;
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  e.toString().replaceFirst("Exception: ", ""),
+                                ),
                               ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFE8E8ED),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(entry.key, style: const TextStyle(fontSize: 16)),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    entry.value.toString(),
-                                    style: const TextStyle(fontWeight: FontWeight.w600),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
+                            );
+                          }
+                        },
                       ),
 
                       const SizedBox(height: 30),
