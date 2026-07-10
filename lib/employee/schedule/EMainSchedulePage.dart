@@ -11,7 +11,9 @@ import 'Month/MySchedule/EMonthMyScheduleBottomSheet.dart';
 import 'Month/MySchedule/EMonthMySchedulePage.dart';
 import 'Week/EWeekSchedulePage.dart';
 import 'api/MyConfirmedSchedulesApi.dart';
+import 'api/WeeklyWorkersApi.dart';
 import 'models/MyConfirmedSchedulesResponse.dart';
+import 'models/WeeklyWorkersResponse.dart';
 
 class EMainSchedulePage extends StatefulWidget {
   const EMainSchedulePage({super.key});
@@ -39,110 +41,23 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
   DateTime? _loadedFrom;
   DateTime? _loadedTo;
 
-  /// 전체보기용 더미 데이터 (아직 API 미연동 범위)
-  Map<String, List<ScheduleShift>> allSchedules = {
-    "2026-06-23": [
-      ScheduleShift(
-        role: "오픈",
-        startTime: "09:00",
-        closeTime: "12:00",
-        required: 2,
-        workers: const [
-          ScheduleWorker(name: "김지연"),
-          ScheduleWorker(name: "이다빈"),
-        ],
-      ),
-      ScheduleShift(
-        role: "미들",
-        startTime: "12:00",
-        closeTime: "16:00",
-        required: 2,
-        workers: const [
-          ScheduleWorker(name: "박춘식"),
-          ScheduleWorker(name: "홍길동"),
-        ],
-      ),
-      ScheduleShift(
-        role: "마감",
-        startTime: "16:00",
-        closeTime: "20:00",
-        required: 1,
-        workers: const [
-          ScheduleWorker(name: "최민수"),
-        ],
-      ),
-    ],
-    "2026-06-25": [
-      ScheduleShift(
-        role: "오픈",
-        startTime: "09:00",
-        closeTime: "12:00",
-        required: 2,
-        workers: const [
-          ScheduleWorker(name: "이다빈"),
-          ScheduleWorker(name: "김지연"),
-        ],
-      ),
-      ScheduleShift(
-        role: "미들",
-        startTime: "12:00",
-        closeTime: "16:00",
-        required: 2,
-        workers: const [
-          ScheduleWorker(name: "박춘식"),
-          ScheduleWorker(name: "강민석"),
-        ],
-      ),
-      ScheduleShift(
-        role: "마감",
-        startTime: "16:00",
-        closeTime: "20:00",
-        required: 2,
-        workers: const [
-          ScheduleWorker(name: "서지훈"),
-          ScheduleWorker(name: "정은우"),
-        ],
-      ),
-    ],
-    "2026-07-01": [
-      ScheduleShift(
-        role: "오픈",
-        startTime: "09:00",
-        closeTime: "12:00",
-        required: 2,
-        workers: const [
-          ScheduleWorker(name: "이다빈"),
-        ],
-      ),
-      ScheduleShift(
-        role: "미들",
-        startTime: "12:00",
-        closeTime: "16:00",
-        required: 2,
-        workers: const [
-          ScheduleWorker(name: "박춘식"),
-          ScheduleWorker(name: "강민석"),
-        ],
-      ),
-      ScheduleShift(
-        role: "마감",
-        startTime: "16:00",
-        closeTime: "20:00",
-        required: 2,
-        workers: const [
-          ScheduleWorker(name: "서지훈"),
-          ScheduleWorker(name: "정은우"),
-        ],
-      ),
-    ],
-  };
+  Map<String, List<ScheduleShift>> allSchedules = {};
 
-  /// 휴무일 더미 데이터 (API에 없는 정보라 우선 유지)
-  final Set<String> holidays = {
-    "2026-06-22", "2026-06-29",
-  };
+  final Set<String> holidays = {};
+
+  int? selectedWorkPlaceId;
+
+  DateTime? _loadedWeekStart;
+
+  WeeklyWorkersResponse? weeklyWorkersResponse;
 
   bool isAllViewSelected = false;
+
+  String _formatDate(DateTime date) {
+    return "${date.year.toString().padLeft(4, '0')}-"
+        "${date.month.toString().padLeft(2, '0')}-"
+        "${date.day.toString().padLeft(2, '0')}";
+  }
 
   @override
   void initState() {
@@ -151,8 +66,14 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
     selectedYear = selectedDate.year;
     selectedMonth = selectedDate.month;
 
-    if (!isAllViewSelected) {
-      _loadMySchedules();
+    _initialize();
+  }
+
+  Future<void> _initialize() async {
+    if (isAllViewSelected) {
+      await _loadWeeklyWorkers(force: true);
+    } else {
+      await _loadMySchedules(force: true);
     }
   }
 
@@ -243,6 +164,11 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
 
       setState(() {
         myConfirmedSchedules = _mapMySchedules(response);
+
+        if (response.schedules.isNotEmpty) {
+          selectedWorkPlaceId = response.schedules.first.workPlaceId;
+        }
+
         _loadedFrom = range.$1;
         _loadedTo = range.$2;
         isLoading = false;
@@ -250,6 +176,72 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
     } catch (e) {
       debugPrint("🔴 [EMainSchedulePage] 확정 근무표 요청 실패 - $e");
 
+      if (!mounted) return;
+
+      setState(() {
+        isLoading = false;
+        errorMessage = e.toString();
+      });
+    }
+  }
+
+  Future<void> _loadWeeklyWorkers({bool force = false}) async {
+    if (selectedWorkPlaceId == null) return;
+
+    final monday = DateTime(
+      selectedDate.year,
+      selectedDate.month,
+      selectedDate.day,
+    ).subtract(Duration(days: selectedDate.weekday - 1));
+
+    if (!force &&
+        _loadedWeekStart == monday &&
+        weeklyWorkersResponse != null) {
+      return;
+    }
+
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      final response = await WeeklyWorkersApi.getWeeklyWorkers(
+        workPlaceId: selectedWorkPlaceId!,
+        weekStartDate: monday,
+      );
+
+      final Map<String, List<ScheduleShift>> map = {};
+
+      for (final day in response.days) {
+        final shifts = <ScheduleShift>[];
+
+        for (final time in day.timeDetails) {
+          shifts.add(
+            ScheduleShift(
+              role: time.timeName,
+              startTime: _formatHHmm(time.startTime),
+              closeTime: _formatHHmm(time.closeTime),
+              required: time.workers.length,
+              workers: time.workers
+                  .map((e) => ScheduleWorker(name: e.name))
+                  .toList(),
+            ),
+          );
+        }
+
+        map[_formatDate(day.workDate)] = shifts;
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        weeklyWorkersResponse = response;
+        allSchedules = map;
+        _loadedWeekStart = monday;
+        isLoading = false;
+      });
+    } catch (e) {
       if (!mounted) return;
 
       setState(() {
@@ -336,13 +328,15 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
                       const Spacer(),
 
                       GestureDetector(
-                        onTap: () {
+                        onTap: () async {
                           setState(() {
                             isAllViewSelected = !isAllViewSelected;
                           });
 
-                          if (!isAllViewSelected) {
-                            _loadMySchedules();
+                          if (isAllViewSelected) {
+                            await _loadWeeklyWorkers();
+                          } else {
+                            await _loadMySchedules();
                           }
                         },
                         child: Container(
@@ -416,8 +410,13 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
                               ),
                               const SizedBox(height: 12),
                               TextButton(
-                                onPressed: () =>
-                                    _loadMySchedules(force: true),
+                                onPressed: () {
+                                  if (isAllViewSelected) {
+                                    _loadWeeklyWorkers(force: true);
+                                  } else {
+                                    _loadMySchedules(force: true);
+                                  }
+                                },
                                 child: const Text("다시 시도"),
                               ),
                             ],
@@ -431,13 +430,15 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
                             ? EWeekSchedulePage(
                           key: const ValueKey("week"),
                           selectedDate: selectedDate,
-                          onDateChanged: (date) {
+                          onDateChanged: (date) async {
                             setState(() {
                               selectedDate = date;
                             });
 
-                            if (!isAllViewSelected) {
-                              _loadMySchedules();
+                            if (isAllViewSelected) {
+                              await _loadWeeklyWorkers(force: true);
+                            } else {
+                              await _loadMySchedules(force: true);
                             }
                           },
 
@@ -459,10 +460,12 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
                           selectedDate: selectedDate,
                           schedules: allSchedules,
                           holidays: holidays,
-                          onDateChanged: (date) {
+                          onDateChanged: (date) async {
                             setState(() {
                               selectedDate = date;
                             });
+
+                            await _loadWeeklyWorkers(force: true);
                           },
                         )
                             : EMonthMySchedulePage(
@@ -503,8 +506,10 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
                               isWeekMode = true;
                             });
 
-                            if (!isAllViewSelected) {
-                              _loadMySchedules();
+                            if (isAllViewSelected) {
+                              _loadWeeklyWorkers(force: true);
+                            } else {
+                              _loadMySchedules(force: true);
                             }
                           },
                           child: AnimatedContainer(
@@ -535,8 +540,10 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
                               isWeekMode = false;
                             });
 
-                            if (!isAllViewSelected) {
-                              _loadMySchedules();
+                            if (isAllViewSelected) {
+                              _loadWeeklyWorkers(force: true);
+                            } else {
+                              _loadMySchedules(force: true);
                             }
                           },
                           child: AnimatedContainer(
