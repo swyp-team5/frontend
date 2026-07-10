@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../model/WorkChangeTargetsResponse.dart';
 
 class WorkerSelect extends StatelessWidget {
+  final bool isSubstitute;
   final List<WorkChangeWorker> workers;
   final WorkChangeWorker? selectedWorker;
   final ValueChanged<WorkChangeWorker> onWorkerSelected;
@@ -10,6 +11,7 @@ class WorkerSelect extends StatelessWidget {
 
   const WorkerSelect({
     super.key,
+    required this.isSubstitute,
     required this.workers,
     required this.selectedWorker,
     required this.onWorkerSelected,
@@ -26,10 +28,10 @@ class WorkerSelect extends StatelessWidget {
             vertical: 20,
           ),
           child: Row(
-            children: const [
+            children: [
               Text(
-                "교대 희망 상대를 선택하세요",
-                style: TextStyle(
+                isSubstitute ? "대타 희망 상대를 선택하세요" : "교대 희망 상대를 선택하세요",
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
                   color: Color(0xFF505050),
@@ -126,31 +128,31 @@ class WorkerSelect extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.all(20),
           child: SizedBox(
-            width: double.infinity,
-            height: 54,
-            child: ElevatedButton(
-              onPressed: selectedWorker == null ? null : onConfirm,
+              width: double.infinity,
+              height: 54,
+              child: ElevatedButton(
+                onPressed: selectedWorker == null ? null : onConfirm,
 
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0084FF),
-                disabledBackgroundColor: const Color(0xFF80C2FF),
-                foregroundColor: Colors.white,
-                disabledForegroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0084FF),
+                  disabledBackgroundColor: const Color(0xFF80C2FF),
+                  foregroundColor: Colors.white,
+                  disabledForegroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
-              ),
 
-              child: const Text(
-                "근무자 선택",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
+                child: const Text(
+                  "근무자 선택",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-            )
+              )
           ),
         ),
       ],

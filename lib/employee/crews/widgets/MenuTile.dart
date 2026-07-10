@@ -1,9 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// 신청서 화면에서 사용하는 공용 메뉴 타일 위젯
-///
-/// 기존 EApplicationFormPage 내부의 private `_MenuTile`을
-/// 별도 파일로 분리하여 재사용 가능하도록 만들었습니다.
 class MenuTile extends StatelessWidget {
   final String title;
   final String? subtitle;
@@ -58,10 +54,7 @@ class MenuTile extends StatelessWidget {
             if (hasArrow)
               const Padding(
                 padding: EdgeInsets.only(left: 6),
-                child: Icon(
-                  Icons.chevron_right,
-                  color: Color(0xffBDBDBD),
-                ),
+                child: Icon(Icons.chevron_right, color: Color(0xffBDBDBD)),
               ),
           ],
         ),

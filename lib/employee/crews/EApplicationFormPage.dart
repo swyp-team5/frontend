@@ -87,8 +87,8 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
 
     // 지난 확정 근무 + 이번 달 진행 중 일정 + 다음 주(월이 넘어가는 경우 포함)
     // 확정 일정까지 한 번에 커버할 수 있도록 넉넉하게 범위를 잡는다.
-    final from = DateTime(_focusedMonth.year, _focusedMonth.month - 1, 1);
-    final to = DateTime(_focusedMonth.year, _focusedMonth.month + 2, 0);
+    final from = DateTime.now();
+    final to = from.add(const Duration(days: 30));
 
     try {
       final response =
@@ -118,8 +118,10 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
       _isLoadingWorkers = true;
     });
 
-    final from = _current.selectedDate!;
-    final to = from;
+    // 다음 주 전체 범위로 조회해야 근무자의 다른 근무일도 함께 받아올 수 있음
+    final week = nextWeek;
+    final from = week.first;
+    final to = week.last;
 
     try {
       final response = await WorkChangeTargetsApi.fetchWorkers(
@@ -129,6 +131,17 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
       );
 
       if (!mounted) return;
+
+      debugPrint("===== API DAYS =====");
+      for (final day in response.days) {
+        debugPrint(day.workDate.toString());
+
+        for (final time in day.timeDetails) {
+          debugPrint(
+            "${time.timeName} -> ${time.workers.map((e) => e.name).join(', ')}",
+          );
+        }
+      }
 
       setState(() {
         _workerDays = response.days;
@@ -144,7 +157,6 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
         }
 
         _workers = map.values.toList();
-
         _isLoadingWorkers = false;
       });
     } catch (e) {
@@ -245,16 +257,22 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
     return dates;
   }
 
-  bool isSelectedWorkerWorkDay(DateTime day) {
+  bool isSelectedWorkerWorkDay(DateTime date) {
     final worker = _current.selectedWorker;
+
     if (worker == null) return false;
 
-    for (final d in _workerDays) {
-      if (!_sameDay(d.workDate, day)) continue;
+    for (final day in _workerDays) {
 
-      for (final time in d.timeDetails) {
-        if (time.workers.any((w) => w.memberId == worker.memberId)) {
-          return true;
+      if (!_sameDay(day.workDate, date)) continue;
+
+      for (final time in day.timeDetails) {
+
+        for (final w in time.workers) {
+
+          if (w.memberId == worker.memberId) {
+            return true;
+          }
         }
       }
     }
@@ -278,17 +296,23 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
     if (worker == null || date == null) return null;
 
     for (final day in _workerDays) {
+
       if (!_sameDay(day.workDate, date)) continue;
 
       for (final time in day.timeDetails) {
-        if (time.workers.any((w) => w.memberId == worker.memberId)) {
-          return MyWorkSchedule(
-            name: worker.name,
-            date: day.workDate,
-            role: time.timeName,
-            startTime: time.startTime.substring(0,5),
-            endTime: time.closeTime.substring(0,5),
-          );
+
+        for (final w in time.workers) {
+
+          if (w.memberId == worker.memberId) {
+
+            return MyWorkSchedule(
+              name: worker.name,
+              date: day.workDate,
+              role: time.timeName,
+              startTime: time.startTime.substring(0,5),
+              endTime: time.closeTime.substring(0,5),
+            );
+          }
         }
       }
     }
@@ -377,6 +401,8 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
                       isSelectedWorkerWorkDay: isSelectedWorkerWorkDay,
                       isSelectable: isSelectable,
                       isNextWeek: isNextWeek,
+                      hasSelectedWorker: _current.selectedWorker != null,
+                      workerConfirmed: _current.workerConfirmed,
                       onPrevMonth: () {
                         setState(() {
                           _focusedMonth = DateTime(
@@ -411,10 +437,14 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
             Expanded(
               child: showWorkerSelect
                   ? WorkerSelect(
+                isSubstitute: isSubstitute,
                 workers: _workers,
                 selectedWorker: _current.selectedWorker,
                 onWorkerSelected: (worker) {
-                  setState(() => _current.selectedWorker = worker);
+                  setState(() {
+                    _current.selectedWorker = worker;
+                    _current.selectedWorkerDate = null;
+                  });
                 },
                 onConfirm: () {
                   setState(() {
