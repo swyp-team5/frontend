@@ -77,6 +77,7 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
       startTime: s.startTimeShort,
       endTime: s.closeTimeShort,
       assignmentId: s.assignmentId,
+      targetMemberId: 0,  // 내 근무는 대타 대상자가 아니므로 의미 없음
     ),
   )
       .toList();
@@ -314,6 +315,7 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
               startTime: time.startTime.substring(0,5),
               endTime: time.closeTime.substring(0,5),
               assignmentId: w.assignmentId,
+              targetMemberId: w.memberId,
             );
           }
         }
@@ -325,33 +327,65 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
 
   MyWorkSchedule? getSelectedSubstituteWorkerSchedule() {
     final worker = _current.selectedWorker;
-    final date = _current.selectedDate;
+    final myDate = _current.selectedDate;
 
-    if (worker == null || date == null) return null;
+    debugPrint("[대타 조회] selectedWorker=${worker?.name}(id:${worker?.memberId}), myDate=$myDate");
 
+    if (worker == null || myDate == null) {
+      debugPrint("[대타 조회] worker 또는 myDate가 null -> 조회 중단");
+      return null;
+    }
+
+    // 1) 혹시 그 날짜에 근무자가 이미 다른 시간대로 근무 중이면 그 정보를 사용
     for (final day in _workerDays) {
-      if (!_sameDay(day.workDate, date)) continue;
+      if (!_sameDay(day.workDate, myDate)) continue;
 
       for (final time in day.timeDetails) {
-        final matched = time.workers
-            .where((w) => w.memberId == worker.memberId)
-            .toList();
+        final matched =
+        time.workers.where((w) => w.memberId == worker.memberId).toList();
 
         if (matched.isNotEmpty) {
-          final w = matched.first; // ✅ 실제 매칭된 worker 객체를 확보
+          final w = matched.first;
+          debugPrint(
+              "[대타 조회] 같은 날짜에 근무자의 기존 스케줄 발견: ${time.timeName} ${time.startTime}-${time.closeTime}, assignmentId=${w.assignmentId}");
           return MyWorkSchedule(
             name: worker.name,
             date: day.workDate,
             role: time.timeName,
             startTime: time.startTime.substring(0, 5),
             endTime: time.closeTime.substring(0, 5),
-            assignmentId: w.assignmentId, // ✅ 이제 정상 참조 가능
+            assignmentId: w.assignmentId,
+            targetMemberId: w.memberId,
           );
         }
       }
     }
 
-    return null;
+    debugPrint("[대타 조회] 해당 날짜에 근무자의 기존 스케줄 없음 -> 내 근무 정보로 fallback");
+
+    // 2) 없으면 내 근무(mySchedule) 정보를 그대로 사용 (진짜 대타 케이스)
+    final mySchedule = getSelectedSchedule();
+    if (mySchedule == null) {
+      debugPrint("[대타 조회] mySchedule도 null -> fallback 불가, null 반환");
+      return null;
+    }
+
+    debugPrint(
+        "[대타 조회] fallback 결과: name=${worker.name}, date=${mySchedule.date}, "
+            "time=${mySchedule.startTime}-${mySchedule.endTime}");
+
+    return MyWorkSchedule(
+      name: worker.name,
+      date: mySchedule.date,
+      role: mySchedule.role,
+      startTime: mySchedule.startTime,
+      endTime: mySchedule.endTime,
+      // 실제 근무가 없으므로 assignmentId 없음
+      assignmentId: 0,
+
+      // ⭐ 서버가 요구하는 값
+      targetMemberId: worker.memberId,
+    );
   }
 
   @override
@@ -646,14 +680,24 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
         return;
       }
 
+      final substituteWorkerSchedule = getSelectedSubstituteWorkerSchedule();
+      debugPrint("[제출] substituteWorkerSchedule=$substituteWorkerSchedule");
+      if (substituteWorkerSchedule == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("대타 근무자의 근무 정보를 확인할 수 없습니다.")),
+        );
+        return;
+      }
+
       ApplicationSubmitSheets.showSubstituteConfirm(
         context: context,
+        workPlaceId: widget.workPlaceId,
         mySchedule: mySchedule,
-        workerName: worker.name,
+        workerSchedule: substituteWorkerSchedule,
         reason: reason,
-        onConfirm: () {
+        onConfirm: (WorkChangeRequestResponse response) {
           Navigator.pop(context);
-          // TODO : 대타 신청 API
+          // TODO : 대타 신청 성공 후 response로 화면 갱신/토스트 처리
         },
       );
     } else {
