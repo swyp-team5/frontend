@@ -7,6 +7,7 @@ class MyWorkSchedule {
   final String role;
   final String startTime;
   final String endTime;
+  final int assignmentId;
 
   const MyWorkSchedule({
     required this.name,
@@ -14,5 +15,6 @@ class MyWorkSchedule {
     required this.role,
     required this.startTime,
     required this.endTime,
+    required this.assignmentId,
   });
 }

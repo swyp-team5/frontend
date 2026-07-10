@@ -17,6 +17,7 @@ import 'api/ScheduleApi.dart';
 import 'api/WorkChangeTargetsApi.dart';
 import 'model/ConfirmedSchedule.dart';
 import 'model/MyWorkSchedule.dart';
+import 'model/WorkChangeRequestResponse.dart';
 import 'model/WorkChangeTargetsResponse.dart';
 
 class EApplicationFormPage extends StatefulWidget {
@@ -75,6 +76,7 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
       role: s.timeName,
       startTime: s.startTimeShort,
       endTime: s.closeTimeShort,
+      assignmentId: s.assignmentId,
     ),
   )
       .toList();
@@ -311,6 +313,7 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
               role: time.timeName,
               startTime: time.startTime.substring(0,5),
               endTime: time.closeTime.substring(0,5),
+              assignmentId: w.assignmentId,
             );
           }
         }
@@ -330,13 +333,19 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
       if (!_sameDay(day.workDate, date)) continue;
 
       for (final time in day.timeDetails) {
-        if (time.workers.any((w) => w.memberId == worker.memberId)) {
+        final matched = time.workers
+            .where((w) => w.memberId == worker.memberId)
+            .toList();
+
+        if (matched.isNotEmpty) {
+          final w = matched.first; // ✅ 실제 매칭된 worker 객체를 확보
           return MyWorkSchedule(
             name: worker.name,
             date: day.workDate,
             role: time.timeName,
-            startTime: time.startTime.substring(0,5),
-            endTime: time.closeTime.substring(0,5),
+            startTime: time.startTime.substring(0, 5),
+            endTime: time.closeTime.substring(0, 5),
+            assignmentId: w.assignmentId, // ✅ 이제 정상 참조 가능
           );
         }
       }
@@ -657,12 +666,13 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
 
       ApplicationSubmitSheets.showExchangeConfirm(
         context: context,
+        workPlaceId: widget.workPlaceId, // ✅ 누락되어 있던 필수 파라미터 추가
         mySchedule: mySchedule,
         workerSchedule: workerSchedule,
         reason: reason,
-        onConfirm: () {
+        onConfirm: (WorkChangeRequestResponse response) { // ✅ 타입 수정
           Navigator.pop(context);
-          // TODO : 교대 신청 API
+          // TODO : 교대 신청 성공 후 response로 화면 갱신/토스트 처리
         },
       );
     }

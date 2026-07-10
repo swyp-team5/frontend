@@ -7,6 +7,7 @@ class ConfirmedSchedule {
   final int timeDetailId;
   final String timeName;
   final int workPartNo;
+  final int assignmentId;
 
   /// 서버는 "09:00:00" 형태(HH:mm:ss)로 내려줌
   final String startTime;
@@ -24,6 +25,7 @@ class ConfirmedSchedule {
     required this.startTime,
     required this.closeTime,
     required this.restTime,
+    required this.assignmentId,
   });
 
   factory ConfirmedSchedule.fromJson(Map<String, dynamic> json) {
@@ -38,6 +40,7 @@ class ConfirmedSchedule {
       startTime: json['startTime'] as String,
       closeTime: json['closeTime'] as String,
       restTime: json['restTime'] as int,
+      assignmentId: json['assignmentId'] as int,
     );
   }
 
