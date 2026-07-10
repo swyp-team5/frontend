@@ -423,7 +423,7 @@ class _Header extends StatelessWidget {
         alignment: Alignment.center,
         children: [
           Positioned(
-            left: 36,
+            left: 26,
             child: IconButton(
               key: const Key('account-settings-back-button'),
               icon: const Icon(Icons.chevron_left, size: 28),

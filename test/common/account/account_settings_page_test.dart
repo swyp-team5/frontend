@@ -18,10 +18,12 @@ void main() {
     final backButtonLeft = tester.getTopLeft(
       find.byKey(const Key('account-settings-back-button')),
     );
+    final backIconLeft = tester.getTopLeft(find.byIcon(Icons.chevron_left));
 
     expect(find.text('계정 설정'), findsOneWidget);
     expect(titleCenter.dx, 196.5);
-    expect(backButtonLeft.dx, 36);
+    expect(backButtonLeft.dx, 26);
+    expect(backIconLeft.dx, 36);
     expect(title.style?.fontSize, 17);
     expect(title.style?.fontWeight, FontWeight.w600);
     expect(title.style?.height, 1.4);
