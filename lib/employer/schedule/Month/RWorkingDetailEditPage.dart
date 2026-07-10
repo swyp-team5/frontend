@@ -5,7 +5,7 @@ import '../RScheduleEditPage.dart';
 import '../api/AssignmentApi.dart';
 import '../api/ConfirmedSchedulesApi.dart';
 import '../models/WorkersResponse.dart';
-import '../models/class AssignmentUpdateRequest.dart';
+import '../models/AssignmentUpdateRequest.dart';
 import '../widgets/WorkerBottomSheet.dart';
 import '../widgets/WorkingTImeInputBottomSheet.dart';
 
@@ -38,6 +38,9 @@ class RWorkingDetailEditPage extends StatefulWidget {
   final int workPlaceId;
 
   /// PUT /confirmed-week-schedules/{confirmedWeekScheduleId}/time-details/{timeDetailId}/assignments 에 필요한 값
+  /// ⚠️ 이 값은 widget.date(진입 시점 날짜) 기준으로 넘어온 값입니다.
+  /// 페이지 안에서 날짜를 다른 주로 바꾸면 더 이상 유효하지 않을 수 있어서,
+  /// 제출 직전에 selectedDate 기준으로 다시 조회합니다.
   final int confirmedWeekScheduleId;
   final int timeDetailId;
   final int workPartNo;
@@ -75,6 +78,12 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
 
   bool _isSubmitting = false;
 
+  /// selectedDate가 속한 주의 진짜 confirmedWeekScheduleId.
+  /// 처음엔 widget.confirmedWeekScheduleId(=widget.date 기준 값)로 초기화하고,
+  /// selectedDate가 바뀔 때마다 다시 조회해서 갱신한다.
+  int? _confirmedWeekScheduleIdForSelectedDate;
+  bool _isResolvingWeekSchedule = false;
+
   final List<String> workTypes = ["오픈", "미들", "마감",];
 
   final List<String> breakTimes = ["없음", "30분", "1시간", "1시간 30분",];
@@ -93,6 +102,8 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
     workers = List.from(widget.workers);
 
     selectedDate = widget.date;
+
+    _confirmedWeekScheduleIdForSelectedDate = widget.confirmedWeekScheduleId;
   }
 
   TimeOfDay _toTimeOfDay(String time) {
@@ -126,6 +137,43 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
     return "${date.year.toString().padLeft(4, '0')}-"
         "${date.month.toString().padLeft(2, '0')}-"
         "${date.day.toString().padLeft(2, '0')}";
+  }
+
+  DateTime _mondayOf(DateTime date) {
+    return DateTime(date.year, date.month, date.day)
+        .subtract(Duration(days: date.weekday - 1));
+  }
+
+  /// selectedDate가 속한 주의 confirmedWeekScheduleId를 다시 조회한다.
+  /// (weekScheduleId도 함께 확인해서 null이면 로그를 남긴다.)
+  Future<int?> _resolveConfirmedWeekScheduleId(DateTime date) async {
+    try {
+      final weekly = await ConfirmedSchedulesApi.getConfirmedWeeklySchedule(
+        workPlaceId: widget.workPlaceId,
+        weekStartDate: _mondayOf(date),
+      );
+
+      debugPrint(
+        "[_resolveConfirmedWeekScheduleId] date=$date -> "
+            "confirmedWeekScheduleId=${weekly.confirmedWeekScheduleId}, "
+            "weekScheduleId=${weekly.weekScheduleId}",
+      );
+
+      if (weekly.confirmedWeekScheduleId == null ||
+          weekly.weekScheduleId == null) {
+        debugPrint(
+          "[_resolveConfirmedWeekScheduleId] ⚠️ 이 날짜가 속한 주는 아직 "
+              "확정된 근무표가 없습니다 (confirmedWeekScheduleId 또는 "
+              "weekScheduleId가 null).",
+        );
+        return null;
+      }
+
+      return weekly.confirmedWeekScheduleId;
+    } catch (e) {
+      debugPrint("[_resolveConfirmedWeekScheduleId] 조회 실패: $e");
+      return null;
+    }
   }
 
   /// 선택한 날짜(date)의 기존 확정 근무표를 조회해서
@@ -269,9 +317,59 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
     }
   }
 
+  Future<void> _onDateChanged(DateTime newDate) async {
+    setState(() {
+      selectedDate = newDate;
+      _isResolvingWeekSchedule = true;
+      _confirmedWeekScheduleIdForSelectedDate = null;
+    });
+
+    final resolved = await _resolveConfirmedWeekScheduleId(newDate);
+
+    if (!mounted) return;
+
+    setState(() {
+      _confirmedWeekScheduleIdForSelectedDate = resolved;
+      _isResolvingWeekSchedule = false;
+    });
+
+    if (resolved == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("선택한 날짜의 근무표 정보를 불러오지 못했어요. 다른 날짜를 선택해주세요"),
+        ),
+      );
+    }
+  }
+
   Future<void> _submitEdit() async {
+    // 제출 직전, selectedDate 기준 confirmedWeekScheduleId를 최종적으로 다시 한 번 확인한다.
+    // (날짜를 바꾼 적이 없어도, 페이지에 오래 머무는 동안 서버 상태가 바뀌었을 수 있으므로
+    // 안전하게 다시 조회한다.)
     setState(() {
       _isSubmitting = true;
+    });
+
+    final resolvedConfirmedWeekScheduleId =
+    await _resolveConfirmedWeekScheduleId(selectedDate);
+
+    if (resolvedConfirmedWeekScheduleId == null) {
+      if (!mounted) return;
+
+      setState(() {
+        _isSubmitting = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("선택한 날짜의 근무표 정보를 확인할 수 없어요. 날짜를 다시 선택해주세요"),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _confirmedWeekScheduleIdForSelectedDate = resolvedConfirmedWeekScheduleId;
     });
 
     final workPartNo = await _resolveWorkPartNo(
@@ -292,7 +390,7 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
     // 디버그용 로그
     debugPrint(
       "PUT /api/work-places/${widget.workPlaceId}"
-          "/confirmed-week-schedules/${widget.confirmedWeekScheduleId}"
+          "/confirmed-week-schedules/$resolvedConfirmedWeekScheduleId"
           "/time-details/${widget.timeDetailId}/assignments",
     );
     debugPrint("body: ${request.toJson()}");
@@ -300,7 +398,7 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
     try {
       final response = await AssignmentApi.update(
         workPlaceId: widget.workPlaceId,
-        confirmedWeekScheduleId: widget.confirmedWeekScheduleId,
+        confirmedWeekScheduleId: resolvedConfirmedWeekScheduleId,
         timeDetailId: widget.timeDetailId,
         request: request,
       );
@@ -339,6 +437,9 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
 
   @override
   Widget build(BuildContext context) {
+    final canSubmit =
+        !_isSubmitting && !_isResolvingWeekSchedule;
+
     return Scaffold(
       backgroundColor: Colors.white,
 
@@ -350,7 +451,7 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
           child: SizedBox(
             height: 52,
             child: ElevatedButton(
-              onPressed: _isSubmitting ? null : _submitEdit,
+              onPressed: canSubmit ? _submitEdit : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1976FF),
                 disabledBackgroundColor:
@@ -362,7 +463,9 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
                 ),
               ),
               child: Text(
-                _isSubmitting ? "수정 중..." : "수정 완료",
+                _isSubmitting
+                    ? "수정 중..."
+                    : (_isResolvingWeekSchedule ? "근무표 확인 중..." : "수정 완료"),
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -512,12 +615,24 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
                     const SizedBox(height: 28),
 
                     /// 근무 수정 날짜
-                    const Text(
-                      "근무 수정 날짜",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    Row(
+                      children: [
+                        const Text(
+                          "근무 수정 날짜",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (_isResolvingWeekSchedule) ...[
+                          const SizedBox(width: 8),
+                          const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ],
+                      ],
                     ),
 
                     const SizedBox(height: 12),
@@ -537,9 +652,7 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
                         );
 
                         if (result != null) {
-                          setState(() {
-                            selectedDate = result;
-                          });
+                          await _onDateChanged(result);
                         }
                       },
                     ),

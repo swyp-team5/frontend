@@ -1,6 +1,7 @@
 import 'package:chack_chack/employer/schedule/Month/RWorkingDetailEditPage.dart';
 import 'package:flutter/material.dart';
 
+import '../api/ConfirmedSchedulesApi.dart';
 import '../models/WorkersResponse.dart';
 import '../widgets/RDeleteWorkingBottomSheet.dart';
 import 'RMonthAllSchedulePage.dart';
@@ -58,6 +59,30 @@ class _RMonthAllScheduleBottomSheetState
     return "${date.year.toString().padLeft(4, '0')}-"
         "${date.month.toString().padLeft(2, '0')}-"
         "${date.day.toString().padLeft(2, '0')}";
+  }
+
+  DateTime _mondayOf(DateTime date) {
+    return DateTime(date.year, date.month, date.day)
+        .subtract(Duration(days: date.weekday - 1));
+  }
+
+  /// widget.confirmedWeekScheduleId는 캘린더에서 "현재 선택된 날짜"가 속한
+  /// 한 주에 대해서만 조회된 값이라, 월간 뷰에 보이는 다른 주의 shift를 수정할 때
+  /// 그대로 쓰면 서버에서 정합성 오류(500)가 날 수 있다.
+  /// 그래서 수정하려는 shift의 실제 workDate가 속한 주의 confirmedWeekScheduleId를
+  /// 별도로 다시 조회한다.
+  Future<int?> _resolveConfirmedWeekScheduleIdForShift(DateTime shiftDate) async {
+    try {
+      final weekly = await ConfirmedSchedulesApi.getConfirmedWeeklySchedule(
+        workPlaceId: widget.workPlaceId,
+        weekStartDate: _mondayOf(shiftDate),
+      );
+
+      return weekly.confirmedWeekScheduleId;
+    } catch (e) {
+      debugPrint("[_resolveConfirmedWeekScheduleIdForShift] 조회 실패: $e");
+      return null;
+    }
   }
 
 
@@ -229,6 +254,23 @@ class _RMonthAllScheduleBottomSheetState
                         color: Color(0xFF1C1C1E),
                       ),
                       onPressed: () async {
+                        // widget.confirmedWeekScheduleId는 다른 주에서 조회된 값일 수 있으므로,
+                        // 이 shift(widget.date)가 실제로 속한 주의 값을 다시 조회한다.
+                        final resolvedConfirmedWeekScheduleId =
+                        await _resolveConfirmedWeekScheduleIdForShift(widget.date);
+
+                        if (resolvedConfirmedWeekScheduleId == null) {
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("근무표 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요"),
+                            ),
+                          );
+                          return;
+                        }
+
+                        if (!mounted) return;
+
                         final result = await Navigator.push<WorkingEditResult>(
                           context,
                           MaterialPageRoute(
@@ -239,7 +281,7 @@ class _RMonthAllScheduleBottomSheetState
                               breakTime: shift.breakTime,
                               date: widget.date,
                               workPlaceId: widget.workPlaceId,
-                              confirmedWeekScheduleId: widget.confirmedWeekScheduleId!,
+                              confirmedWeekScheduleId: resolvedConfirmedWeekScheduleId,
                               timeDetailId: shift.timeDetailId,
                               workPartNo: shift.workPartNo,
                               workers: shift.workers
@@ -306,18 +348,36 @@ class _RMonthAllScheduleBottomSheetState
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
+                    final resolvedConfirmedWeekScheduleId =
+                    await _resolveConfirmedWeekScheduleIdForShift(widget.date);
+
+                    if (resolvedConfirmedWeekScheduleId == null) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("근무표 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요"),
+                        ),
+                      );
+                      return;
+                    }
+
+                    if (!mounted) return;
+
                     showModalBottomSheet(
                       context: context,
                       isScrollControlled: true,
                       backgroundColor: Colors.transparent,
                       builder: (_) {
                         return RDeleteWorkingBottomSheet(
+                          workPlaceId: widget.workPlaceId,
+                          confirmedWeekScheduleId: resolvedConfirmedWeekScheduleId,
                           works: groups.map((shift) {
                             return DeleteWorkItem(
                               role: shift.timeName,
                               startTime: shift.startTime,
                               endTime: shift.endTime,
+                              timeDetailId: shift.timeDetailId,
                               workers: shift.workers
                                   .map((e) => e.name)
                                   .toList(),

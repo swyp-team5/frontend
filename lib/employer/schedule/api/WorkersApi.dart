@@ -27,7 +27,7 @@ class WorkersApi {
 
     try {
       final res = await dio.get(
-        "$_baseUrl/api/work-places/$workPlaceId/workers",
+        "$_baseUrl/api/work-places/$workPlaceId/crews",
         options: Options(
           headers: {
             "Authorization": "Bearer $token",
@@ -43,8 +43,6 @@ class WorkersApi {
       final workersResponse = WorkersResponse.fromJson(res.data);
 
       debugPrint("========== Parsed ==========");
-      debugPrint("workPlaceId : ${workersResponse.workPlaceId}");
-      debugPrint("weekScheduleId : ${workersResponse.weekScheduleId}");
       debugPrint("worker count : ${workersResponse.workers.length}");
 
       for (final worker in workersResponse.workers) {

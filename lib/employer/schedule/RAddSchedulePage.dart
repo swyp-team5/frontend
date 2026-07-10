@@ -6,7 +6,6 @@ import 'package:chack_chack/employer/schedule/widgets/WorkingTImeInputBottomShee
 import 'package:flutter/material.dart';
 
 import 'api/AssignmentApi.dart';
-import 'api/ConfirmedSchedulesApi.dart';
 import 'api/WorkersApi.dart';
 import 'models/AssignmentCreateRequest.dart';
 import 'models/WorkersResponse.dart';
@@ -88,53 +87,6 @@ class _RAddSchedulePageState extends State<RAddSchedulePage> {
         "${date.day.toString().padLeft(2, '0')}";
   }
 
-  /// 선택한 날짜(date)의 기존 확정 근무표를 조회해서
-  /// 같은 timeName이 이미 있으면 그 workPartNo를 재사용하고,
-  /// 없으면 새로운 workPartNo(기존 최댓값 + 1)를 부여한다.
-  Future<int> _resolveWorkPartNo({
-    required DateTime date,
-    required String timeName,
-  }) async {
-    try {
-      final response = await ConfirmedSchedulesApi.getConfirmedSchedules(
-        workPlaceId: widget.workPlaceId,
-        from: date,
-        to: date,
-      );
-
-      final targetDate = _formatDate(date);
-
-      final matchedDays =
-      response.days.where((d) => d.workDate == targetDate).toList();
-
-      if (matchedDays.isEmpty || matchedDays.first.timeDetails.isEmpty) {
-        // 해당 날짜에 등록된 타임이 없으면 1번부터 시작
-        return 1;
-      }
-
-      final timeDetails = matchedDays.first.timeDetails;
-
-      // 같은 timeName이 이미 있으면 그 workPartNo 재사용
-      final existing =
-      timeDetails.where((t) => t.timeName == timeName).toList();
-
-      if (existing.isNotEmpty) {
-        return existing.first.workPartNo;
-      }
-
-      // 없으면 기존 workPartNo 중 최댓값 + 1
-      final maxPartNo = timeDetails
-          .map((t) => t.workPartNo)
-          .reduce((a, b) => a > b ? a : b);
-
-      return maxPartNo + 1;
-    } catch (e) {
-      debugPrint("[_resolveWorkPartNo] 조회 실패: $e");
-      // 조회 실패 시 기본값(1)으로 폴백
-      return 1;
-    }
-  }
-
   List<WorkerItem> workers = [];
 
   Future<void> _loadWorkers() async {
@@ -173,24 +125,27 @@ class _RAddSchedulePageState extends State<RAddSchedulePage> {
 
       // AssignmentCreateRequest는 날짜 하나당 요청 하나이므로,
       // 선택된 날짜 수만큼 순차적으로 등록.
+      // workPartNo는 서버에서 자동으로 계산해서 응답으로 내려주므로
+      // 클라이언트에서 별도로 조회하지 않습니다.
       for (final date in selectedDates) {
-        final workPartNo = await _resolveWorkPartNo(
-          date: date,
-          timeName: workNameController.text,
-        );
-
-        await AssignmentApi.create(
+        final response = await AssignmentApi.create(
           workPlaceId: widget.workPlaceId,
           confirmedWeekScheduleId: widget.confirmedWeekScheduleId,
           request: AssignmentCreateRequest(
             workDate: _formatDate(date),
-            workPartNo: workPartNo, // 동적으로 조회한 값 사용
             timeName: workNameController.text,
             startTime: startTime,
             closeTime: endTime,
             restTime: restTime,
             workerMemberIds: memberIds,
           ),
+        );
+
+        debugPrint(
+          "근무 등록 성공 : workDate=${response.workDate}, "
+              "timeDetailId=${response.timeDetailId}, "
+              "workPartNo=${response.workPartNo}, "
+              "assignmentCount=${response.assignmentCount}",
         );
       }
 

@@ -1,25 +1,37 @@
 import 'package:flutter/material.dart';
 
+import '../api/AssignmentApi.dart';
+
 class DeleteWorkItem {
   final String role;
   final String startTime;
   final String endTime;
   final List<String> workers;
 
+  /// 삭제 API 호출에 필요한 timeDetailId
+  final int timeDetailId;
+
   DeleteWorkItem({
     required this.role,
     required this.startTime,
     required this.endTime,
     required this.workers,
+    required this.timeDetailId,
   });
 }
 
 class RDeleteWorkingBottomSheet extends StatefulWidget {
+  final int workPlaceId;
+  final int confirmedWeekScheduleId;
   final List<DeleteWorkItem> works;
+
+  /// 삭제 성공 시 실제로 삭제된 index 리스트를 전달합니다.
   final void Function(List<int>)? onDelete;
 
   const RDeleteWorkingBottomSheet({
     super.key,
+    required this.workPlaceId,
+    required this.confirmedWeekScheduleId,
     required this.works,
     this.onDelete,
   });
@@ -32,8 +44,9 @@ class RDeleteWorkingBottomSheet extends StatefulWidget {
 class _RDeleteWorkingBottomSheetState
     extends State<RDeleteWorkingBottomSheet> {
   final Set<int> selectedIndexes = {};
+  bool isDeleting = false;
 
-  bool get canDelete => selectedIndexes.isNotEmpty;
+  bool get canDelete => selectedIndexes.isNotEmpty && !isDeleting;
 
   Color _roleColor(String role) {
     switch (role) {
@@ -61,6 +74,45 @@ class _RDeleteWorkingBottomSheetState
     });
   }
 
+  Future<void> _deleteSelected() async {
+    if (selectedIndexes.isEmpty || isDeleting) return;
+
+    setState(() => isDeleting = true);
+
+    final targetIndexes = selectedIndexes.toList();
+    final deletedIndexes = <int>[];
+
+    try {
+      for (final index in targetIndexes) {
+        final timeDetailId = widget.works[index].timeDetailId;
+
+        final result = await AssignmentApi.delete(
+          workPlaceId: widget.workPlaceId,
+          confirmedWeekScheduleId: widget.confirmedWeekScheduleId,
+          timeDetailId: timeDetailId,
+        );
+
+        if (result.status == 'DELETED') {
+          deletedIndexes.add(index);
+        }
+      }
+
+      if (!mounted) return;
+
+      widget.onDelete?.call(deletedIndexes);
+      Navigator.pop(context, deletedIndexes);
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => isDeleting = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +132,7 @@ class _RDeleteWorkingBottomSheetState
             width: 46,
             height: 5,
             decoration: BoxDecoration(
-              color: Color(0xFFE2E2E2),
+              color: const Color(0xFFE2E2E2),
               borderRadius: BorderRadius.circular(999),
             ),
           ),
@@ -101,7 +153,7 @@ class _RDeleteWorkingBottomSheetState
               Positioned(
                 right: 24,
                 child: GestureDetector(
-                  onTap: () => Navigator.pop(context),
+                  onTap: isDeleting ? null : () => Navigator.pop(context),
                   child: Container(
                     width: 32,
                     height: 32,
@@ -131,7 +183,7 @@ class _RDeleteWorkingBottomSheetState
           ),
 
           const SizedBox(height: 20),
-          Divider(height: 1, color: Color(0xFFF1F1F5)),
+          const Divider(height: 1, color: Color(0xFFF1F1F5)),
           const SizedBox(height: 20),
 
           Expanded(
@@ -147,7 +199,7 @@ class _RDeleteWorkingBottomSheetState
                 selectedIndexes.contains(index);
 
                 return GestureDetector(
-                  onTap: () => _toggleSelection(index),
+                  onTap: isDeleting ? null : () => _toggleSelection(index),
                   child: AnimatedContainer(
                     duration:
                     const Duration(milliseconds: 200),
@@ -227,13 +279,7 @@ class _RDeleteWorkingBottomSheetState
               width: double.infinity,
               height: 56,
               child: ElevatedButton(
-                onPressed: canDelete
-                    ? () {
-                  widget.onDelete?.call(
-                    selectedIndexes.toList(),
-                  );
-                }
-                    : null,
+                onPressed: canDelete ? _deleteSelected : null,
                 style: ElevatedButton.styleFrom(
                   elevation: 0,
                   backgroundColor:
@@ -243,12 +289,21 @@ class _RDeleteWorkingBottomSheetState
                     borderRadius: BorderRadius.circular(14),
                   ),
                 ),
-                child: Text(
+                child: isDeleting
+                    ? const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: Colors.white,
+                  ),
+                )
+                    : Text(
                   "삭제",
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: canDelete
+                    color: selectedIndexes.isNotEmpty
                         ? Colors.white
                         : const Color(0xFFE6F2FF),
                   ),

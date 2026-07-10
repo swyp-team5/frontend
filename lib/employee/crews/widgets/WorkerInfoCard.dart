@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../EApplicationFormPage.dart'; // MyWorkSchedule가 있는 파일 경로로 수정
+import '../EApplicationFormPage.dart';
+import '../model/MyWorkSchedule.dart'; // MyWorkSchedule가 있는 파일 경로로 수정
 
 class WorkerInfoCard extends StatelessWidget {
   final String? workerName;
