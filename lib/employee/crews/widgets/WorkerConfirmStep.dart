@@ -1,14 +1,10 @@
-import 'package:chack_chack/employee/crews/widgets/WorkerInfoCard.dart';
 import 'package:flutter/material.dart';
 
-import '../EApplicationFormPage.dart';
-import '../model/MyWorkSchedule.dart';
+import 'package:chack_chack/employee/crews/model/MyWorkSchedule.dart';
+import 'package:chack_chack/employee/crews/widgets/WorkerInfoCard.dart';
 
-/// 근무자 선택 이후 근무 정보를 보여주고
-/// "근무자 확정" 버튼을 눌러 확정하는 단계 화면
-///
-/// 기존 EApplicationFormPage 내부의 `_buildWorkerInfo()` 메서드를
-/// 별도 위젯으로 분리했습니다.
+/// 근무자 선택(WorkerSelect) 확인 이후 나오는 근무정보 확인 화면.
+/// 교대 신청일 때만 거쳐가고, 대타는 이 화면을 건너뛴다.
 class WorkerConfirmStep extends StatelessWidget {
   final String? workerName;
   final MyWorkSchedule? schedule;
@@ -26,19 +22,10 @@ class WorkerConfirmStep extends StatelessWidget {
     return Column(
       children: [
         const SizedBox(height: 40),
-
-        WorkerInfoCard(
-          workerName: workerName,
-          schedule: schedule,
-        ),
-
+        WorkerInfoCard(workerName: workerName, schedule: schedule),
         const Spacer(),
-
         Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: 16,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
           child: SizedBox(
             width: double.infinity,
             height: 54,
