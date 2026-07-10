@@ -60,7 +60,7 @@ class _OnboardingBottomSheetState extends ConsumerState<OnboardingBottomSheet> {
 
       switch (outcome.type) {
         case SocialAuthOutcomeType.loginSuccess:
-        // FCM 토큰 등록 (실패해도 로그인 흐름은 계속 진행)
+          // FCM 토큰 등록 (실패해도 로그인 흐름은 계속 진행)
           _registerFcmToken();
           _openHome(outcome.member!);
         case SocialAuthOutcomeType.signupRequired:
@@ -78,7 +78,7 @@ class _OnboardingBottomSheetState extends ConsumerState<OnboardingBottomSheet> {
     } on SocialProviderException catch (error) {
       debugPrint(
         '[SocialAuth][UI] provider failure type=${error.runtimeType} '
-            'configuration=${error.isConfigurationError}',
+        'configuration=${error.isConfigurationError}',
       );
       _showError(error.message);
     } on SocialAuthException catch (error) {
@@ -129,9 +129,9 @@ class _OnboardingBottomSheetState extends ConsumerState<OnboardingBottomSheet> {
   void _openHome(AuthMember member) {
     final builder = switch (member.role) {
       AuthMemberRole.owner =>
-      widget.ownerHomeBuilder ?? (_) => const RHomePage(),
+        widget.ownerHomeBuilder ?? (_) => const RHomePage(),
       AuthMemberRole.worker =>
-      widget.workerHomeBuilder ?? (_) => const EHomePage(),
+        widget.workerHomeBuilder ?? (_) => const EHomePage(),
     };
 
     Navigator.of(
@@ -150,92 +150,135 @@ class _OnboardingBottomSheetState extends ConsumerState<OnboardingBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final showsAppleLogin = Theme.of(context).platform == TargetPlatform.iOS;
+
     return Container(
+      height: 345,
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 56,
-                height: 6,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE5E5E5),
-                  borderRadius: BorderRadius.circular(100),
-                ),
-              ),
-              const SizedBox(height: 28),
-              const Text(
-                '스케줄 관리를 더 쉽고 간편하게',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Color(0xFF111111),
-                ),
-              ),
-              const SizedBox(height: 20),
-              _SocialButton(
-                key: const Key('kakao-login-button'),
-                label: '카카오로 시작하기',
-                backgroundColor: const Color(0xFFFEE500),
-                assetPath: 'assets/images/logo/kakaotalk.png',
-                isLoading: _loadingProvider == SocialAuthProvider.kakao,
-                onPressed: _isLoading
-                    ? null
-                    : () => _authenticate(SocialAuthProvider.kakao),
-              ),
-              const SizedBox(height: 10),
-              _SocialButton(
-                key: const Key('google-login-button'),
-                label: 'Google로 시작하기',
-                backgroundColor: Colors.white,
-                assetPath: 'assets/images/logo/google.png',
-                borderColor: const Color(0xFFE5E5E5),
-                isLoading: _loadingProvider == SocialAuthProvider.google,
-                onPressed: _isLoading
-                    ? null
-                    : () => _authenticate(SocialAuthProvider.google),
-              ),
-              const SizedBox(height: 22),
-              const Text.rich(
-                TextSpan(
-                  style: TextStyle(
-                    color: Color(0xFF505050),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                  ),
-                  children: [
-                    TextSpan(text: '이미 계정이 있거나 초대받았다면 '),
-                    TextSpan(
-                      text: '바로 시작하기',
-                      style: TextStyle(
-                        color: Color(0xFF0084FF),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
+      child: Column(
+        children: [
+          const SizedBox(height: 12),
+          Container(
+            width: 43,
+            height: 6,
+            decoration: BoxDecoration(
+              color: const Color(0xFFE0E2E5),
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
-        ),
+          const SizedBox(height: 18),
+          const Text(
+            '스케줄 관리를 더 쉽고 간편하게',
+            style: TextStyle(
+              fontFamily: 'Pretendard',
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              height: 1.4,
+              color: Color(0xFF111111),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Divider(height: 1, thickness: 1, color: Color(0xFFE5E5EC)),
+          ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              children: [
+                _SocialButton(
+                  key: const Key('kakao-login-button'),
+                  label: '카카오로 시작하기',
+                  backgroundColor: const Color(0xFFFFE200),
+                  assetPath: 'assets/images/logo/kakaotalk.png',
+                  iconWidth: 20,
+                  iconHeight: 20,
+                  iconColor: const Color(0xE6111111),
+                  isLoading: _loadingProvider == SocialAuthProvider.kakao,
+                  onPressed: _isLoading
+                      ? null
+                      : () => _authenticate(SocialAuthProvider.kakao),
+                ),
+                const SizedBox(height: 8),
+                _SocialButton(
+                  key: const Key('google-login-button'),
+                  label: 'Google로 시작하기',
+                  backgroundColor: Colors.white,
+                  assetPath: 'assets/images/logo/google.png',
+                  borderColor: const Color(0xFFE5E5EC),
+                  isLoading: _loadingProvider == SocialAuthProvider.google,
+                  onPressed: _isLoading
+                      ? null
+                      : () => _authenticate(SocialAuthProvider.google),
+                ),
+                if (showsAppleLogin) ...[
+                  const SizedBox(height: 8),
+                  _SocialButton(
+                    key: const Key('apple-login-button'),
+                    label: 'Apple로 시작하기',
+                    backgroundColor: Colors.white,
+                    assetPath: 'assets/images/logo/apple.png',
+                    borderColor: const Color(0xFFE5E5EC),
+                    isLoading: _loadingProvider == SocialAuthProvider.apple,
+                    onPressed: _isLoading
+                        ? null
+                        : () => _authenticate(SocialAuthProvider.apple),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+          const Text.rich(
+            TextSpan(
+              style: TextStyle(
+                color: Color(0xFF505050),
+                fontSize: 13,
+                fontWeight: FontWeight.w400,
+              ),
+              children: [
+                TextSpan(text: '이미 계정이 있거나 초대받았다면 '),
+                TextSpan(
+                  text: '바로 시작하기',
+                  style: TextStyle(
+                    color: Color(0xFF0084FF),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
 }
 
 class _SocialButton extends StatelessWidget {
+  static const double _iconSize = 20;
+  static const double _contentWidth = 230;
+
+  static const TextStyle _labelStyle = TextStyle(
+    fontFamily: 'Pretendard',
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    height: 1.375,
+    color: Color(0xFF111111),
+  );
+
   final String label;
   final Color backgroundColor;
   final String assetPath;
   final Color? borderColor;
+  final double iconWidth;
+  final double iconHeight;
+  final Color? iconColor;
   final bool isLoading;
   final VoidCallback? onPressed;
 
@@ -247,52 +290,76 @@ class _SocialButton extends StatelessWidget {
     required this.isLoading,
     required this.onPressed,
     this.borderColor,
+    this.iconWidth = _iconSize,
+    this.iconHeight = _iconSize,
+    this.iconColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: double.infinity,
-      height: 38,
-      child: ElevatedButton(
-        onPressed: onPressed,
-        style: ElevatedButton.styleFrom(
-          elevation: 0,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          backgroundColor: backgroundColor,
-          disabledBackgroundColor: backgroundColor,
-          foregroundColor: const Color(0xFF111111),
-          disabledForegroundColor: const Color(0xFF111111),
-          side: borderColor == null
-              ? BorderSide.none
-              : BorderSide(color: borderColor!),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-        ),
-        child: isLoading
-            ? const SizedBox.square(
-          dimension: 18,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: Color(0xFF111111),
-          ),
-        )
-            : Stack(
-          alignment: Alignment.center,
-          children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Image.asset(assetPath, width: 18, height: 18),
-            ),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
+          width: double.infinity,
+          height: 50,
+          child: ElevatedButton(
+            onPressed: onPressed,
+            style: ElevatedButton.styleFrom(
+              elevation: 0,
+              padding: EdgeInsets.zero,
+              backgroundColor: backgroundColor,
+              disabledBackgroundColor: backgroundColor,
+              foregroundColor: const Color(0xFF111111),
+              disabledForegroundColor: const Color(0xFF111111),
+              side: borderColor == null
+                  ? BorderSide.none
+                  : BorderSide(color: borderColor!, width: 1),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+            child: isLoading
+                ? const SizedBox.square(
+                    dimension: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Color(0xFF111111),
+                    ),
+                  )
+                : Center(
+                    child: SizedBox(
+                      width: _contentWidth,
+                      height: _iconSize,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: _iconSize,
+                            height: _iconSize,
+                            child: Center(
+                              child: Image.asset(
+                                assetPath,
+                                width: iconWidth,
+                                height: iconHeight,
+                                fit: BoxFit.contain,
+                                color: iconColor,
+                                colorBlendMode:
+                                    iconColor == null ? null : BlendMode.srcIn,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 28),
+                          Expanded(
+                            child: Text(
+                              label,
+                              style: _labelStyle,
+                              maxLines: 1,
+                              overflow: TextOverflow.visible,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+          ),
+        );
+      }
+    }

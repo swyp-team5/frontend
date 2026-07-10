@@ -1,4 +1,4 @@
-enum SocialAuthProvider { google, kakao }
+enum SocialAuthProvider { google, kakao, apple }
 
 enum AuthStatus { loginSuccess, signupRequired }
 
@@ -28,25 +28,38 @@ class SocialCredential {
   final SocialAuthProvider provider;
   final String? idToken;
   final String? accessToken;
+  final String? authorizationCode;
   final DevicePayload device;
 
   const SocialCredential.google({required String idToken, required this.device})
     : provider = SocialAuthProvider.google,
       idToken = idToken,
-      accessToken = null;
+      accessToken = null,
+      authorizationCode = null;
 
   const SocialCredential.kakao({
     required String accessToken,
     required this.device,
   }) : provider = SocialAuthProvider.kakao,
        idToken = null,
-       accessToken = accessToken;
+       accessToken = accessToken,
+       authorizationCode = null;
+
+  const SocialCredential.apple({
+    required String idToken,
+    required String authorizationCode,
+    required this.device,
+  }) : provider = SocialAuthProvider.apple,
+       idToken = idToken,
+       accessToken = null,
+       authorizationCode = authorizationCode;
 
   Map<String, dynamic> toJson() {
     return {
       'provider': provider.name.toUpperCase(),
       if (idToken != null) 'idToken': idToken,
       if (accessToken != null) 'accessToken': accessToken,
+      if (authorizationCode != null) 'authorizationCode': authorizationCode,
       'device': device.toJson(),
     };
   }

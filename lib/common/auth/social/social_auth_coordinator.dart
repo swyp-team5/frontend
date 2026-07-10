@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../../fcm/FcmSetupService.dart';
@@ -50,6 +52,7 @@ class SocialAuthCoordinator implements SocialAuthFlow {
       providers: {
         SocialAuthProvider.google: GoogleSocialIdentityProvider(),
         SocialAuthProvider.kakao: KakaoSocialIdentityProvider(),
+        SocialAuthProvider.apple: AppleSocialIdentityProvider(),
       },
       api: SocialAuthApi(),
       sessionSaver: ServerTokenManager(),
@@ -90,10 +93,14 @@ class SocialAuthCoordinator implements SocialAuthFlow {
         // FCM 토큰 등록 (실패해도 로그인 흐름은 계속 진행)
         // provider(카카오/구글)에 상관없이 로그인 성공 지점이 여기 하나로 모여서
         // 예전처럼 provider별로 각각 등록 코드를 넣을 필요가 없다.
-        FcmSetupService.registerCurrentDevice(
-          deviceId: credential.device.deviceId,
-          platform: credential.device.platform,
-          appVersion: credential.device.appVersion,
+        unawaited(
+          FcmSetupService.registerCurrentDevice(
+            deviceId: credential.device.deviceId,
+            platform: credential.device.platform,
+            appVersion: credential.device.appVersion,
+          ).catchError((error) {
+            debugPrint('[FCM][SocialAuth] token registration failed: $error');
+          }),
         );
 
         return SocialAuthOutcome.loginSuccess(response.member!);

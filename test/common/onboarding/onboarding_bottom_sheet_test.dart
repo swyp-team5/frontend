@@ -10,13 +10,56 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('shows Kakao and Google actions without Apple', (tester) async {
-    await _pumpSheet(tester, _FakeSocialAuthFlow());
+  testWidgets('shows Kakao, Google, and Apple actions on iOS', (tester) async {
+    await _pumpSheet(
+      tester,
+      _FakeSocialAuthFlow(),
+      platform: TargetPlatform.iOS,
+    );
+
+    expect(find.text('카카오로 시작하기'), findsOneWidget);
+    expect(find.text('Google로 시작하기'), findsOneWidget);
+    expect(find.text('Apple로 시작하기'), findsOneWidget);
+  });
+
+  testWidgets('hides Apple action on Android', (tester) async {
+    await _pumpSheet(
+      tester,
+      _FakeSocialAuthFlow(),
+      platform: TargetPlatform.android,
+    );
 
     expect(find.text('카카오로 시작하기'), findsOneWidget);
     expect(find.text('Google로 시작하기'), findsOneWidget);
     expect(find.text('Apple로 시작하기'), findsNothing);
   });
+
+  testWidgets(
+    'uses Figma icon styles and the same label size for social buttons',
+    (tester) async {
+      await _pumpSheet(tester, _FakeSocialAuthFlow());
+
+      final kakaoIcon = tester.widget<Image>(
+        find.image(const AssetImage('assets/images/logo/kakaotalk.png')),
+      );
+      final googleIcon = tester.widget<Image>(
+        find.image(const AssetImage('assets/images/logo/google.png')),
+      );
+      final kakaoText = tester.widget<Text>(find.text('카카오로 시작하기'));
+      final googleText = tester.widget<Text>(find.text('Google로 시작하기'));
+
+      expect(kakaoIcon.width, 18);
+      expect(kakaoIcon.height, 17);
+      expect(kakaoIcon.color, const Color(0xE6111111));
+      expect(kakaoIcon.colorBlendMode, BlendMode.srcIn);
+      expect(googleIcon.width, 18);
+      expect(googleIcon.height, 18);
+      expect(googleIcon.color, isNull);
+      expect(kakaoText.style?.fontSize, googleText.style?.fontSize);
+      expect(kakaoText.style?.fontWeight, googleText.style?.fontWeight);
+      expect(kakaoText.style?.height, googleText.style?.height);
+    },
+  );
 
   testWidgets('owner login replaces onboarding with owner home', (
     tester,
@@ -61,6 +104,17 @@ void main() {
 
     expect(flow.providers, [SocialAuthProvider.google]);
     expect(find.text('worker home'), findsOneWidget);
+  });
+
+  testWidgets('Apple action starts Apple authentication', (tester) async {
+    final flow = _FakeSocialAuthFlow();
+    await _pumpSheet(tester, flow, platform: TargetPlatform.iOS);
+
+    await tester.tap(find.text('Apple로 시작하기'));
+    await tester.pumpAndSettle();
+
+    expect(flow.providers, [SocialAuthProvider.apple]);
+    expect(find.text('스케줄 관리를 더 쉽고 간편하게'), findsOneWidget);
   });
 
   testWidgets('signup result stores credential and opens signup', (
@@ -140,6 +194,7 @@ Future<void> _pumpSheet(
   WidgetTester tester,
   SocialAuthFlow flow, {
   ProviderContainer? container,
+  TargetPlatform platform = TargetPlatform.android,
 }) async {
   final resolvedContainer = container ?? ProviderContainer();
   if (container == null) {
@@ -149,6 +204,7 @@ Future<void> _pumpSheet(
     UncontrolledProviderScope(
       container: resolvedContainer,
       child: MaterialApp(
+        theme: ThemeData(platform: platform),
         home: Scaffold(
           body: OnboardingBottomSheet(
             authFlow: flow,
