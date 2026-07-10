@@ -48,12 +48,12 @@ void main() {
       final kakaoText = tester.widget<Text>(find.text('카카오로 시작하기'));
       final googleText = tester.widget<Text>(find.text('Google로 시작하기'));
 
-      expect(kakaoIcon.width, 18);
-      expect(kakaoIcon.height, 17);
+      expect(kakaoIcon.width, 20);
+      expect(kakaoIcon.height, 20);
       expect(kakaoIcon.color, const Color(0xE6111111));
       expect(kakaoIcon.colorBlendMode, BlendMode.srcIn);
-      expect(googleIcon.width, 18);
-      expect(googleIcon.height, 18);
+      expect(googleIcon.width, 20);
+      expect(googleIcon.height, 20);
       expect(googleIcon.color, isNull);
       expect(kakaoText.style?.fontSize, googleText.style?.fontSize);
       expect(kakaoText.style?.fontWeight, googleText.style?.fontWeight);
