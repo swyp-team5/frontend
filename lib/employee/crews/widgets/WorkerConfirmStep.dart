@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
+import 'WorkerInfoCard.dart';
+import '../model/MyWorkSchedule.dart';
 
-import 'package:chack_chack/employee/crews/model/MyWorkSchedule.dart';
-import 'package:chack_chack/employee/crews/widgets/WorkerInfoCard.dart';
-
-/// 근무자 선택(WorkerSelect) 확인 이후 나오는 근무정보 확인 화면.
-/// 교대 신청일 때만 거쳐가고, 대타는 이 화면을 건너뛴다.
 class WorkerConfirmStep extends StatelessWidget {
   final String? workerName;
   final MyWorkSchedule? schedule;
@@ -22,7 +19,10 @@ class WorkerConfirmStep extends StatelessWidget {
     return Column(
       children: [
         const SizedBox(height: 40),
-        WorkerInfoCard(workerName: workerName, schedule: schedule),
+        WorkerInfoCard(
+          workerName: workerName,
+          schedule: schedule,
+        ),
         const Spacer(),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-/// 신청서 화면 최상단의 뒤로가기 + 타이틀.
 class ApplicationFormHeader extends StatelessWidget {
   const ApplicationFormHeader({super.key});
 

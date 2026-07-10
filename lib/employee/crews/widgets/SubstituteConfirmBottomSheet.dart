@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 
 import '../../../common/employee/ESubstitueAccept.dart';
+import '../api/WorkChangeRequestApi.dart';
+import '../model/WorkChangeRequestResponse.dart';
 
-class SubstituteConfirmBottomSheet extends StatelessWidget {
+class SubstituteConfirmBottomSheet extends StatefulWidget {
   const SubstituteConfirmBottomSheet({
     super.key,
+    required this.workPlaceId,
+    required this.requestAssignmentId,
+    required this.targetMemberId,
     required this.myName,
     required this.myDate,
     required this.myTime,
@@ -17,6 +22,10 @@ class SubstituteConfirmBottomSheet extends StatelessWidget {
     required this.onConfirm,
   });
 
+  final int workPlaceId;
+  final int requestAssignmentId;
+  final int targetMemberId;
+
   final String myName;
   final String myDate;
   final String myTime;
@@ -27,7 +36,62 @@ class SubstituteConfirmBottomSheet extends StatelessWidget {
 
   final String reason;
 
-  final VoidCallback onConfirm;
+  final ValueChanged<WorkChangeRequestResponse> onConfirm;
+
+  @override
+  State<SubstituteConfirmBottomSheet> createState() =>
+      _SubstituteConfirmBottomSheetState();
+}
+
+class _SubstituteConfirmBottomSheetState
+    extends State<SubstituteConfirmBottomSheet> {
+  bool _isLoading = false;
+  final WorkChangeRequestApi _api = WorkChangeRequestApi();
+
+  Future<void> _handleConfirm() async {
+    if (_isLoading) return;
+
+    setState(() => _isLoading = true);
+
+    debugPrint(
+      "[SubstituteConfirm] 대타 신청 요청 시작 - "
+          "workPlaceId: ${widget.workPlaceId}, "
+          "requestAssignmentId: ${widget.requestAssignmentId}, "
+          "targetAssignmentId: ${widget.targetMemberId}, "
+          "reason: ${widget.reason}",
+    );
+
+    try {
+      final response = await _api.requestSubstitute(
+        workPlaceId: widget.workPlaceId,
+        requestAssignmentId: widget.requestAssignmentId,
+        targetMemberId: widget.targetMemberId,
+        reason: widget.reason,
+      );
+
+      debugPrint("[SubstituteConfirm] 대타 신청 성공 ✅ response: $response");
+
+      if (!mounted) return;
+
+      widget.onConfirm(response);
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const ESubstituteAccept(),
+        ),
+      );
+    } catch (e, stackTrace) {
+      debugPrint("[SubstituteConfirm] 대타 신청 실패 ❌ error: $e");
+      debugPrint("[SubstituteConfirm] stackTrace: $stackTrace");
+
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$e'.replaceFirst('Exception: ', ''))),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -110,7 +174,7 @@ class SubstituteConfirmBottomSheet extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                myName,
+                                widget.myName,
                                 style: const TextStyle(
                                   color: Color(0xff0063BF),
                                   fontSize: 13,
@@ -122,7 +186,7 @@ class SubstituteConfirmBottomSheet extends StatelessWidget {
                             const SizedBox(height: 10),
 
                             Text(
-                              myDate,
+                              widget.myDate,
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -132,7 +196,7 @@ class SubstituteConfirmBottomSheet extends StatelessWidget {
                             const SizedBox(height: 6),
 
                             Text(
-                              myTime,
+                              widget.myTime,
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w500,
@@ -167,7 +231,7 @@ class SubstituteConfirmBottomSheet extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
-                                workerName,
+                                widget.workerName,
                                 style: const TextStyle(
                                   color: Color(0xff019A4E),
                                   fontSize: 13,
@@ -179,7 +243,7 @@ class SubstituteConfirmBottomSheet extends StatelessWidget {
                             const SizedBox(height: 10),
 
                             Text(
-                              workerDate,
+                              widget.workerDate,
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
@@ -189,7 +253,7 @@ class SubstituteConfirmBottomSheet extends StatelessWidget {
                             const SizedBox(height: 6),
 
                             Text(
-                              workerTime,
+                              widget.workerTime,
                               style: const TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w500,
@@ -224,7 +288,7 @@ class SubstituteConfirmBottomSheet extends StatelessWidget {
                         const Spacer(),
 
                         Text(
-                          reason,
+                          widget.reason,
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
@@ -245,7 +309,8 @@ class SubstituteConfirmBottomSheet extends StatelessWidget {
                   child: SizedBox(
                     height: 56,
                     child: OutlinedButton(
-                      onPressed: () => Navigator.pop(context),
+                      onPressed:
+                      _isLoading ? null : () => Navigator.pop(context),
                       style: OutlinedButton.styleFrom(
                         side: BorderSide.none,
                       ),
@@ -267,16 +332,7 @@ class SubstituteConfirmBottomSheet extends StatelessWidget {
                   child: SizedBox(
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: () {
-                        onConfirm();
-
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const ESubstituteAccept(),
-                          ),
-                        );
-                      },
+                      onPressed: _isLoading ? null : _handleConfirm,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xff0084FF),
                         elevation: 0,
@@ -284,7 +340,17 @@ class SubstituteConfirmBottomSheet extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: const Text(
+                      child: _isLoading
+                          ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          valueColor:
+                          AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      )
+                          : const Text(
                         "확정",
                         style: TextStyle(
                           fontSize: 16,

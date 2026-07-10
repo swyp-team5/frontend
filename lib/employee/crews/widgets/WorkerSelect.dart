@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 
+import '../model/WorkChangeTargetsResponse.dart';
+
 class WorkerSelect extends StatelessWidget {
-  final List<String> workers;
-  final String? selectedWorker;
-  final ValueChanged<String> onWorkerSelected;
+  final bool isSubstitute;
+  final List<WorkChangeWorker> workers;
+  final WorkChangeWorker? selectedWorker;
+  final ValueChanged<WorkChangeWorker> onWorkerSelected;
   final VoidCallback onConfirm;
 
   const WorkerSelect({
     super.key,
+    required this.isSubstitute,
     required this.workers,
     required this.selectedWorker,
     required this.onWorkerSelected,
@@ -24,10 +28,10 @@ class WorkerSelect extends StatelessWidget {
             vertical: 20,
           ),
           child: Row(
-            children: const [
+            children: [
               Text(
-                "교대 희망 상대를 선택하세요",
-                style: TextStyle(
+                isSubstitute ? "대타 희망 상대를 선택하세요" : "교대 희망 상대를 선택하세요",
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w500,
                   color: Color(0xFF505050),
@@ -49,11 +53,12 @@ class WorkerSelect extends StatelessWidget {
               childAspectRatio: 2.7,
             ),
             itemBuilder: (_, index) {
-              final workerName = workers[index];
-              final selected = workerName == selectedWorker;
+              final worker = workers[index];
+              final selected =
+                  selectedWorker?.memberId == worker.memberId;
 
               return GestureDetector(
-                onTap: () => onWorkerSelected(workerName),
+                onTap: () => onWorkerSelected(worker),
                 child: Container(
                   decoration: BoxDecoration(
                     color: selected
@@ -70,12 +75,19 @@ class WorkerSelect extends StatelessWidget {
                     children: [
                       const SizedBox(width: 12),
 
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: worker.profileImageUrl != null
+                            ? Image.network(
+                          worker.profileImageUrl!,
+                          width: 48,
+                          height: 48,
+                          fit: BoxFit.cover,
+                        )
+                            : Container(
+                          width: 48,
+                          height: 48,
                           color: const Color(0xFFE0E2E5),
-                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
 
@@ -96,7 +108,7 @@ class WorkerSelect extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              workerName,
+                              worker.name,
                               style: const TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 16,
@@ -116,31 +128,31 @@ class WorkerSelect extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.all(20),
           child: SizedBox(
-            width: double.infinity,
-            height: 54,
-            child: ElevatedButton(
-              onPressed: selectedWorker == null ? null : onConfirm,
+              width: double.infinity,
+              height: 54,
+              child: ElevatedButton(
+                onPressed: selectedWorker == null ? null : onConfirm,
 
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0084FF),
-                disabledBackgroundColor: const Color(0xFF80C2FF),
-                foregroundColor: Colors.white,
-                disabledForegroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF0084FF),
+                  disabledBackgroundColor: const Color(0xFF80C2FF),
+                  foregroundColor: Colors.white,
+                  disabledForegroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
-              ),
 
-              child: const Text(
-                "근무자 선택",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
+                child: const Text(
+                  "근무자 선택",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
-              ),
-            )
+              )
           ),
         ),
       ],

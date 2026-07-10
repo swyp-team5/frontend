@@ -11,10 +11,14 @@ import 'package:chack_chack/employee/crews/widgets/WorkerConfirmStep.dart';
 import 'package:chack_chack/employee/crews/widgets/WorkerSelect.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import 'api/ScheduleApi.dart';
+import 'api/WorkChangeTargetsApi.dart';
 import 'model/ConfirmedSchedule.dart';
 import 'model/MyWorkSchedule.dart';
+import 'model/WorkChangeRequestResponse.dart';
+import 'model/WorkChangeTargetsResponse.dart';
 
 class EApplicationFormPage extends StatefulWidget {
   /// 캘린더 활성화 정보 조회를 위한 근무지 ID
@@ -55,6 +59,13 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
   bool _isLoadingSchedules = false;
   String? _scheduleError;
 
+  /// =========================
+  /// 교대 대상 근무자 조회
+  /// =========================
+  List<WorkChangeWorker> _workers = [];
+  List<WorkChangeDay> _workerDays = [];
+  bool _isLoadingWorkers = false;
+
   /// 화면(캘린더/신청서)에서 쓰던 "내 근무" 데이터 형태로 변환
   List<MyWorkSchedule> get mySchedules => _confirmedSchedules
       .where((s) => s.workPlaceId == widget.workPlaceId)
@@ -65,6 +76,8 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
       role: s.timeName,
       startTime: s.startTimeShort,
       endTime: s.closeTimeShort,
+      assignmentId: s.assignmentId,
+      targetMemberId: 0,  // 내 근무는 대타 대상자가 아니므로 의미 없음
     ),
   )
       .toList();
@@ -77,8 +90,8 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
 
     // 지난 확정 근무 + 이번 달 진행 중 일정 + 다음 주(월이 넘어가는 경우 포함)
     // 확정 일정까지 한 번에 커버할 수 있도록 넉넉하게 범위를 잡는다.
-    final from = DateTime(_focusedMonth.year, _focusedMonth.month - 1, 1);
-    final to = DateTime(_focusedMonth.year, _focusedMonth.month + 2, 0);
+    final from = DateTime.now();
+    final to = from.add(const Duration(days: 30));
 
     try {
       final response =
@@ -97,6 +110,65 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
             ? "근무 일정을 불러오지 못했습니다.\n[$e]"
             : "근무 일정을 불러오지 못했습니다.\n다시 시도해주세요.";
         _isLoadingSchedules = false;
+      });
+    }
+  }
+
+  Future<void> _fetchWorkers() async {
+    if (_current.selectedDate == null) return;
+
+    setState(() {
+      _isLoadingWorkers = true;
+    });
+
+    // 다음 주 전체 범위로 조회해야 근무자의 다른 근무일도 함께 받아올 수 있음
+    final week = nextWeek;
+    final from = week.first;
+    final to = week.last;
+
+    try {
+      final response = await WorkChangeTargetsApi.fetchWorkers(
+        workPlaceId: widget.workPlaceId,
+        fromDate: DateFormat('yyyy-MM-dd').format(from),
+        toDate: DateFormat('yyyy-MM-dd').format(to),
+      );
+
+      if (!mounted) return;
+
+      debugPrint("===== API DAYS =====");
+      for (final day in response.days) {
+        debugPrint(day.workDate.toString());
+
+        for (final time in day.timeDetails) {
+          debugPrint(
+            "${time.timeName} -> ${time.workers.map((e) => e.name).join(', ')}",
+          );
+        }
+      }
+
+      setState(() {
+        _workerDays = response.days;
+
+        final map = <int, WorkChangeWorker>{};
+
+        for (final day in response.days) {
+          for (final time in day.timeDetails) {
+            for (final worker in time.workers) {
+              map[worker.memberId] = worker;
+            }
+          }
+        }
+
+        _workers = map.values.toList();
+        _isLoadingWorkers = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _workers = [];
+        _workerDays = [];
+        _isLoadingWorkers = false;
       });
     }
   }
@@ -127,17 +199,21 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
       a.year == b.year && a.month == b.month && a.day == b.day;
 
   bool isSelectable(DateTime day) {
-    // 근무자 확정 이후에는 아무 날짜도 선택 불가
     if (_current.workerConfirmed) return false;
 
-    // 처음 (내 근무 선택)
+    // 내 근무 선택 단계
     if (!_workerMode) {
       if (!isNextWeek(day)) return false;
       return isMyWorkDay(day);
     }
 
     // 근무자 선택 단계
-    if (_current.selectedWorker == null) return false;
+    if (_current.selectedWorker == null) {
+      // 모든 근무자의 근무일 선택 가능
+      return isWorkerWorkDay(day);
+    }
+
+    // 근무자 선택 후에는 그 근무자의 근무일만 선택 가능
     return isSelectedWorkerWorkDay(day);
   }
 
@@ -184,43 +260,132 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
     return dates;
   }
 
-  // TODO: MockWorkerSchedules는 "근무지 근무자 일정 조회" API 연동 전까지의 임시 데이터.
+  bool isSelectedWorkerWorkDay(DateTime date) {
+    final worker = _current.selectedWorker;
 
-  List<MyWorkSchedule> getWorkersForSelectedDate() {
-    final date = _current.selectedDate;
-    if (date == null) return [];
-    return MockWorkerSchedules.all.where((s) => _sameDay(s.date, date)).toList();
+    if (worker == null) return false;
+
+    for (final day in _workerDays) {
+
+      if (!_sameDay(day.workDate, date)) continue;
+
+      for (final time in day.timeDetails) {
+
+        for (final w in time.workers) {
+
+          if (w.memberId == worker.memberId) {
+            return true;
+          }
+        }
+      }
+    }
+
+    return false;
   }
 
-  bool isSelectedWorkerWorkDay(DateTime day) {
-    final worker = _current.selectedWorker;
-    if (worker == null) return false;
-    return MockWorkerSchedules.all
-        .any((s) => s.name == worker && _sameDay(s.date, day));
+  bool isWorkerWorkDay(DateTime day) {
+    for (final d in _workerDays) {
+      if (_sameDay(d.workDate, day)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   MyWorkSchedule? getSelectedWorkerSchedule() {
     final worker = _current.selectedWorker;
     final date = _current.selectedWorkerDate;
+
     if (worker == null || date == null) return null;
-    try {
-      return MockWorkerSchedules.all
-          .firstWhere((s) => s.name == worker && _sameDay(s.date, date));
-    } catch (_) {
-      return null;
+
+    for (final day in _workerDays) {
+
+      if (!_sameDay(day.workDate, date)) continue;
+
+      for (final time in day.timeDetails) {
+
+        for (final w in time.workers) {
+
+          if (w.memberId == worker.memberId) {
+
+            return MyWorkSchedule(
+              name: worker.name,
+              date: day.workDate,
+              role: time.timeName,
+              startTime: time.startTime.substring(0,5),
+              endTime: time.closeTime.substring(0,5),
+              assignmentId: w.assignmentId,
+              targetMemberId: w.memberId,
+            );
+          }
+        }
+      }
     }
+
+    return null;
   }
 
   MyWorkSchedule? getSelectedSubstituteWorkerSchedule() {
     final worker = _current.selectedWorker;
-    final date = _current.selectedDate;
-    if (worker == null || date == null) return null;
-    try {
-      return MockWorkerSchedules.all
-          .firstWhere((s) => s.name == worker && _sameDay(s.date, date));
-    } catch (_) {
+    final myDate = _current.selectedDate;
+
+    debugPrint("[대타 조회] selectedWorker=${worker?.name}(id:${worker?.memberId}), myDate=$myDate");
+
+    if (worker == null || myDate == null) {
+      debugPrint("[대타 조회] worker 또는 myDate가 null -> 조회 중단");
       return null;
     }
+
+    // 1) 혹시 그 날짜에 근무자가 이미 다른 시간대로 근무 중이면 그 정보를 사용
+    for (final day in _workerDays) {
+      if (!_sameDay(day.workDate, myDate)) continue;
+
+      for (final time in day.timeDetails) {
+        final matched =
+        time.workers.where((w) => w.memberId == worker.memberId).toList();
+
+        if (matched.isNotEmpty) {
+          final w = matched.first;
+          debugPrint(
+              "[대타 조회] 같은 날짜에 근무자의 기존 스케줄 발견: ${time.timeName} ${time.startTime}-${time.closeTime}, assignmentId=${w.assignmentId}");
+          return MyWorkSchedule(
+            name: worker.name,
+            date: day.workDate,
+            role: time.timeName,
+            startTime: time.startTime.substring(0, 5),
+            endTime: time.closeTime.substring(0, 5),
+            assignmentId: w.assignmentId,
+            targetMemberId: w.memberId,
+          );
+        }
+      }
+    }
+
+    debugPrint("[대타 조회] 해당 날짜에 근무자의 기존 스케줄 없음 -> 내 근무 정보로 fallback");
+
+    // 2) 없으면 내 근무(mySchedule) 정보를 그대로 사용 (진짜 대타 케이스)
+    final mySchedule = getSelectedSchedule();
+    if (mySchedule == null) {
+      debugPrint("[대타 조회] mySchedule도 null -> fallback 불가, null 반환");
+      return null;
+    }
+
+    debugPrint(
+        "[대타 조회] fallback 결과: name=${worker.name}, date=${mySchedule.date}, "
+            "time=${mySchedule.startTime}-${mySchedule.endTime}");
+
+    return MyWorkSchedule(
+      name: worker.name,
+      date: mySchedule.date,
+      role: mySchedule.role,
+      startTime: mySchedule.startTime,
+      endTime: mySchedule.endTime,
+      // 실제 근무가 없으므로 assignmentId 없음
+      assignmentId: 0,
+
+      // ⭐ 서버가 요구하는 값
+      targetMemberId: worker.memberId,
+    );
   }
 
   @override
@@ -275,9 +440,12 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
                       workerMode: _workerMode,
                       showWorkerSelect: showWorkerSelect,
                       isMyWorkDay: isMyWorkDay,
+                      isWorkerWorkDay: isWorkerWorkDay,
                       isSelectedWorkerWorkDay: isSelectedWorkerWorkDay,
                       isSelectable: isSelectable,
                       isNextWeek: isNextWeek,
+                      hasSelectedWorker: _current.selectedWorker != null,
+                      workerConfirmed: _current.workerConfirmed,
                       onPrevMonth: () {
                         setState(() {
                           _focusedMonth = DateTime(
@@ -312,10 +480,14 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
             Expanded(
               child: showWorkerSelect
                   ? WorkerSelect(
-                workers: MockWorkerSchedules.workerNames,
+                isSubstitute: isSubstitute,
+                workers: _workers,
                 selectedWorker: _current.selectedWorker,
                 onWorkerSelected: (worker) {
-                  setState(() => _current.selectedWorker = worker);
+                  setState(() {
+                    _current.selectedWorker = worker;
+                    _current.selectedWorkerDate = null;
+                  });
                 },
                 onConfirm: () {
                   setState(() {
@@ -333,7 +505,7 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
               )
                   : showWorkerInfo
                   ? WorkerConfirmStep(
-                workerName: _current.selectedWorker,
+                workerName: _current.selectedWorker?.name,
                 schedule: getSelectedWorkerSchedule(),
                 onConfirm: () {
                   setState(() {
@@ -371,7 +543,7 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
                       ? isSubstitute
                   // 대타 : 이름만 표시
                       ? Text(
-                    _current.selectedWorker ?? "",
+                    _current.selectedWorker?.name ?? "",
                     style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500),
@@ -412,16 +584,20 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
                           color: Color(0xff8F8F8F),
                           fontSize: 16)),
                   hasArrow: true,
-                  onTap: () {
+                  onTap: () async {
                     if (_current.selectedDate == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text("먼저 날짜를 선택해주세요.")),
                       );
                       return;
                     }
-                    if (getWorkersForSelectedDate().isEmpty) {
+                    await _fetchWorkers();
+
+                    if (_workers.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("해당 날짜에 근무자가 없습니다.")),
+                        const SnackBar(
+                          content: Text("해당 날짜에 근무자가 없습니다."),
+                        ),
                       );
                       return;
                     }
@@ -495,21 +671,33 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
         : _current.selectedReason!;
 
     if (isSubstitute) {
-      final workerName = _current.selectedWorker;
-      if (workerName == null) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text("대타 근무자를 선택해주세요.")));
+      final worker = _current.selectedWorker;
+
+      if (worker == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("대타 근무자를 선택해주세요.")),
+        );
+        return;
+      }
+
+      final substituteWorkerSchedule = getSelectedSubstituteWorkerSchedule();
+      debugPrint("[제출] substituteWorkerSchedule=$substituteWorkerSchedule");
+      if (substituteWorkerSchedule == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("대타 근무자의 근무 정보를 확인할 수 없습니다.")),
+        );
         return;
       }
 
       ApplicationSubmitSheets.showSubstituteConfirm(
         context: context,
+        workPlaceId: widget.workPlaceId,
         mySchedule: mySchedule,
-        workerName: workerName,
+        workerSchedule: substituteWorkerSchedule,
         reason: reason,
-        onConfirm: () {
+        onConfirm: (WorkChangeRequestResponse response) {
           Navigator.pop(context);
-          // TODO : 대타 신청 API
+          // TODO : 대타 신청 성공 후 response로 화면 갱신/토스트 처리
         },
       );
     } else {
@@ -522,12 +710,13 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
 
       ApplicationSubmitSheets.showExchangeConfirm(
         context: context,
+        workPlaceId: widget.workPlaceId, // ✅ 누락되어 있던 필수 파라미터 추가
         mySchedule: mySchedule,
         workerSchedule: workerSchedule,
         reason: reason,
-        onConfirm: () {
+        onConfirm: (WorkChangeRequestResponse response) { // ✅ 타입 수정
           Navigator.pop(context);
-          // TODO : 교대 신청 API
+          // TODO : 교대 신청 성공 후 response로 화면 갱신/토스트 처리
         },
       );
     }
