@@ -19,6 +19,7 @@ class ApplicationCalendar extends StatefulWidget {
     required this.workerMode,
     required this.showWorkerSelect,
     required this.isMyWorkDay,
+    required this.isWorkerWorkDay,
     required this.isSelectedWorkerWorkDay,
     required this.isSelectable,
     required this.isNextWeek,
@@ -39,6 +40,7 @@ class ApplicationCalendar extends StatefulWidget {
 
   final bool Function(DateTime) isMyWorkDay;
   final bool Function(DateTime) isSelectedWorkerWorkDay;
+  final bool Function(DateTime) isWorkerWorkDay;
 
   /// 워커모드/근무확정 등 화면 자체의 비즈니스 로직 기반 선택 가능 여부.
   /// 최종 선택 가능 여부는 이 값 && API 기반(휴무/제한) 값을 함께 만족해야 함.
@@ -56,101 +58,21 @@ class ApplicationCalendar extends StatefulWidget {
 }
 
 class _ApplicationCalendarState extends State<ApplicationCalendar> {
-  CalendarActivateResponse? _calendarActivate;
-  bool _isLoading = true;
-  String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
-    _fetchCalendarActivate();
   }
 
   @override
-  void didUpdateWidget(covariant ApplicationCalendar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // workPlaceId가 바뀌면 다시 불러오기
-    if (oldWidget.workPlaceId != widget.workPlaceId) {
-      _fetchCalendarActivate();
-    }
-  }
-
-  Future<void> _fetchCalendarActivate() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final result = await CalendarActivateApi.getCalendarActivate(
-        workPlaceId: widget.workPlaceId,
-      );
-
-      debugPrint("availableDates: ${result.availableDates.map((e) => '${e.date} holiday=${e.holidayStatus} limit=${e.selectLimitStatus}').toList()}");
-
-      if (!mounted) return;
-      setState(() {
-        _calendarActivate = result;
-        _isLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _errorMessage = e.toString().replaceFirst('Exception: ', '');
-        _isLoading = false;
-      });
-    }
-  }
-
-  /// API 응답 기준: 신청 가능 목록에 있고, 휴무/선택제한이 아닌 날짜인가
-  bool _isApiSelectable(DateTime day) {
-    final data = _calendarActivate;
-    if (data == null) return false;
-
-    final info = data.findByDate(day);
-    if (info == null) return false; // 신청 가능 목록에 없는 날짜
-    if (info.holidayStatus) return false; // 휴무일
-    if (info.selectLimitStatus) return false; // 선택 제한된 날짜
-
-    return true;
-  }
 
   /// 최종 선택 가능 여부 = API 기반 && 화면 비즈니스 로직 기반
   bool _isSelectable(DateTime day) {
-    return _isApiSelectable(day) && widget.isSelectable(day);
+    return widget.isSelectable(day);
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const SizedBox(
-        height: 360,
-        child: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    if (_errorMessage != null) {
-      return SizedBox(
-        height: 360,
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                _errorMessage!,
-                style: const TextStyle(color: Colors.red),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: _fetchCalendarActivate,
-                child: const Text("다시 시도"),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
 
     return Column(
       children: [
@@ -255,6 +177,11 @@ class _ApplicationCalendarState extends State<ApplicationCalendar> {
             final selectable = _isSelectable(day);
 
             final myWorkDay = widget.isMyWorkDay(day);
+
+            // 모든 근무자의 근무일
+            final allWorkerWorkDay = widget.isWorkerWorkDay(day);
+
+            // 선택한 근무자의 근무일
             final workerWorkDay = widget.isSelectedWorkerWorkDay(day);
 
             return GestureDetector(
@@ -280,7 +207,7 @@ class _ApplicationCalendarState extends State<ApplicationCalendar> {
                     // 교대 신청
                     // ==========================
                         : widget.showWorkerSelect
-                        ? (workerWorkDay
+                        ? (allWorkerWorkDay
                         ? (isWorkerSelected
                         ? const Color(0xff27C840)
                         : const Color(0xffD9F6C5))
@@ -324,7 +251,7 @@ class _ApplicationCalendarState extends State<ApplicationCalendar> {
                       // ---------- 교대 ----------
                           : isWorkerSelected
                           ? Colors.white
-                          : workerWorkDay
+                          : allWorkerWorkDay
                           ? const Color(0xff8F8F8F)
                           : isMySelected
                           ? const Color(0xff999999)

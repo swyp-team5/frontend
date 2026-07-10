@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../model/WorkChangeTargetsResponse.dart';
+
 class WorkerSelect extends StatelessWidget {
-  final List<String> workers;
-  final String? selectedWorker;
-  final ValueChanged<String> onWorkerSelected;
+  final List<WorkChangeWorker> workers;
+  final WorkChangeWorker? selectedWorker;
+  final ValueChanged<WorkChangeWorker> onWorkerSelected;
   final VoidCallback onConfirm;
 
   const WorkerSelect({
@@ -49,11 +51,12 @@ class WorkerSelect extends StatelessWidget {
               childAspectRatio: 2.7,
             ),
             itemBuilder: (_, index) {
-              final workerName = workers[index];
-              final selected = workerName == selectedWorker;
+              final worker = workers[index];
+              final selected =
+                  selectedWorker?.memberId == worker.memberId;
 
               return GestureDetector(
-                onTap: () => onWorkerSelected(workerName),
+                onTap: () => onWorkerSelected(worker),
                 child: Container(
                   decoration: BoxDecoration(
                     color: selected
@@ -70,12 +73,19 @@ class WorkerSelect extends StatelessWidget {
                     children: [
                       const SizedBox(width: 12),
 
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: worker.profileImageUrl != null
+                            ? Image.network(
+                          worker.profileImageUrl!,
+                          width: 48,
+                          height: 48,
+                          fit: BoxFit.cover,
+                        )
+                            : Container(
+                          width: 48,
+                          height: 48,
                           color: const Color(0xFFE0E2E5),
-                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
 
@@ -96,7 +106,7 @@ class WorkerSelect extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              workerName,
+                              worker.name,
                               style: const TextStyle(
                                 fontWeight: FontWeight.w600,
                                 fontSize: 16,

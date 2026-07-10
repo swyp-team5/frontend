@@ -11,10 +11,13 @@ import 'package:chack_chack/employee/crews/widgets/WorkerConfirmStep.dart';
 import 'package:chack_chack/employee/crews/widgets/WorkerSelect.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import 'api/ScheduleApi.dart';
+import 'api/WorkChangeTargetsApi.dart';
 import 'model/ConfirmedSchedule.dart';
 import 'model/MyWorkSchedule.dart';
+import 'model/WorkChangeTargetsResponse.dart';
 
 class EApplicationFormPage extends StatefulWidget {
   /// 캘린더 활성화 정보 조회를 위한 근무지 ID
@@ -54,6 +57,13 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
   List<ConfirmedSchedule> _confirmedSchedules = [];
   bool _isLoadingSchedules = false;
   String? _scheduleError;
+
+  /// =========================
+  /// 교대 대상 근무자 조회
+  /// =========================
+  List<WorkChangeWorker> _workers = [];
+  List<WorkChangeDay> _workerDays = [];
+  bool _isLoadingWorkers = false;
 
   /// 화면(캘린더/신청서)에서 쓰던 "내 근무" 데이터 형태로 변환
   List<MyWorkSchedule> get mySchedules => _confirmedSchedules
@@ -101,6 +111,53 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
     }
   }
 
+  Future<void> _fetchWorkers() async {
+    if (_current.selectedDate == null) return;
+
+    setState(() {
+      _isLoadingWorkers = true;
+    });
+
+    final from = _current.selectedDate!;
+    final to = from;
+
+    try {
+      final response = await WorkChangeTargetsApi.fetchWorkers(
+        workPlaceId: widget.workPlaceId,
+        fromDate: DateFormat('yyyy-MM-dd').format(from),
+        toDate: DateFormat('yyyy-MM-dd').format(to),
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _workerDays = response.days;
+
+        final map = <int, WorkChangeWorker>{};
+
+        for (final day in response.days) {
+          for (final time in day.timeDetails) {
+            for (final worker in time.workers) {
+              map[worker.memberId] = worker;
+            }
+          }
+        }
+
+        _workers = map.values.toList();
+
+        _isLoadingWorkers = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _workers = [];
+        _workerDays = [];
+        _isLoadingWorkers = false;
+      });
+    }
+  }
+
   DateTime getNextMonday() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -127,17 +184,21 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
       a.year == b.year && a.month == b.month && a.day == b.day;
 
   bool isSelectable(DateTime day) {
-    // 근무자 확정 이후에는 아무 날짜도 선택 불가
     if (_current.workerConfirmed) return false;
 
-    // 처음 (내 근무 선택)
+    // 내 근무 선택 단계
     if (!_workerMode) {
       if (!isNextWeek(day)) return false;
       return isMyWorkDay(day);
     }
 
     // 근무자 선택 단계
-    if (_current.selectedWorker == null) return false;
+    if (_current.selectedWorker == null) {
+      // 모든 근무자의 근무일 선택 가능
+      return isWorkerWorkDay(day);
+    }
+
+    // 근무자 선택 후에는 그 근무자의 근무일만 선택 가능
     return isSelectedWorkerWorkDay(day);
   }
 
@@ -184,43 +245,80 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
     return dates;
   }
 
-  // TODO: MockWorkerSchedules는 "근무지 근무자 일정 조회" API 연동 전까지의 임시 데이터.
-
-  List<MyWorkSchedule> getWorkersForSelectedDate() {
-    final date = _current.selectedDate;
-    if (date == null) return [];
-    return MockWorkerSchedules.all.where((s) => _sameDay(s.date, date)).toList();
-  }
-
   bool isSelectedWorkerWorkDay(DateTime day) {
     final worker = _current.selectedWorker;
     if (worker == null) return false;
-    return MockWorkerSchedules.all
-        .any((s) => s.name == worker && _sameDay(s.date, day));
+
+    for (final d in _workerDays) {
+      if (!_sameDay(d.workDate, day)) continue;
+
+      for (final time in d.timeDetails) {
+        if (time.workers.any((w) => w.memberId == worker.memberId)) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
+  bool isWorkerWorkDay(DateTime day) {
+    for (final d in _workerDays) {
+      if (_sameDay(d.workDate, day)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   MyWorkSchedule? getSelectedWorkerSchedule() {
     final worker = _current.selectedWorker;
     final date = _current.selectedWorkerDate;
+
     if (worker == null || date == null) return null;
-    try {
-      return MockWorkerSchedules.all
-          .firstWhere((s) => s.name == worker && _sameDay(s.date, date));
-    } catch (_) {
-      return null;
+
+    for (final day in _workerDays) {
+      if (!_sameDay(day.workDate, date)) continue;
+
+      for (final time in day.timeDetails) {
+        if (time.workers.any((w) => w.memberId == worker.memberId)) {
+          return MyWorkSchedule(
+            name: worker.name,
+            date: day.workDate,
+            role: time.timeName,
+            startTime: time.startTime.substring(0,5),
+            endTime: time.closeTime.substring(0,5),
+          );
+        }
+      }
     }
+
+    return null;
   }
 
   MyWorkSchedule? getSelectedSubstituteWorkerSchedule() {
     final worker = _current.selectedWorker;
     final date = _current.selectedDate;
+
     if (worker == null || date == null) return null;
-    try {
-      return MockWorkerSchedules.all
-          .firstWhere((s) => s.name == worker && _sameDay(s.date, date));
-    } catch (_) {
-      return null;
+
+    for (final day in _workerDays) {
+      if (!_sameDay(day.workDate, date)) continue;
+
+      for (final time in day.timeDetails) {
+        if (time.workers.any((w) => w.memberId == worker.memberId)) {
+          return MyWorkSchedule(
+            name: worker.name,
+            date: day.workDate,
+            role: time.timeName,
+            startTime: time.startTime.substring(0,5),
+            endTime: time.closeTime.substring(0,5),
+          );
+        }
+      }
     }
+
+    return null;
   }
 
   @override
@@ -275,6 +373,7 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
                       workerMode: _workerMode,
                       showWorkerSelect: showWorkerSelect,
                       isMyWorkDay: isMyWorkDay,
+                      isWorkerWorkDay: isWorkerWorkDay,
                       isSelectedWorkerWorkDay: isSelectedWorkerWorkDay,
                       isSelectable: isSelectable,
                       isNextWeek: isNextWeek,
@@ -312,7 +411,7 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
             Expanded(
               child: showWorkerSelect
                   ? WorkerSelect(
-                workers: MockWorkerSchedules.workerNames,
+                workers: _workers,
                 selectedWorker: _current.selectedWorker,
                 onWorkerSelected: (worker) {
                   setState(() => _current.selectedWorker = worker);
@@ -333,7 +432,7 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
               )
                   : showWorkerInfo
                   ? WorkerConfirmStep(
-                workerName: _current.selectedWorker,
+                workerName: _current.selectedWorker?.name,
                 schedule: getSelectedWorkerSchedule(),
                 onConfirm: () {
                   setState(() {
@@ -371,7 +470,7 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
                       ? isSubstitute
                   // 대타 : 이름만 표시
                       ? Text(
-                    _current.selectedWorker ?? "",
+                    _current.selectedWorker?.name ?? "",
                     style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w500),
@@ -412,16 +511,20 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
                           color: Color(0xff8F8F8F),
                           fontSize: 16)),
                   hasArrow: true,
-                  onTap: () {
+                  onTap: () async {
                     if (_current.selectedDate == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(content: Text("먼저 날짜를 선택해주세요.")),
                       );
                       return;
                     }
-                    if (getWorkersForSelectedDate().isEmpty) {
+                    await _fetchWorkers();
+
+                    if (_workers.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("해당 날짜에 근무자가 없습니다.")),
+                        const SnackBar(
+                          content: Text("해당 날짜에 근무자가 없습니다."),
+                        ),
                       );
                       return;
                     }
@@ -495,17 +598,19 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
         : _current.selectedReason!;
 
     if (isSubstitute) {
-      final workerName = _current.selectedWorker;
-      if (workerName == null) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(const SnackBar(content: Text("대타 근무자를 선택해주세요.")));
+      final worker = _current.selectedWorker;
+
+      if (worker == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("대타 근무자를 선택해주세요.")),
+        );
         return;
       }
 
       ApplicationSubmitSheets.showSubstituteConfirm(
         context: context,
         mySchedule: mySchedule,
-        workerName: workerName,
+        workerName: worker.name,
         reason: reason,
         onConfirm: () {
           Navigator.pop(context);

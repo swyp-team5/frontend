@@ -1,3 +1,5 @@
+import '../model/WorkChangeTargetsResponse.dart';
+
 /// 교대/대타 각각의 신청 상태(날짜, 근무자, 사유 등)를 담는 모델.
 /// 교대/대타 탭 각각에서 사용하는 신청 데이터.
 ///
@@ -14,7 +16,7 @@
 class ApplicationTabData {
   DateTime? selectedDate;
   DateTime? selectedWorkerDate;
-  String? selectedWorker;
+  WorkChangeWorker? selectedWorker;
   String? selectedReason;
   String? selectedEtc;
   bool workerConfirmed = false;
