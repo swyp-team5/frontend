@@ -1,27 +1,17 @@
 import 'package:chack_chack/employee/crews/widgets/ApplicationCalendar.dart';
 import 'package:chack_chack/employee/crews/widgets/ApplicationForm.dart';
 import 'package:chack_chack/employee/crews/widgets/ExchangeConfirmBottomSheet.dart';
+import 'package:chack_chack/employee/crews/widgets/MenuTile.dart';
 import 'package:chack_chack/employee/crews/widgets/ReasonBottomSheet.dart';
 import 'package:chack_chack/employee/crews/widgets/SubstituteConfirmBottomSheet.dart';
-import 'package:chack_chack/employee/crews/widgets/WorkerInfoCard.dart';
+import 'package:chack_chack/employee/crews/widgets/WorkerConfirmStep.dart';
 import 'package:chack_chack/employee/crews/widgets/WorkerSelect.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
-class MyWorkSchedule {
-  final String name;
-  final DateTime date;
-  final String role;
-  final String startTime;
-  final String endTime;
-
-  const MyWorkSchedule({
-    required this.name,
-    required this.date,
-    required this.role,
-    required this.startTime,
-    required this.endTime,
-  });
-}
+import 'api/ScheduleApi.dart';
+import 'model/ConfirmedSchedule.dart';
+import 'model/MyWorkSchedule.dart';
 
 class EApplicationFormPage extends StatefulWidget {
   /// 캘린더 활성화 정보 조회를 위한 근무지 ID
@@ -37,7 +27,6 @@ class EApplicationFormPage extends StatefulWidget {
 }
 
 class _EApplicationFormPageState extends State<EApplicationFormPage> {
-
   /// false = 교대
   /// true = 대타
   bool isSubstitute = false;
@@ -74,8 +63,8 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
   String? _substituteSelectedEtc;
 
   // =========================
-// 현재 탭에서 사용할 데이터
-// =========================
+  // 현재 탭에서 사용할 데이터
+  // =========================
 
   DateTime? get _selectedDate =>
       isSubstitute ? _substituteSelectedDate : _exchangeSelectedDate;
@@ -88,8 +77,9 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
     }
   }
 
-  DateTime? get _selectedWorkerDate =>
-      isSubstitute ? _substituteSelectedWorkerDate : _exchangeSelectedWorkerDate;
+  DateTime? get _selectedWorkerDate => isSubstitute
+      ? _substituteSelectedWorkerDate
+      : _exchangeSelectedWorkerDate;
 
   set _selectedWorkerDate(DateTime? value) {
     if (isSubstitute) {
@@ -133,31 +123,21 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
   }
 
   bool get canSubmit {
-
     final selectedDate =
-    isSubstitute
-        ? _substituteSelectedDate
-        : _exchangeSelectedDate;
+    isSubstitute ? _substituteSelectedDate : _exchangeSelectedDate;
 
     final selectedWorker =
-    isSubstitute
-        ? _substituteSelectedWorker
-        : _exchangeSelectedWorker;
+    isSubstitute ? _substituteSelectedWorker : _exchangeSelectedWorker;
 
-    final selectedWorkerDate =
-    isSubstitute
+    final selectedWorkerDate = isSubstitute
         ? _substituteSelectedWorkerDate
         : _exchangeSelectedWorkerDate;
 
     final selectedReason =
-    isSubstitute
-        ? _substituteSelectedReason
-        : _exchangeSelectedReason;
+    isSubstitute ? _substituteSelectedReason : _exchangeSelectedReason;
 
     final selectedEtc =
-    isSubstitute
-        ? _substituteSelectedEtc
-        : _exchangeSelectedEtc;
+    isSubstitute ? _substituteSelectedEtc : _exchangeSelectedEtc;
 
     final hasSchedule = selectedDate != null;
 
@@ -169,20 +149,14 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
 
     final hasReason = selectedReason != null;
 
-    final hasEtc =
-        selectedReason != "기타" ||
-            (selectedEtc != null && selectedEtc.trim().isNotEmpty);
+    final hasEtc = selectedReason != "기타" ||
+        (selectedEtc != null && selectedEtc.trim().isNotEmpty);
 
-    return hasSchedule &&
-        hasWorker &&
-        hasReason &&
-        hasEtc;
+    return hasSchedule && hasWorker && hasReason && hasEtc;
   }
 
   bool get _workerConfirmed =>
-      isSubstitute
-          ? _substituteWorkerConfirmed
-          : _exchangeWorkerConfirmed;
+      isSubstitute ? _substituteWorkerConfirmed : _exchangeWorkerConfirmed;
 
   set _workerConfirmed(bool value) {
     if (isSubstitute) {
@@ -192,30 +166,75 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
     }
   }
 
-  /// 내 근무
-  final List<MyWorkSchedule> mySchedules = [
-    MyWorkSchedule(
+  /// =========================
+  /// GET /api/me/confirmed-schedules 연동
+  /// =========================
+  ///
+  /// 지난 확정 근무, 이번 주 진행 중 일정, 다음 주 확정 일정을
+  /// 모두 이 API 하나로 (from/to만 바꿔서) 조회한다.
+
+  /// API에서 받아온 원본 데이터
+  List<ConfirmedSchedule> _confirmedSchedules = [];
+
+  bool _isLoadingSchedules = false;
+  String? _scheduleError;
+
+  /// 화면(캘린더/신청서)에서 쓰던 "내 근무" 데이터 형태로 변환
+  /// - widget.workPlaceId 근무지의 일정만 사용
+  List<MyWorkSchedule> get mySchedules => _confirmedSchedules
+      .where((s) => s.workPlaceId == widget.workPlaceId)
+      .map(
+        (s) => MyWorkSchedule(
       name: "나",
-      date: DateTime(2026, 7, 6),
-      role: "오픈",
-      startTime: "09:00",
-      endTime: "12:00",
+      date: s.workDate,
+      role: s.timeName,
+      startTime: s.startTimeShort,
+      endTime: s.closeTimeShort,
     ),
-    MyWorkSchedule(
-      name: "나",
-      date: DateTime(2026, 7, 8),
-      role: "미들",
-      startTime: "12:00",
-      endTime: "16:00",
-    ),
-    MyWorkSchedule(
-      name: "나",
-      date: DateTime(2026, 7, 10),
-      role: "오픈",
-      startTime: "09:00",
-      endTime: "12:00",
-    ),
-  ];
+  )
+      .toList();
+
+  Future<void> _fetchConfirmedSchedules() async {
+    setState(() {
+      _isLoadingSchedules = true;
+      _scheduleError = null;
+    });
+
+    // 지난 확정 근무 + 이번 달 진행 중 일정 + 다음 주(월이 넘어가는 경우 포함)
+    // 확정 일정까지 한 번에 커버할 수 있도록 넉넉하게 범위를 잡는다.
+    final from = DateTime(_focusedMonth.year, _focusedMonth.month - 1, 1);
+    final to = DateTime(_focusedMonth.year, _focusedMonth.month + 2, 0);
+
+    try {
+      final response = await ScheduleApi.fetchConfirmedSchedules(
+        from: from,
+        to: to,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _confirmedSchedules = response.schedules;
+        _isLoadingSchedules = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      // TODO: 원인 파악되면 kDebugMode 분기 지우고 사용자 문구만 남기기
+      setState(() {
+        _scheduleError = kDebugMode
+            ? "근무 일정을 불러오지 못했습니다.\n[$e]"
+            : "근무 일정을 불러오지 못했습니다.\n다시 시도해주세요.";
+        _isLoadingSchedules = false;
+      });
+    }
+  }
+
+  // TODO: 아래 두 근무자 일정은 "내 근무"가 아니라 동료 근무자 일정이라
+  // GET /api/me/confirmed-schedules 로는 조회할 수 없음.
+  // 교대/대타 상대를 고르는 화면(WorkerSelect)에서 쓸 별도의
+  // "근무지 근무자 일정 조회" API가 필요함. 백엔드에 확인 후
+  // 같은 방식(from/to)으로 연동 예정.
 
   /// 근무자1
   final List<MyWorkSchedule> worker1Schedules = [
@@ -277,13 +296,10 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
     );
 
     // 이번 주 월요일
-    final thisMonday =
-    today.subtract(Duration(days: today.weekday - 1));
+    final thisMonday = today.subtract(Duration(days: today.weekday - 1));
 
     // 다음 주 월요일
     return thisMonday.add(const Duration(days: 7));
-
-
   }
 
   @override
@@ -292,11 +308,12 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
 
     final mondayNextWeek = getNextMonday();
 
-
     _focusedMonth = DateTime(
       mondayNextWeek.year,
       mondayNextWeek.month,
     );
+
+    _fetchConfirmedSchedules();
   }
 
   List<DateTime> get nextWeek {
@@ -309,7 +326,6 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
   }
 
   bool isSelectable(DateTime day) {
-
     // ✅ 근무자 확정 이후에는 아무 날짜도 선택 불가
     if (_workerConfirmed) {
       return false;
@@ -341,9 +357,7 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
   bool isNextWeek(DateTime day) {
     return nextWeek.any(
           (d) =>
-      d.year == day.year &&
-          d.month == day.month &&
-          d.day == day.day,
+      d.year == day.year && d.month == day.month && d.day == day.day,
     );
   }
 
@@ -367,12 +381,9 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
   }
 
   List<DateTime> buildCalendarDays() {
+    final firstDay = DateTime(_focusedMonth.year, _focusedMonth.month, 1);
 
-    final firstDay =
-    DateTime(_focusedMonth.year, _focusedMonth.month, 1);
-
-    final lastDay =
-    DateTime(_focusedMonth.year, _focusedMonth.month + 1, 0);
+    final lastDay = DateTime(_focusedMonth.year, _focusedMonth.month + 1, 0);
 
     final startOffset = firstDay.weekday % 7;
 
@@ -382,7 +393,6 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
     final dates = <DateTime>[];
 
     for (int i = 0; i < 42; i++) {
-
       final day = i - startOffset + 1;
 
       if (day <= 0) {
@@ -493,7 +503,6 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     final days = buildCalendarDays();
@@ -506,7 +515,6 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
       body: SafeArea(
         child: Column(
           children: [
-
             /// =========================
             /// 상단 + 달력 (좌우 30)
             /// =========================
@@ -518,7 +526,6 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-
                   /// 헤더
                   Row(
                     children: [
@@ -546,52 +553,72 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
 
                   const SizedBox(height: 28),
 
-                  ApplicationCalendar(
-                    isSubstitute: isSubstitute,
-                    workPlaceId: widget.workPlaceId,
-
-                    focusedMonth: _focusedMonth,
-                    days: days,
-
-                    selectedDate: _selectedDate,
-                    selectedWorkerDate: _selectedWorkerDate,
-
-                    workerMode: _workerMode,
-                    showWorkerSelect: showWorkerSelect,
-
-                    isMyWorkDay: isMyWorkDay,
-                    isSelectedWorkerWorkDay: isSelectedWorkerWorkDay,
-                    isSelectable: isSelectable,
-                    isNextWeek: isNextWeek,
-
-                    onPrevMonth: () {
-                      setState(() {
-                        _focusedMonth = DateTime(
-                          _focusedMonth.year,
-                          _focusedMonth.month - 1,
-                        );
-                      });
-                    },
-
-                    onNextMonth: () {
-                      setState(() {
-                        _focusedMonth = DateTime(
-                          _focusedMonth.year,
-                          _focusedMonth.month + 1,
-                        );
-                      });
-                    },
-
-                    onSelectDay: (day) {
-                      setState(() {
-                        if (_workerMode) {
-                          _selectedWorkerDate = day;
-                        } else {
-                          _selectedDate = day;
-                        }
-                      });
-                    },
-                  ),
+                  /// 근무 일정 로딩/에러/정상 상태에 따라 캘린더 영역 분기
+                  if (_isLoadingSchedules)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 60),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (_scheduleError != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 40),
+                      child: Column(
+                        children: [
+                          Text(
+                            _scheduleError!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                          const SizedBox(height: 12),
+                          TextButton(
+                            onPressed: _fetchConfirmedSchedules,
+                            child: const Text("다시 시도"),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    ApplicationCalendar(
+                      isSubstitute: isSubstitute,
+                      workPlaceId: widget.workPlaceId,
+                      focusedMonth: _focusedMonth,
+                      days: days,
+                      selectedDate: _selectedDate,
+                      selectedWorkerDate: _selectedWorkerDate,
+                      workerMode: _workerMode,
+                      showWorkerSelect: showWorkerSelect,
+                      isMyWorkDay: isMyWorkDay,
+                      isSelectedWorkerWorkDay: isSelectedWorkerWorkDay,
+                      isSelectable: isSelectable,
+                      isNextWeek: isNextWeek,
+                      onPrevMonth: () {
+                        setState(() {
+                          _focusedMonth = DateTime(
+                            _focusedMonth.year,
+                            _focusedMonth.month - 1,
+                          );
+                        });
+                        _fetchConfirmedSchedules();
+                      },
+                      onNextMonth: () {
+                        setState(() {
+                          _focusedMonth = DateTime(
+                            _focusedMonth.year,
+                            _focusedMonth.month + 1,
+                          );
+                        });
+                        _fetchConfirmedSchedules();
+                      },
+                      onSelectDay: (day) {
+                        setState(() {
+                          if (_workerMode) {
+                            _selectedWorkerDate = day;
+                          } else {
+                            _selectedDate = day;
+                          }
+                        });
+                      },
+                    ),
                 ],
               ),
             ),
@@ -623,9 +650,7 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: !isSubstitute
-                              ? Colors.black
-                              : Colors.grey,
+                          color: !isSubstitute ? Colors.black : Colors.grey,
                         ),
                       ),
                     ),
@@ -656,9 +681,7 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: isSubstitute
-                              ? Colors.black
-                              : Colors.grey,
+                          color: isSubstitute ? Colors.black : Colors.grey,
                         ),
                       ),
                     ),
@@ -672,13 +695,11 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
                   ? WorkerSelect(
                 workers: const ["윤서준", "김유진"],
                 selectedWorker: _selectedWorker,
-
                 onWorkerSelected: (worker) {
                   setState(() {
                     _selectedWorker = worker;
                   });
                 },
-
                 onConfirm: () {
                   setState(() {
                     showWorkerSelect = false;
@@ -695,13 +716,20 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
                 },
               )
                   : showWorkerInfo
-                  ? _buildWorkerInfo()
+                  ? WorkerConfirmStep(
+                workerName: _selectedWorker,
+                schedule: selectedWorkerSchedule,
+                onConfirm: () {
+                  setState(() {
+                    showWorkerInfo = false;
+                    _workerConfirmed = true;
+                  });
+                },
+              )
                   : ApplicationForm(
                 isSubstitute: isSubstitute,
-
-                scheduleTile: _MenuTile(
+                scheduleTile: MenuTile(
                   title: isSubstitute ? "대타 신청 날짜" : "교대 신청 날짜",
-
                   trailing: Text(
                     selectedSchedule == null
                         ? "선택 안함"
@@ -719,13 +747,10 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
                           : FontWeight.w500,
                     ),
                   ),
-
                   onTap: () {},
                 ),
-
-                workerTile: _MenuTile(
+                workerTile: MenuTile(
                   title: isSubstitute ? "대타 근무자" : "교대 상대 근무자",
-
                   trailing: _workerConfirmed
                       ? isSubstitute
                   // ===========================
@@ -738,14 +763,15 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
                       fontWeight: FontWeight.w500,
                     ),
                   )
-
                   // ===========================
                   // 교대 : 이름 + 근무정보 표시
                   // ===========================
                       : selectedWorkerSchedule != null
                       ? Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisAlignment:
+                    MainAxisAlignment.center,
+                    crossAxisAlignment:
+                    CrossAxisAlignment.end,
                     children: [
                       Text(
                         selectedWorkerSchedule.name,
@@ -781,9 +807,7 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
                       fontSize: 16,
                     ),
                   ),
-
                   hasArrow: true,
-
                   onTap: () {
                     if (_selectedDate == null) {
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -809,10 +833,8 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
                     });
                   },
                 ),
-
-                reasonTile: _MenuTile(
+                reasonTile: MenuTile(
                   title: isSubstitute ? "대타 사유" : "교대 사유",
-
                   trailing: Text(
                     _selectedReason == null
                         ? "선택 안함"
@@ -831,11 +853,10 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
                           : FontWeight.w500,
                     ),
                   ),
-
                   hasArrow: true,
-
                   onTap: () async {
-                    final result = await showModalBottomSheet<Map<String, String?>>(
+                    final result = await showModalBottomSheet<
+                        Map<String, String?>>(
                       context: context,
                       isScrollControlled: true,
                       backgroundColor: Colors.transparent,
@@ -854,10 +875,8 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
                     }
                   },
                 ),
-
                 onSubmit: canSubmit
                     ? () {
-
                   // ==========================
                   // 대타 신청
                   // ==========================
@@ -866,18 +885,22 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
                   final mySchedule = getSelectedSchedule();
 
                   if (mySchedule == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("내 근무를 선택해주세요.")),
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(
+                      const SnackBar(
+                          content: Text("내 근무를 선택해주세요.")),
                     );
                     return;
                   }
 
                   if (isSubstitute) {
-
                     // 대타는 근무자 이름만 있으면 됨
                     if (_selectedWorker == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("대타 근무자를 선택해주세요.")),
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(
+                        const SnackBar(
+                            content:
+                            Text("대타 근무자를 선택해주세요.")),
                       );
                       return;
                     }
@@ -886,47 +909,50 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
                       context: context,
                       backgroundColor: Colors.transparent,
                       isScrollControlled: true,
-                      builder: (_) => SubstituteConfirmBottomSheet(
-                        myName: "최세중(나)",
+                      builder: (_) =>
+                          SubstituteConfirmBottomSheet(
+                            myName: "최세중(나)",
 
-                        // 이름만 사용
-                        workerName: _selectedWorker!,
+                            // 이름만 사용
+                            workerName: _selectedWorker!,
 
-                        // 내 근무 정보
-                        myDate:
-                        "${mySchedule.date.month}월 ${mySchedule.date.day}일",
-                        myTime:
-                        "${mySchedule.startTime} - ${mySchedule.endTime}",
+                            // 내 근무 정보
+                            myDate:
+                            "${mySchedule.date.month}월 ${mySchedule.date.day}일",
+                            myTime:
+                            "${mySchedule.startTime} - ${mySchedule.endTime}",
 
-                        // 대타는 내 근무를 대신하는 것이므로
-                        // 날짜/시간도 동일
-                        workerDate:
-                        "${mySchedule.date.month}월 ${mySchedule.date.day}일",
-                        workerTime:
-                        "${mySchedule.startTime} - ${mySchedule.endTime}",
+                            // 대타는 내 근무를 대신하는 것이므로
+                            // 날짜/시간도 동일
+                            workerDate:
+                            "${mySchedule.date.month}월 ${mySchedule.date.day}일",
+                            workerTime:
+                            "${mySchedule.startTime} - ${mySchedule.endTime}",
 
-                        reason: _selectedReason == "기타"
-                            ? "기타 / $_selectedEtc"
-                            : _selectedReason!,
+                            reason: _selectedReason == "기타"
+                                ? "기타 / $_selectedEtc"
+                                : _selectedReason!,
 
-                        onConfirm: () {
-                          Navigator.pop(context);
+                            onConfirm: () {
+                              Navigator.pop(context);
 
-                          // TODO : 대타 신청 API
-                        },
-                      ),
+                              // TODO : 대타 신청 API
+                            },
+                          ),
                     );
-
                   } else {
-
                     // ==========================
                     // 교대 신청
                     // ==========================
-                    final workerSchedule = getSelectedWorkerSchedule();
+                    final workerSchedule =
+                    getSelectedWorkerSchedule();
 
                     if (workerSchedule == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text("교대 근무를 선택해주세요.")),
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(
+                        const SnackBar(
+                            content:
+                            Text("교대 근무를 선택해주세요.")),
                       );
                       return;
                     }
@@ -938,21 +964,17 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
                       builder: (_) => ExchangeConfirmBottomSheet(
                         myName: "최세중(나)",
                         workerName: workerSchedule.name,
-
                         myDate:
                         "${mySchedule.date.month}월 ${mySchedule.date.day}일",
                         workerDate:
                         "${workerSchedule.date.month}월 ${workerSchedule.date.day}일",
-
                         myTime:
                         "${mySchedule.startTime} - ${mySchedule.endTime}",
                         workerTime:
                         "${workerSchedule.startTime} - ${workerSchedule.endTime}",
-
                         reason: _selectedReason == "기타"
                             ? "기타 / $_selectedEtc"
                             : _selectedReason!,
-
                         onConfirm: () {
                           Navigator.pop(context);
 
@@ -965,128 +987,6 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
                     : null,
               ),
             )
-          ],
-        ),
-      ),
-    );
-  }
-
-
-  Widget _buildWorkerInfo() {
-    final schedule = getSelectedWorkerSchedule();
-
-    return Column(
-      children: [
-        const SizedBox(height: 40),
-
-        WorkerInfoCard(
-          workerName: _selectedWorker,
-          schedule: schedule,
-        ),
-
-        const Spacer(),
-
-        Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 14,
-            vertical: 16,
-          ),
-          child: SizedBox(
-            width: double.infinity,
-            height: 54,
-            child: ElevatedButton(
-              onPressed: () {
-                setState(() {
-                  showWorkerInfo = false;
-                  _workerConfirmed = true;
-                });
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0084FF),
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text(
-                "근무자 확정",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _MenuTile extends StatelessWidget {
-  final String title;
-  final String? subtitle;
-
-  final Widget? trailing;   // nullable로 변경
-  final String? value;      // nullable로 변경
-
-  final bool hasArrow;
-  final VoidCallback onTap;
-  final Color? valueColor;
-  final FontWeight? valueWeight;
-
-  const _MenuTile({
-    super.key,
-    required this.title,
-    this.subtitle,
-    this.trailing,
-    this.value,
-    required this.onTap,
-    this.hasArrow = false,
-    this.valueColor,
-    this.valueWeight,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        height: 72,
-        padding: const EdgeInsets.symmetric(horizontal: 20,),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-
-            trailing ??
-                Text(
-                  value ?? "",
-                  style: TextStyle(
-                    color: valueColor ?? const Color(0xff8F8F8F),
-                    fontSize: 16,
-                    fontWeight: valueWeight ?? FontWeight.w400,
-                  ),
-                ),
-
-            if (hasArrow)
-              const Padding(
-                padding: EdgeInsets.only(left: 6),
-                child: Icon(
-                  Icons.chevron_right,
-                  color: Color(0xffBDBDBD),
-                ),
-              ),
           ],
         ),
       ),
