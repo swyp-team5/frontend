@@ -43,6 +43,20 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
     super.dispose();
   }
 
+  /// 서버가 같은 objectKey/URL 경로에 이미지를 덮어쓰는 구조라면,
+  /// Flutter의 Image.network는 URL을 캐시 키로 사용하기 때문에
+  /// 수정 후에도 예전 이미지가 계속 보일 수 있다.
+  /// notice의 갱신 시점을 나타내는 값(가능하면 updatedAt, 없으면 date)을
+  /// 쿼리 파라미터로 붙여서 캐시를 무효화한다.
+  ///
+  /// TODO: NoticeModel에 updatedAt(또는 그에 준하는) 필드가 있다면
+  /// notice.date 대신 그 값을 사용하는 것이 더 정확하다.
+  String _cacheBustedUrl(NoticeModel notice) {
+    final url = notice.imageUrl!;
+    final separator = url.contains('?') ? '&' : '?';
+    return '$url${separator}v=${notice.noticeId}_${notice.date}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(RNotificationProvider);
@@ -266,7 +280,9 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
                                           borderRadius:
                                           BorderRadius.circular(14),
                                           child: Image.network(
-                                            notice.imageUrl!,
+                                            // ✅ 캐시 무효화 파라미터를 붙여서
+                                            // 수정 후에도 새 이미지가 보이도록 함
+                                            _cacheBustedUrl(notice),
                                             width: 110,
                                             height: 110,
                                             fit: BoxFit.cover,

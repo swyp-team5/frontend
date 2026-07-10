@@ -1,3 +1,5 @@
+import 'package:flutter/cupertino.dart';
+
 class ECrewModel {
   final int crewId;
   final int memberId;
@@ -25,6 +27,7 @@ class ECrewModel {
   });
 
   factory ECrewModel.fromJson(Map<String, dynamic> json) {
+    debugPrint("crew json: $json");
     return ECrewModel(
       crewId: json["crewId"] is int
           ? json["crewId"]

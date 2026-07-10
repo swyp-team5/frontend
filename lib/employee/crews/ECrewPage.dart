@@ -1,3 +1,4 @@
+import 'package:chack_chack/employee/schedule/EMainSchedulePage.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dio/dio.dart';
@@ -114,6 +115,9 @@ class _ECrewPageState extends State<ECrewPage> {
           } else if (index == 1) {
             Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const ECrewPage()));
+          } else if (index == 2) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const EMainSchedulePage()));
           } else if (index == 4) {
             Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const EMyPage()));
