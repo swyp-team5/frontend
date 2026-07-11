@@ -1,5 +1,7 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
+import '../../../../common/auth/server_token_manager.dart';
 import '../../../common/employee/EExchangeReject.dart';
 import '../../../common/employee/ESubstituteReject.dart';
 import '../../crews/model/WorkChangeRequestResponse.dart';
@@ -38,7 +40,11 @@ class _DetailViewData {
 
 class _SubstituteRequestState extends State<SubstituteRequest> {
   final _listApi = WorkChangeRequestListApi();
+  final Dio _dio = Dio(BaseOptions(baseUrl: "https://chackchack.shop"));
   late Future<_DetailViewData> _future;
+
+  // 거절 API 호출 중인지 여부 (버튼 중복 클릭 방지 및 로딩 표시용)
+  bool _isRejecting = false;
 
   @override
   void initState() {
@@ -81,6 +87,84 @@ class _SubstituteRequestState extends State<SubstituteRequest> {
       requestSide: requestSide,
       targetSide: targetSide,
     );
+  }
+
+  /// POST /api/work-places/{workPlaceId}/work-change-requests/{requestId}/reject
+  /// reject는 별도 요청 바디(reason 등)가 필요 없음.
+  Future<bool> _rejectRequest() async {
+    final url =
+        "/api/work-places/${widget.workPlaceId}/work-change-requests/${widget.workChangeRequestId}/reject";
+    debugPrint("[SubstituteRequest] reject 요청 시작: $url");
+
+    try {
+      final token = await ServerTokenManager.getValidAccessToken();
+      if (token == null) {
+        debugPrint("[SubstituteRequest] reject 실패: 토큰 없음");
+        return false;
+      }
+
+      final response = await _dio.post(
+        url,
+        data: {},
+        options: Options(
+          headers: {"Authorization": "Bearer $token"},
+        ),
+      );
+
+      debugPrint(
+        "[SubstituteRequest] reject 응답: "
+            "status=${response.statusCode}, data=${response.data}",
+      );
+
+      final success =
+          response.statusCode == 200 || response.statusCode == 204;
+      debugPrint("[SubstituteRequest] reject 결과: success=$success");
+      return success;
+    } on DioException catch (e) {
+      debugPrint(
+        "[SubstituteRequest] reject DioException: "
+            "status=${e.response?.statusCode}, data=${e.response?.data}, "
+            "requestUri=${e.requestOptions.uri}",
+      );
+      return false;
+    } catch (e, st) {
+      debugPrint("[SubstituteRequest] reject 실패(예상치 못한 예외): $e");
+      debugPrint("$st");
+      return false;
+    }
+  }
+
+  Future<void> _handleReject() async {
+    if (_isRejecting) return;
+
+    debugPrint("[SubstituteRequest] 거절 버튼 클릭됨");
+
+    setState(() {
+      _isRejecting = true;
+    });
+
+    final success = await _rejectRequest();
+
+    if (!mounted) return;
+
+    setState(() {
+      _isRejecting = false;
+    });
+
+    if (success) {
+      debugPrint("[SubstituteRequest] 거절 성공 → ESubstituteReject로 이동");
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const ESubstituteReject(),
+        ),
+      );
+    } else {
+      debugPrint("[SubstituteRequest] 거절 실패 → 스낵바 표시");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("거절 처리에 실패했어요. 다시 시도해주세요.")),
+      );
+    }
   }
 
   @override
@@ -211,15 +295,17 @@ class _SubstituteRequestState extends State<SubstituteRequest> {
                   height: 55,
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(side: BorderSide.none),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ESubstituteReject(),
-                        ),
-                      );
-                    },
-                    child: const Text(
+                    onPressed: _isRejecting ? null : _handleReject,
+                    child: _isRejecting
+                        ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.black54,
+                      ),
+                    )
+                        : const Text(
                       "거절",
                       style: TextStyle(
                         color: Colors.black,
