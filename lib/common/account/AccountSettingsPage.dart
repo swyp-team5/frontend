@@ -297,18 +297,19 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F7),
+      backgroundColor: const Color(0xFFF5F5F5),
       body: SafeArea(
         child: Column(
           children: [
             _Header(onBack: () => Navigator.pop(context)),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(36, 20, 36, 32),
+                padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _Card(
+                      key: const Key('account-settings-social-card'),
                       children: [
                         _MenuRow(
                           title: '연동된 소셜 계정',
@@ -318,9 +319,9 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 32),
                     _SectionTitle('마케팅 관리'),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 14),
                     _Card(
                       children: [
                         _SwitchRow(
@@ -332,9 +333,9 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                         const _MenuRow(title: '약관 및 개인정보 처리 동의 내역'),
                       ],
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 32),
                     _SectionTitle('계정 관리'),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 14),
                     _Card(
                       children: [
                         _MenuRow(
@@ -423,7 +424,7 @@ class _Header extends StatelessWidget {
         alignment: Alignment.center,
         children: [
           Positioned(
-            left: 26,
+            left: 14,
             child: IconButton(
               key: const Key('account-settings-back-button'),
               icon: const Icon(Icons.chevron_left, size: 28),
@@ -436,9 +437,8 @@ class _Header extends StatelessWidget {
             '계정 설정',
             style: TextStyle(
               color: Color(0xFF111111),
-              fontSize: 17,
+              fontSize: 18,
               fontWeight: FontWeight.w600,
-              height: 1.4,
             ),
           ),
         ],
@@ -458,7 +458,7 @@ class _SectionTitle extends StatelessWidget {
       title,
       style: const TextStyle(
         color: Color(0xFF767676),
-        fontSize: 14,
+        fontSize: 16,
         fontWeight: FontWeight.w600,
       ),
     );
@@ -468,7 +468,7 @@ class _SectionTitle extends StatelessWidget {
 class _Card extends StatelessWidget {
   final List<Widget> children;
 
-  const _Card({required this.children});
+  const _Card({super.key, required this.children});
 
   @override
   Widget build(BuildContext context) {
@@ -476,7 +476,7 @@ class _Card extends StatelessWidget {
       width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(children: children),
     );
@@ -499,10 +499,10 @@ class _MenuRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(18),
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 17),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         child: Row(
           children: [
             Expanded(
@@ -510,8 +510,8 @@ class _MenuRow extends StatelessWidget {
                 title,
                 style: TextStyle(
                   color: textColor,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),
@@ -538,7 +538,7 @@ class _SwitchRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       child: Row(
         children: [
           Expanded(
@@ -546,8 +546,8 @@ class _SwitchRow extends StatelessWidget {
               title,
               style: const TextStyle(
                 color: Color(0xFF111111),
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
