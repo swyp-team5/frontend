@@ -1,7 +1,9 @@
+import 'package:chack_chack/employer/home/widgets/RWorkChangeRejectBottomSheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../schedule/api/ConfirmedSchedulesApi.dart';
+import 'RWorkChangeAcceptBottomSheet.dart';
 import 'RWorkChangeRequestListPage.dart' show WorkChangeRequestItem;
 
 
@@ -341,8 +343,18 @@ class _RWorkChangeRequestDetailPageState
                               ),
                             ),
                             onPressed: () {
-                              // TODO: 사장님 거절 API 연동 (owner reject)
-                              Navigator.of(context).pop("REJECTED");
+                              showModalBottomSheet(
+                                context: context,
+                                backgroundColor: Colors.transparent,
+                                isScrollControlled: true,
+                                builder: (_) => RWorkChangeRejectBottomSheet(
+                                  workPlaceId: item.workPlaceId,
+                                  requestId: item.workChangeRequestId,
+                                  onSuccess: () {
+                                    Navigator.of(context).pop("REJECTED");
+                                  },
+                                ),
+                              );
                             },
                             child: const Text(
                               "거절",
@@ -359,16 +371,25 @@ class _RWorkChangeRequestDetailPageState
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF0084FF),
-                              padding:
-                              const EdgeInsets.symmetric(vertical: 16),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               elevation: 0,
                             ),
                             onPressed: () {
-                              // TODO: 사장님 승인 API 연동 (owner approve)
-                              Navigator.of(context).pop("APPROVED");
+                              showModalBottomSheet(
+                                context: context,
+                                backgroundColor: Colors.transparent,
+                                isScrollControlled: true,
+                                builder: (_) => RWorkChangeAcceptBottomSheet(
+                                  workPlaceId: item.workPlaceId,
+                                  requestId: item.workChangeRequestId,
+                                  onSuccess: () {
+                                    Navigator.of(context).pop("APPROVED");
+                                  },
+                                ),
+                              );
                             },
                             child: const Text(
                               "수락",
