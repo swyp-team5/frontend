@@ -55,10 +55,14 @@ class _AgreementPageState extends ConsumerState<AgreementPage> {
       final role = widget.role == UserRole.owner ? 'OWNER' : 'WORKER';
       final result = await _termsApi.getSignupTerms(role: role);
 
+      // 이 화면은 역할 공통 동의 단계라, COMMON 약관만 보여준다.
+      // (OWNER 전용 약관은 이후 RSignUp3에서 별도로 노출됨)
+      final commonTerms = result.where((t) => t.termsType == 'COMMON').toList();
+
       if (!mounted) return;
 
       setState(() {
-        terms = result;
+        terms = commonTerms;
         isLoading = false;
       });
     } catch (e) {
