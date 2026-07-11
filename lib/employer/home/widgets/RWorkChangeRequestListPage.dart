@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 
 import '../../../common/auth/server_token_manager.dart';
+import 'RWorkChangeRequestDetailPage.dart';
 
 /// 근무자가 사장님에게 보낸 근무 변경(교대/대타) 요청 1건
 ///
@@ -448,7 +449,12 @@ class _RWorkChangeRequestListPageState extends State<RWorkChangeRequestListPage>
                 ? _nameOf(item.targetMemberId)
                 : null;
 
-            return Container(
+            // "대상 근무자가 요청을 수락"(ACCEPTED_BY_TARGET) 상태일 때만
+            // 카드를 탭해서 별도의 상세(승인) 페이지로 이동할 수 있게 한다.
+            final isAcceptedByTarget =
+                item.status.toUpperCase() == "ACCEPTED_BY_TARGET";
+
+            final cardContent = Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: const Color(0xFFF5F5F7),
@@ -534,6 +540,26 @@ class _RWorkChangeRequestListPageState extends State<RWorkChangeRequestListPage>
                   ],
                 ],
               ),
+            );
+
+            if (!isAcceptedByTarget) {
+              return cardContent;
+            }
+
+            return GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => RWorkChangeRequestDetailPage(
+                      item: item,
+                      requesterName: requesterName,
+                      targetName: targetName,
+                    ),
+                  ),
+                );
+              },
+              child: cardContent,
             );
           },
         ),
