@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../auth/server_token_manager.dart';
+import '../auth/social/social_identity_provider.dart';
+import '../fcm/FcmSetupService.dart';
+import '../fcm/api/FcmTokenApi.dart';
 import '../fcm/api/NotificationSettingsApi.dart';
 import '../onboarding/OnboardingPage.dart';
 import 'account_settings_api.dart';
@@ -66,6 +69,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
         await widget.updatePushEnabled!(value);
       } else {
         await NotificationSettingsApi.updateSettings(fcmPushEnabled: value);
+        await _syncFcmToken(value);
       }
     } catch (error) {
       debugPrint('알림 설정 변경 실패: $error');
@@ -74,6 +78,21 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
       }
       setState(() => _fcmPushEnabled = !value);
       _showSnackBar('알림 설정 변경에 실패했어요. 다시 시도해주세요.');
+    }
+  }
+
+  // 푸시를 끄면 이 기기로 더 이상 알림이 오면 안 되므로 FCM 토큰도 비활성화하고,
+  // 다시 켜면 토큰을 재등록해서 실제로 알림을 받을 수 있는 상태로 되돌린다.
+  Future<void> _syncFcmToken(bool enabled) async {
+    final device = await DeviceContextProvider().load();
+    if (enabled) {
+      await FcmSetupService.registerCurrentDevice(
+        deviceId: device.deviceId,
+        platform: device.platform,
+        appVersion: device.appVersion,
+      );
+    } else {
+      await FcmTokenApi.deactivate(deviceId: device.deviceId);
     }
   }
 

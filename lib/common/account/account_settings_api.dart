@@ -1,7 +1,9 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 
 import '../auth/server_token_manager.dart';
 import '../auth/session/auth_session_store.dart';
+import '../fcm/api/FcmTokenApi.dart';
 
 enum SocialAccountProvider {
   kakao,
@@ -51,6 +53,9 @@ class AccountSettingsApi {
       throw Exception('로그인 정보가 없습니다.');
     }
 
+    // 로그아웃 이후에는 이 기기로 푸시가 가면 안 되므로, 세션이 아직 유효할 때 먼저 비활성화한다.
+    await _deactivateFcmToken(session.deviceId);
+
     await dio.post(
       '/api/auth/logout',
       data: {
@@ -66,10 +71,24 @@ class AccountSettingsApi {
       throw Exception('인증이 필요합니다. 다시 로그인해주세요.');
     }
 
+    final session = await sessionLoader();
+    if (session != null) {
+      await _deactivateFcmToken(session.deviceId);
+    }
+
     await dio.delete(
       '/api/members/me',
       options: Options(headers: {'Authorization': 'Bearer $accessToken'}),
     );
+  }
+
+  // FCM 토큰 비활성화는 로그아웃/탈퇴 자체를 막아서는 안 되는 부가 정리 작업이라 실패를 삼킨다.
+  Future<void> _deactivateFcmToken(String deviceId) async {
+    try {
+      await FcmTokenApi.deactivate(deviceId: deviceId);
+    } catch (error) {
+      debugPrint('FCM 토큰 비활성화 실패: $error');
+    }
   }
 
   Future<SocialAccountProvider?> loadSocialProvider() async {
