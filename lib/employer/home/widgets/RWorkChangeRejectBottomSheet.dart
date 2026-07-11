@@ -70,7 +70,13 @@ class _RWorkChangeRejectBottomSheetState
 
       final response = await _dio.post(
         url,
-        options: Options(headers: {"Authorization": "Bearer $token"}),
+        data: {}, // reason은 사용하지 않으므로 빈 JSON 객체만 전송
+        options: Options(
+          headers: {
+            "Authorization": "Bearer $token",
+            "Content-Type": "application/json",
+          },
+        ),
       );
 
       // 응답 형태: { "reason": "..." } 이지만 reason은 사용하지 않음
