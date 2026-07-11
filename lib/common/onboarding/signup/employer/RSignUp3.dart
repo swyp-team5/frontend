@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../employer/home/RHomePage.dart';
+import '../../api/terms_api.dart';
+import '../../models/terms_models.dart';
 import '../../providers/signup_provider.dart';
+import '../agreement/TermsDetailBottomSheet.dart';
 import 'AddressSearchPage.dart';
 
 class RSignUp3 extends ConsumerStatefulWidget {
@@ -17,6 +20,32 @@ class _RSignUp3State extends ConsumerState<RSignUp3> {
   final TextEditingController detailAddressController = TextEditingController();
 
   bool isPrivacyChecked = false;
+
+  final TermsApi _termsApi = TermsApi();
+  TermsItem? _ownerTerm;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOwnerTerm();
+  }
+
+  Future<void> _loadOwnerTerm() async {
+    try {
+      final terms = await _termsApi.getSignupTerms(role: 'OWNER');
+      final ownerTerm = terms.firstWhere(
+        (t) => t.termsType == 'OWNER',
+        orElse: () => throw Exception('사장님 전용 약관을 찾을 수 없습니다.'),
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _ownerTerm = ownerTerm;
+      });
+    } catch (e) {
+      debugPrint('개인정보 보호의무 약관 조회 실패: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -206,7 +235,17 @@ class _RSignUp3State extends ConsumerState<RSignUp3> {
                       detailAddressController.text.trim(),
                     );
 
-                    _showPrivacyAgreement();
+                    if (_ownerTerm == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text("약관 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요."),
+                        ),
+                      );
+                      _loadOwnerTerm();
+                      return;
+                    }
+
+                    _showPrivacyAgreement(_ownerTerm!);
                   }
                       : null,
 
@@ -254,7 +293,7 @@ class _RSignUp3State extends ConsumerState<RSignUp3> {
     );
   }
 
-  void _showPrivacyAgreement() {
+  void _showPrivacyAgreement(TermsItem term) {
     isPrivacyChecked = false;
     showModalBottomSheet(
       context: context,
@@ -339,9 +378,9 @@ class _RSignUp3State extends ConsumerState<RSignUp3> {
 
                                   const SizedBox(width: 12),
 
-                                  const Text(
-                                    '[필수] 개인정보보호의무',
-                                    style: TextStyle(
+                                  Text(
+                                    '[${term.isRequired ? '필수' : '선택'}] ${term.title}',
+                                    style: const TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -353,7 +392,15 @@ class _RSignUp3State extends ConsumerState<RSignUp3> {
 
                           IconButton(
                             onPressed: () {
-                              // TODO : 개인정보보호의무 상세 약관 페이지 또는 BottomSheet
+                              showModalBottomSheet(
+                                context: context,
+                                isScrollControlled: true,
+                                backgroundColor: Colors.transparent,
+                                builder: (_) => TermsDetailBottomSheet(
+                                  title: term.title,
+                                  content: term.content ?? '',
+                                ),
+                              );
                             },
                             icon: const Icon(Icons.chevron_right),
                           ),
@@ -369,7 +416,7 @@ class _RSignUp3State extends ConsumerState<RSignUp3> {
                             ? () async {
                           final notifier = ref.read(signupProvider.notifier);
 
-                          notifier.setTermsAgreement(5, true);
+                          notifier.setTermsAgreement(term.termsId, true);
 
                           final success = await notifier.signUp();
 
