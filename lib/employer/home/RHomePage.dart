@@ -10,8 +10,10 @@ import 'package:chack_chack/employer/home/widgets/RAutoScheduleBottomSheet.dart'
 import 'package:chack_chack/employer/home/widgets/RHomeHeader.dart';
 import 'package:chack_chack/employer/home/widgets/RNoticeBanner.dart';
 import 'package:chack_chack/employer/home/widgets/RNoticeWriteCard.dart';
+import 'package:chack_chack/employer/home/widgets/RRequestListCard.dart';
 import 'package:chack_chack/employer/home/widgets/RScheduleCard.dart';
 import 'package:chack_chack/employer/home/widgets/RTodayWorkCard.dart';
+import 'package:chack_chack/employer/home/widgets/RWorkChangeRequestListPage.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import '../../common/auth/server_token_manager.dart';
@@ -43,7 +45,8 @@ class RHomePage extends StatefulWidget {
 }
 
 class _RHomePageState extends State<RHomePage> {
-  bool isCardVisible = true;
+  /// 카드별로 닫힘 여부를 관리 (여러 장 동시 표시를 위해 Set으로 관리)
+  final Set<HomeCardType> closedCardTypes = {};
 
   List<Map<String, dynamic>> stores = [];
 
@@ -307,32 +310,27 @@ class _RHomePageState extends State<RHomePage> {
   // 개발용
   //==========================================================
 
-  // static const HomeCardType? debugCardType =
-  //     HomeCardType.weeklySchedule;
+  /// 여러 장을 동시에 보여주고 싶은 카드 타입 목록
+  static const List<HomeCardType> debugCardTypes = [
+    HomeCardType.weeklySchedule,
+    HomeCardType.scheduleCreationAvailable,
+    HomeCardType.submissionStatus,
+  ];
 
-  static const HomeCardType? debugCardType =
-      HomeCardType.scheduleCreationAvailable;
-
-  // static const HomeCardType? debugCardType =
-  //     HomeCardType.submissionStatus;
-
-  // static const HomeCardType? debugCardType =
-  //     HomeCardType.none;
-
-  // static const HomeCardType? debugCardType = null;
+  // static const List<HomeCardType> debugCardTypes = [];
 
   //==========================================================
-  // 실제 카드 타입
+  // 실제 카드 타입 (모두 표시)
   //==========================================================
 
-  HomeCardType get cardType {
-    if (debugCardType != null) {
-      return debugCardType!;
+  List<HomeCardType> get cardTypes {
+    if (debugCardTypes.isNotEmpty) {
+      return debugCardTypes;
     }
 
     /// TODO : API 연결
 
-    return HomeCardType.none;
+    return [];
   }
 
   /// RMakingSchedulePage로 이동 후 돌아오면 weekScheduleId를 다시 조회
@@ -538,7 +536,7 @@ class _RHomePageState extends State<RHomePage> {
       Map<String, dynamic>? selectedStore;
       if (loadedStores.isNotEmpty) {
         selectedStore = loadedStores.firstWhere(
-          (store) => store["workPlaceId"] == storedWorkPlaceId,
+              (store) => store["workPlaceId"] == storedWorkPlaceId,
           orElse: () => loadedStores.first,
         );
         await SelectedWorkPlaceStorage.save(selectedStore["workPlaceId"]);
@@ -625,8 +623,56 @@ class _RHomePageState extends State<RHomePage> {
     await _loadSubmitStatus();
   }
 
+  /// 특정 타입의 카드 onMakeScheduleTap 처리
+  void _onMakeScheduleTap(HomeCardType type) {
+    switch (type) {
+    /// 제출 기간 (최근 기록 불러오기 BottomSheet)
+      case HomeCardType.weeklySchedule:
+        _showScheduleBottomSheet(context);
+        break;
+
+    /// 제출 완료 → 자동 스케줄 안내 BottomSheet
+      case HomeCardType.scheduleCreationAvailable:
+        if (selectedWorkPlaceId == null || weekScheduleId == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                "스케줄 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.",
+              ),
+            ),
+          );
+          break;
+        }
+
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => RAutoScheduleBottomSheet(
+            workPlaceId: selectedWorkPlaceId!,
+            weekScheduleId: weekScheduleId!,
+          ),
+        );
+        break;
+
+    /// 제출 현황 — RScheduleCard 내부에서
+    /// workPlaceId/weekScheduleId로 RSubmitStatusPage 이동 처리
+      case HomeCardType.submissionStatus:
+        break;
+
+      case HomeCardType.none:
+        break;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    /// 실제로 화면에 보여줄 카드 타입들 (닫힌 카드는 제외)
+    final visibleCardTypes = cardTypes
+        .where((type) =>
+    type != HomeCardType.none && !closedCardTypes.contains(type))
+        .toList();
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F7),
 
@@ -648,7 +694,7 @@ class _RHomePageState extends State<RHomePage> {
                   workPlaceId: selectedWorkPlaceId!,),
               ),
             );
-          } else if (index == 4) {
+          } else if (index == 3) {
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -707,63 +753,25 @@ class _RHomePageState extends State<RHomePage> {
 
               const SizedBox(height: 16),
 
-              /// Schedule Card
-              if (cardType != HomeCardType.none && isCardVisible)
-                RScheduleCard(
-                  type: cardType,
-                  daysLeft: daysLeft,
-                  workPlaceId: selectedWorkPlaceId,
-                  weekScheduleId: weekScheduleId,
-                  notSubmittedCount: notSubmittedCount, // ✅ 추가
-                  onClose: () {
-                    setState(() {
-                      isCardVisible = false;
-                    });
-                  },
-                  onMakeScheduleTap: () {
-                    switch (cardType) {
-                    /// 제출 기간 (최근 기록 불러오기 BottomSheet)
-                      case HomeCardType.weeklySchedule:
-                        _showScheduleBottomSheet(context);
-                        break;
-
-                    /// 제출 완료 → 자동 스케줄 안내 BottomSheet
-                      case HomeCardType.scheduleCreationAvailable:
-                        if (selectedWorkPlaceId == null ||
-                            weekScheduleId == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                "스케줄 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.",
-                              ),
-                            ),
-                          );
-                          break;
-                        }
-
-                        showModalBottomSheet(
-                          context: context,
-                          isScrollControlled: true,
-                          backgroundColor: Colors.transparent,
-                          builder: (_) => RAutoScheduleBottomSheet(
-                            workPlaceId: selectedWorkPlaceId!,
-                            weekScheduleId: weekScheduleId!,
-                          ),
-                        );
-                        break;
-
-                    /// 제출 현황 — RScheduleCard 내부에서
-                    /// workPlaceId/weekScheduleId로 RSubmitStatusPage 이동 처리
-                      case HomeCardType.submissionStatus:
-                        break;
-
-                      case HomeCardType.none:
-                        break;
-                    }
-                  },
-                ),
-
-              const SizedBox(height: 14),
+              /// Schedule Cards (여러 장 동시 표시)
+              ...visibleCardTypes.map((type) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: RScheduleCard(
+                    type: type,
+                    daysLeft: daysLeft,
+                    workPlaceId: selectedWorkPlaceId,
+                    weekScheduleId: weekScheduleId,
+                    notSubmittedCount: notSubmittedCount,
+                    onClose: () {
+                      setState(() {
+                        closedCardTypes.add(type);
+                      });
+                    },
+                    onMakeScheduleTap: () => _onMakeScheduleTap(type),
+                  ),
+                );
+              }),
 
               /// Notice Write
               RNoticeWriteCard(
@@ -772,6 +780,31 @@ class _RHomePageState extends State<RHomePage> {
                     context,
                     MaterialPageRoute(
                       builder: (_) => RNotificationPage(
+                        workPlaceId: selectedWorkPlaceId!,
+                      ),
+                    ),
+                  );
+                },
+              ),
+
+              const SizedBox(height: 14),
+
+              /// Request List (근무자들이 보낸 근무변경 요청 목록)
+              RRequestListCard(
+                onTap: () {
+                  if (selectedWorkPlaceId == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text("근무지 정보를 불러오는 중입니다."),
+                      ),
+                    );
+                    return;
+                  }
+
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => RWorkChangeRequestListPage(
                         workPlaceId: selectedWorkPlaceId!,
                       ),
                     ),

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:chack_chack/employer/mypage/RMyPage.dart';
+import 'package:chack_chack/employer/schedule/RMainSchedulePage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../mypage/api/profile_api.dart';
@@ -36,6 +37,8 @@ class _RCrewPageState extends State<RCrewPage> {
   String inviteCode = "";
   String inviteUrl = "";
   bool isCreatingInvitation = false;
+
+  int? workPlaceId;
 
   final ProfileApi profileApi = ProfileApi(
     Dio(
@@ -311,8 +314,17 @@ class _RCrewPageState extends State<RCrewPage> {
   @override
   void initState() {
     super.initState();
+    _loadWorkPlaceId();
     _loadCrews();
     _loadOwnerProfile();
+  }
+
+  Future<void> _loadWorkPlaceId() async {
+    final id = await SelectedWorkPlaceStorage.load();
+    if (!mounted) return;
+    setState(() {
+      workPlaceId = id;
+    });
   }
 
   /// 사장님(나) 프로필 조회 - crews API 성공 여부와 무관하게 독립적으로 동작
@@ -414,7 +426,10 @@ class _RCrewPageState extends State<RCrewPage> {
           } else if (index == 1) {
             Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const RCrewPage()));
-          } else if (index == 4) {
+          } else if (index == 2) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => RMainSchedulePage(workPlaceId: workPlaceId!)));
+          } else if (index == 3) {
             Navigator.push(
                 context, MaterialPageRoute(builder: (_) => const RMyPage()));
           }

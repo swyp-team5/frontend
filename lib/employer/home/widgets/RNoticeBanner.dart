@@ -70,12 +70,23 @@ class _RNoticeBannerState extends State<RNoticeBanner> {
         child: Row(
           children: [
             const SizedBox(width: 10),
-            Text(
-              "공지 \t 📌",
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  "공지",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Image.asset(
+                  "assets/images/pin.png",
+                  width: 20,
+                  height: 20,
+                ),
+              ],
             ),
             const SizedBox(width: 10),
             Expanded(

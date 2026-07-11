@@ -54,8 +54,22 @@ class _RSubmitStatusPageState extends State<RSubmitStatusPage> {
 
   @override
   Widget build(BuildContext context) {
-    // UI는 요청 범위 밖 — 데이터 로딩/에러 상태만 최소 구성
     return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        title: const Text(
+          "제출 현황",
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.white,
+        elevation: 0,
+        foregroundColor: Colors.black, // 뒤로가기 아이콘 및 텍스트 색상
+      ),
+      // UI는 요청 범위 밖 — 데이터 로딩/에러 상태만 최소 구성
       body: Center(
         child: _isLoading
             ? const CircularProgressIndicator()

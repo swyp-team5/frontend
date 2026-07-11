@@ -114,16 +114,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         // 휴대폰 이미지
                         //----------------------------------
                         Expanded(
-                          child: Align(
+                          child: FittedBox(
+                            fit: BoxFit.contain,
                             alignment: Alignment.bottomCenter,
-                            child: SizedBox(
-                              width: 600,
-                              height: 600,
-                              child: Image.asset(
-                                item.image,
-                                fit: BoxFit.contain,
-                              ),
-                            ),
+                            child: Image.asset(item.image),
                           ),
                         ),
                       ],

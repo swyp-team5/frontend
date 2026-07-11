@@ -227,7 +227,7 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
           } else if (index == 1) {
             Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const RCrewPage()));
-          } else if (index == 4) {
+          } else if (index == 3) {
             Navigator.push(
                 context, MaterialPageRoute(builder: (_) => const RMyPage()));
           }
