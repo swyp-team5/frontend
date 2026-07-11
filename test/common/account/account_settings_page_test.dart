@@ -19,15 +19,31 @@ void main() {
       find.byKey(const Key('account-settings-back-button')),
     );
     final backIconLeft = tester.getTopLeft(find.byIcon(Icons.chevron_left));
+    final socialCard = tester.getSize(
+      find.byKey(const Key('account-settings-social-card')),
+    );
+    final socialCardLeft = tester.getTopLeft(
+      find.byKey(const Key('account-settings-social-card')),
+    );
+    final socialText = tester.widget<Text>(find.text('연동된 소셜 계정'));
+    final marketingTitle = tester.widget<Text>(find.text('마케팅 관리'));
+    final pushText = tester.widget<Text>(find.text('푸시 알림'));
 
     expect(find.text('계정 설정'), findsOneWidget);
     expect(titleCenter.dx, 196.5);
-    expect(backButtonLeft.dx, 26);
-    expect(backIconLeft.dx, 36);
-    expect(title.style?.fontSize, 17);
+    expect(backButtonLeft.dx, 14);
+    expect(backIconLeft.dx, 24);
+    expect(title.style?.fontSize, 18);
     expect(title.style?.fontWeight, FontWeight.w600);
-    expect(title.style?.height, 1.4);
     expect(title.style?.color, const Color(0xFF111111));
+    expect(socialCardLeft.dx, 24);
+    expect(socialCard.width, 345);
+    expect(socialText.style?.fontSize, 16);
+    expect(socialText.style?.fontWeight, FontWeight.w600);
+    expect(marketingTitle.style?.fontSize, 16);
+    expect(marketingTitle.style?.fontWeight, FontWeight.w600);
+    expect(pushText.style?.fontSize, 16);
+    expect(pushText.style?.fontWeight, FontWeight.w600);
     expect(find.text('연동된 소셜 계정'), findsOneWidget);
     expect(find.text('푸시 알림'), findsOneWidget);
     expect(find.text('약관 및 개인정보 처리 동의 내역'), findsOneWidget);
