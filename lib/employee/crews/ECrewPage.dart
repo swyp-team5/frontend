@@ -118,7 +118,7 @@ class _ECrewPageState extends State<ECrewPage> {
           } else if (index == 2) {
             Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const EMainSchedulePage()));
-          } else if (index == 4) {
+          } else if (index == 3) {
             Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const EMyPage()));
           }

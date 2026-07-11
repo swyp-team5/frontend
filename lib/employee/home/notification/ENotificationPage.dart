@@ -1,4 +1,5 @@
 import 'package:chack_chack/employee/home/notification/ENotiDetailPage.dart';
+import 'package:chack_chack/employee/schedule/EMainSchedulePage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -59,7 +60,10 @@ class _ENotificationPageState extends ConsumerState<ENotificationPage> {
           } else if (index == 1) {
             Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const ECrewPage()));
-          } else if (index == 4) {
+          } else if (index == 2) {
+            Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const EMainSchedulePage()));
+          } else if (index == 3) {
             Navigator.push(
                 context, MaterialPageRoute(builder: (_) => const EMyPage()));
           }

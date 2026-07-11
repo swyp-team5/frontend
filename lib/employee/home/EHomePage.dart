@@ -17,6 +17,7 @@ import '../../common/auth/server_token_manager.dart';
 import '../../common/widgets/BottomNavBar.dart';
 import '../crews/ECrewPage.dart';
 import '../crews/model/ConfirmedSchedule.dart';
+import 'api/WorkChangeRequestListApi.dart';
 
 enum HomeCardType {
   none,
@@ -42,11 +43,16 @@ class EHomePage extends StatefulWidget {
 class _EHomePageState extends State<EHomePage> {
   DateTime focusedDay = DateTime.now();
   DateTime? selectedDay;
-  bool isCardVisible = true;
 
   String workPlaceName = "";
   int? workPlaceId;
   String? accessToken; // ✅ 배너용 accessToken 상태 추가
+
+  // ✅ 대타 신청 카드용 id
+  int? substituteWorkChangeRequestId;
+
+  // ✅ 카드별로 닫혔는지 여부 (개발용: 6개 타입 전부 보여주기 위해 단일 bool 대신 Set 사용)
+  final Set<HomeCardType> hiddenCardTypes = {};
 
   Set<DateTime> workedDates = {};
 
@@ -54,6 +60,9 @@ class _EHomePageState extends State<EHomePage> {
   final Dio _dio = Dio(
     BaseOptions(baseUrl: "https://chackchack.shop"),
   );
+
+  final WorkChangeRequestListApi _workChangeRequestApi =
+  WorkChangeRequestListApi();
 
   Future<void> _loadMyWorkPlace() async {
     try {
@@ -100,8 +109,52 @@ class _EHomePageState extends State<EHomePage> {
       });
 
       debugPrint("근무지 로딩 성공: $id / $name");
+
+      // workPlaceId가 확정된 뒤에 대타 신청 카드용 데이터도 로딩
+      _loadSubstituteRequestCard(id);
     } catch (e) {
       debugPrint("workPlace 로딩 실패: $e");
+    }
+  }
+
+  /// 홈 카드(대타 신청)에 표시할 workChangeRequestId를 가져옵니다.
+  /// 아직 처리되지 않은(REQUESTED) 대타(SUBSTITUTE) 요청 중 가장 최근 것을 사용합니다.
+  Future<void> _loadSubstituteRequestCard(int workPlaceId) async {
+    try {
+      // 이 카드는 수락/거절 액션(RECEIVED)으로 이어지는 카드라서
+      // "내가 받은 요청" 기준으로 조회합니다.
+      final result = await _workChangeRequestApi.fetchRequests(
+        workPlaceId: workPlaceId,
+        scope: "RECEIVED",
+        page: 0,
+        size: 20,
+      );
+
+      debugPrint(
+        "[EHomePage] work-change-requests 응답 ${result.content.length}건",
+      );
+
+      final pending = result.content.where(
+            (e) => e.requestType == "SUBSTITUTE" && e.status == "REQUESTED",
+      );
+
+      if (pending.isEmpty) {
+        debugPrint("[EHomePage] 처리 대기 중인 대타 요청이 없어요.");
+        return;
+      }
+
+      final target = pending.first;
+
+      if (!mounted) return;
+      setState(() {
+        substituteWorkChangeRequestId = target.workChangeRequestId;
+      });
+
+      debugPrint(
+        "[EHomePage] 대타 요청 카드용 id 로딩 성공: ${target.workChangeRequestId}",
+      );
+    } catch (e) {
+      debugPrint("[EHomePage] 대타 요청 카드 로딩 실패: $e");
     }
   }
 
@@ -188,27 +241,38 @@ class _EHomePageState extends State<EHomePage> {
   }
 
   //==========================================================
-  // 개발용
+  // 개발용: 6개 HomeCardType(=none 제외) 전부 렌더링
   //==========================================================
-  static const HomeCardType? debugCardType = HomeCardType.weeklySchedule;
+  static const List<HomeCardType> _allCardTypes = [
+    HomeCardType.weeklySchedule,
+    HomeCardType.scheduleCompleted,
+    HomeCardType.scheduleChanged,
+    HomeCardType.shiftRequest,
+    HomeCardType.substituteRequest,
+    HomeCardType.ownerWorkRequest,
+  ];
 
-  // static const HomeCardType? debugCardType = HomeCardType.scheduleCompleted;
-
-  // static const HomeCardType? debugCardType = HomeCardType.scheduleChanged;
-
-  // static const HomeCardType? debugCardType = HomeCardType.shiftRequest;
-
-  // static const HomeCardType? debugCardType = HomeCardType.substituteRequest;
-
-  // static const HomeCardType? debugCardType = HomeCardType.ownerWorkRequest;
-
-
-
-  HomeCardType get cardType {
-    if (debugCardType != null) {
-      return debugCardType!;
+  void _handleDetailTap(HomeCardType type) {
+    switch (type) {
+      case HomeCardType.weeklySchedule:
+        if (workPlaceId == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("근무지 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요."),
+            ),
+          );
+          break;
+        }
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ESubmitSchedulePage(workPlaceId: workPlaceId!),
+          ),
+        );
+        break;
+      default:
+        break;
     }
-    return HomeCardType.none;
   }
 
   @override
@@ -228,7 +292,7 @@ class _EHomePageState extends State<EHomePage> {
               context,
               MaterialPageRoute(builder: (_) => const EMainSchedulePage()),
             );
-          } else if (index == 4) {
+          } else if (index == 3) {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const EMyPage()),
@@ -269,42 +333,27 @@ class _EHomePageState extends State<EHomePage> {
                 const SizedBox.shrink(), // 로딩 전엔 배너 숨김 (필요 시 스켈레톤으로 교체 가능)
               const SizedBox(height: 16),
 
-              /// Schedule Card
-              if (isCardVisible)
-                EScheduleCard(
-                  type: cardType,
-                  daysLeft: daysLeft,
-                  onClose: () {
-                    setState(() {
-                      isCardVisible = false;
-                    });
-                  },
-                  onDetailTap: () {
-                    switch (cardType) {
-                      case HomeCardType.weeklySchedule:
-                        if (workPlaceId == null) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("근무지 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.")),
-                          );
-                          break;
-                        }
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ESubmitSchedulePage(workPlaceId: workPlaceId!),
-                          ),
-                        );
-                        break;
-                      default:
-                        break;
-                    }
-                  },
-                ),
-              const SizedBox(height: 14),
+              /// Schedule Cards (개발용: 6개 타입 전부 표시)
+              for (final type in _allCardTypes)
+                if (!hiddenCardTypes.contains(type)) ...[
+                  EScheduleCard(
+                    type: type,
+                    daysLeft: daysLeft,
+                    workPlaceId: workPlaceId,
+                    workChangeRequestId: substituteWorkChangeRequestId,
+                    onClose: () {
+                      setState(() {
+                        hiddenCardTypes.add(type);
+                      });
+                    },
+                    onDetailTap: () => _handleDetailTap(type),
+                  ),
+                  const SizedBox(height: 14),
+                ],
 
-              /// CheckIn Card
-              const ECheckInCard(),
-              const SizedBox(height: 14),
+              // /// CheckIn Card
+              // const ECheckInCard(),
+              // const SizedBox(height: 14),
 
               /// Calendar
               EHomeCalendar(

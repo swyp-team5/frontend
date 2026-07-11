@@ -30,10 +30,10 @@ class BottomNavBar extends StatelessWidget {
         "label": "스케줄",
       },
 
-      {
-        "icon": Icons.payments_outlined,
-        "label": "급여",
-      },
+      // {
+      //   "icon": Icons.payments_outlined,
+      //   "label": "급여",
+      // },
 
       {
         "icon": Icons.person_outline,

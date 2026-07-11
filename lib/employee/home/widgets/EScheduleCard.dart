@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../schedule/EMainSchedulePage.dart';
 import '../EHomePage.dart';
 import '../application/ExchangeRequest.dart';
 import '../application/SubstituteRequest.dart';
+import '../application/SentWorkChangeRequestsPage.dart';
 
 class EScheduleCard extends StatelessWidget {
   final HomeCardType type;
@@ -9,12 +11,18 @@ class EScheduleCard extends StatelessWidget {
   final VoidCallback? onClose;
   final VoidCallback? onDetailTap;
 
+  /// substituteRequest 타입 카드에서 상세 화면으로 이동할 때 필요
+  final int? workPlaceId;
+  final int? workChangeRequestId;
+
   const EScheduleCard({
     super.key,
     required this.type,
     required this.daysLeft,
     this.onClose,
     this.onDetailTap,
+    this.workPlaceId,
+    this.workChangeRequestId,
   });
 
   //-----------------------------------------
@@ -186,6 +194,11 @@ class EScheduleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint(
+      "[EScheduleCard] build - type: $type, workPlaceId: $workPlaceId, "
+          "workChangeRequestId: $workChangeRequestId",
+    );
+
     if (type == HomeCardType.none) {
       return const SizedBox.shrink();
     }
@@ -258,57 +271,155 @@ class EScheduleCard extends StatelessWidget {
 
                   Padding(
                     padding: const EdgeInsets.only(left: 5),
-                    child: TextButton(
-                      onPressed: () {
-                        switch (type) {
-                          case HomeCardType.shiftRequest:
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const ExchangeRequest(),
-                              ),
-                            );
-                            break;
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextButton(
+                          onPressed: () {
+                            switch (type) {
+                              case HomeCardType.shiftRequest:
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const ExchangeRequest(),
+                                  ),
+                                );
+                                break;
 
-                          case HomeCardType.substituteRequest:
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const SubstituteRequest(),
-                              ),
-                            );
-                            break;
+                              case HomeCardType.scheduleCompleted:
+                              case HomeCardType.scheduleChanged:
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const EMainSchedulePage(),
+                                  ),
+                                );
+                                break;
 
-                          default:
-                            onDetailTap?.call();
-                        }
-                      },
-                      style: TextButton.styleFrom(
-                        padding: EdgeInsets.zero,
-                        minimumSize: Size.zero,
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        alignment: Alignment.centerLeft,
-                        foregroundColor: detailColor,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            "자세히 보기",
-                            style: TextStyle(
-                              color: detailColor,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                              case HomeCardType.substituteRequest:
+                                debugPrint(
+                                  "[EScheduleCard] 자세히 보기 tap - "
+                                      "workPlaceId: $workPlaceId, "
+                                      "workChangeRequestId: $workChangeRequestId",
+                                );
+
+                                if (workPlaceId == null ||
+                                    workChangeRequestId == null) {
+                                  debugPrint(
+                                    "[EScheduleCard] id가 없어 이동을 취소합니다. "
+                                        "-> 이 카드를 생성하는 부모 위젯(EHomePage 등)에서 "
+                                        "workPlaceId/workChangeRequestId를 넘기고 있는지 확인하세요.",
+                                  );
+                                  // 필요한 id가 없으면 이동하지 않고 안내만 표시
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text("요청 정보를 불러올 수 없어요."),
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                debugPrint(
+                                  "[EScheduleCard] SubstituteRequest로 이동 - "
+                                      "workPlaceId: $workPlaceId, "
+                                      "workChangeRequestId: $workChangeRequestId",
+                                );
+
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => SubstituteRequest(
+                                      workPlaceId: workPlaceId!,
+                                      workChangeRequestId: workChangeRequestId!,
+                                    ),
+                                  ),
+                                );
+                                break;
+
+                              default:
+                                onDetailTap?.call();
+                            }
+                          },
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.zero,
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            alignment: Alignment.centerLeft,
+                            foregroundColor: detailColor,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                "자세히 보기",
+                                style: TextStyle(
+                                  color: detailColor,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 2),
+                              Icon(
+                                Icons.chevron_right,
+                                size: 18,
+                                color: detailColor,
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        /// 보낸 요청(SENT) 목록으로 이동하는 버튼
+                        if (type == HomeCardType.substituteRequest ||
+                            type == HomeCardType.shiftRequest) ...[
+                          const SizedBox(width: 8),
+                          TextButton(
+                            onPressed: () {
+                              if (workPlaceId == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("근무지 정보를 불러오는 중입니다."),
+                                  ),
+                                );
+                                return;
+                              }
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => SentWorkChangeRequestsPage(
+                                    workPlaceId: workPlaceId!,
+                                  ),
+                                ),
+                              );
+                            },
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              alignment: Alignment.centerLeft,
+                              foregroundColor: detailColor,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  "내가 보낸 요청 보기",
+                                  style: TextStyle(
+                                    color: detailColor,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(width: 2),
+                                Icon(
+                                  Icons.chevron_right,
+                                  size: 18,
+                                  color: detailColor,
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(width: 2),
-                          Icon(
-                            Icons.chevron_right,
-                            size: 18,
-                            color: detailColor,
-                          ),
                         ],
-                      ),
+                      ],
                     ),
                   ),
                 ],
