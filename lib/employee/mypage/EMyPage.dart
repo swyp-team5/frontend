@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
+import '../../common/account/AccountSettingsPage.dart';
 import '../../employer/mypage/api/profile_api.dart';
 import '../crews/ECrewPage.dart';
 import '../home/EHomePage.dart';
@@ -464,37 +465,25 @@ class _EMyPageState extends State<EMyPage> {
 
               const SizedBox(height: 32),
 
-              /// 알림 설정
-              _buildSectionTitle("알림 설정"),
-              const SizedBox(height: 14),
-
-              _buildCard(
-                children: [
-                  _buildSwitchRow(
-                    icon: Icons.notifications_none,
-                    title: "푸시 알림 받기",
-                    value: fcmPushEnabled,
-                    onChanged: _toggleFcmPush,
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 32),
-
               /// 고객 지원
               _buildSectionTitle("고객 지원"),
               const SizedBox(height: 14),
 
               _buildCard(
                 children: [
-                  _buildMenuRow(
-                    icon: Icons.groups_outlined,
-                    title: "고객 센터",
-                  ),
+                  _buildMenuRow(icon: Icons.groups_outlined, title: "고객 센터"),
                   const Divider(height: 1, color: Color(0xFFF2F2F2)),
                   _buildMenuRow(
                     icon: Icons.settings_outlined,
                     title: "계정 설정",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AccountSettingsPage(),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
