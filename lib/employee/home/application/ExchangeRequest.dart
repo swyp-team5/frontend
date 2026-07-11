@@ -60,6 +60,9 @@ class _ExchangeRequestState extends State<ExchangeRequest> {
   bool _isLoading = true;
   String? _error;
 
+  // 거절 API 호출 중인지 여부 (버튼 중복 클릭 방지 및 로딩 표시용)
+  bool _isRejecting = false;
+
   String? _applicantName;
   String? _reason;
 
@@ -259,6 +262,97 @@ class _ExchangeRequestState extends State<ExchangeRequest> {
     return "$y-$m-$d";
   }
 
+  /// POST /api/work-places/{workPlaceId}/work-change-requests/{requestId}/reject
+  Future<bool> _rejectRequest() async {
+    debugPrint(
+      "[ExchangeRequest] reject 요청 시작: "
+          "workPlaceId=${widget.workPlaceId}, "
+          "workChangeRequestId=${widget.workChangeRequestId}",
+    );
+
+    try {
+      final token = await ServerTokenManager.getValidAccessToken();
+      if (token == null) {
+        debugPrint("[ExchangeRequest] reject 실패: 토큰 없음");
+        return false;
+      }
+      debugPrint("[ExchangeRequest] 토큰 확인 완료, API 호출 시도");
+
+      final url =
+          "/api/work-places/${widget.workPlaceId}/work-change-requests/${widget.workChangeRequestId}/reject";
+      debugPrint("[ExchangeRequest] POST 요청: $url");
+
+      final response = await _dio.post(
+        url,
+        options: Options(
+          headers: {"Authorization": "Bearer $token"},
+        ),
+      );
+
+      debugPrint(
+        "[ExchangeRequest] reject 응답: "
+            "status=${response.statusCode}, data=${response.data}",
+      );
+
+      final success = response.statusCode == 200 || response.statusCode == 204;
+      debugPrint("[ExchangeRequest] reject 결과: success=$success");
+      return success;
+    } on DioException catch (e) {
+      debugPrint(
+        "[ExchangeRequest] reject DioException: "
+            "status=${e.response?.statusCode}, data=${e.response?.data}, "
+            "requestUri=${e.requestOptions.uri}",
+      );
+      return false;
+    } catch (e, st) {
+      debugPrint("[ExchangeRequest] reject 실패: $e");
+      debugPrint("$st");
+      return false;
+    }
+  }
+
+  Future<void> _handleReject() async {
+    if (_isRejecting) {
+      debugPrint("[ExchangeRequest] 이미 처리 중이라 무시함");
+      return;
+    }
+
+    debugPrint("[ExchangeRequest] 거절 버튼 클릭됨");
+
+    setState(() {
+      _isRejecting = true;
+    });
+
+    final success = await _rejectRequest();
+
+    if (!mounted) {
+      debugPrint("[ExchangeRequest] 위젯이 dispose됨, 처리 중단");
+      return;
+    }
+
+    setState(() {
+      _isRejecting = false;
+    });
+
+    if (success) {
+      debugPrint("[ExchangeRequest] 거절 성공 → EExchangeReject로 이동");
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => EExchangeReject(
+            workPlaceId: widget.workPlaceId,
+            workChangeRequestId: widget.workChangeRequestId,
+          ),
+        ),
+      );
+    } else {
+      debugPrint("[ExchangeRequest] 거절 실패 → 스낵바 표시");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("거절 처리에 실패했어요. 다시 시도해주세요.")),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -375,19 +469,17 @@ class _ExchangeRequestState extends State<ExchangeRequest> {
                               style: OutlinedButton.styleFrom(
                                 side: BorderSide.none,
                               ),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => EExchangeReject(
-                                      workPlaceId: widget.workPlaceId,
-                                      workChangeRequestId:
-                                      widget.workChangeRequestId,
-                                    ),
-                                  ),
-                                );
-                              },
-                              child: const Text(
+                              onPressed: _isRejecting ? null : _handleReject,
+                              child: _isRejecting
+                                  ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.black54,
+                                ),
+                              )
+                                  : const Text(
                                 "거절",
                                 style: TextStyle(
                                   color: Colors.black,
@@ -419,11 +511,11 @@ class _ExchangeRequestState extends State<ExchangeRequest> {
                                   backgroundColor: Colors.transparent,
                                   isScrollControlled: true,
                                   builder: (_) => ExAcceptionBottomSheet(
+                                    workPlaceId: widget.workPlaceId,
+                                    workChangeRequestId:
+                                    widget.workChangeRequestId,
                                     onAccept: () {
                                       Navigator.pop(context);
-
-                                      // TODO: 교대 수락 API 호출
-                                      // widget.workPlaceId, widget.workChangeRequestId 사용
                                     },
                                   ),
                                 );

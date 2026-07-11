@@ -249,9 +249,10 @@ class _SubstituteRequestState extends State<SubstituteRequest> {
                         backgroundColor: Colors.transparent,
                         isScrollControlled: true,
                         builder: (_) => SubAcceptionBottomSheet(
+                          workPlaceId: widget.workPlaceId,
+                          workChangeRequestId: widget.workChangeRequestId,
                           onAccept: () {
                             Navigator.pop(context);
-                            // TODO: 대타 수락 API 호출
                           },
                         ),
                       );

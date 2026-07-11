@@ -1,14 +1,110 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 
 import '../../../common/employee/EExchangeAccept.dart';
+import '../../../../common/auth/server_token_manager.dart';
 
-class ExAcceptionBottomSheet extends StatelessWidget {
+class ExAcceptionBottomSheet extends StatefulWidget {
+  final int workPlaceId;
+  final int workChangeRequestId;
   final VoidCallback onAccept;
 
   const ExAcceptionBottomSheet({
     super.key,
+    required this.workPlaceId,
+    required this.workChangeRequestId,
     required this.onAccept,
   });
+
+  @override
+  State<ExAcceptionBottomSheet> createState() =>
+      _ExAcceptionBottomSheetState();
+}
+
+class _ExAcceptionBottomSheetState extends State<ExAcceptionBottomSheet> {
+  final Dio _dio = Dio(BaseOptions(baseUrl: "https://chackchack.shop"));
+
+  // 수락 API 호출 중인지 여부 (버튼 중복 클릭 방지 및 로딩 표시용)
+  bool _isLoading = false;
+
+  /// POST /api/work-places/{workPlaceId}/work-change-requests/{requestId}/accept
+  /// accept는 별도 요청 바디(reason 등)가 필요 없음.
+  Future<bool> _acceptRequest() async {
+    final url =
+        "/api/work-places/${widget.workPlaceId}/work-change-requests/${widget.workChangeRequestId}/accept";
+    debugPrint("[ExAcceptionBottomSheet] accept 요청 시작: $url");
+
+    try {
+      final token = await ServerTokenManager.getValidAccessToken();
+      if (token == null) {
+        debugPrint("[ExAcceptionBottomSheet] accept 실패: 토큰 없음");
+        return false;
+      }
+
+      final response = await _dio.post(
+        url,
+        options: Options(
+          headers: {"Authorization": "Bearer $token"},
+        ),
+      );
+
+      debugPrint(
+        "[ExAcceptionBottomSheet] accept 응답: "
+            "status=${response.statusCode}, data=${response.data}",
+      );
+
+      final success =
+          response.statusCode == 200 || response.statusCode == 204;
+      debugPrint("[ExAcceptionBottomSheet] accept 결과: success=$success");
+      return success;
+    } on DioException catch (e) {
+      debugPrint(
+        "[ExAcceptionBottomSheet] accept DioException: "
+            "status=${e.response?.statusCode}, data=${e.response?.data}, "
+            "requestUri=${e.requestOptions.uri}",
+      );
+      return false;
+    } catch (e, st) {
+      debugPrint("[ExAcceptionBottomSheet] accept 실패(예상치 못한 예외): $e");
+      debugPrint("$st");
+      return false;
+    }
+  }
+
+  Future<void> _handleAccept() async {
+    if (_isLoading) return;
+
+    debugPrint("[ExAcceptionBottomSheet] 수락하기 버튼 클릭됨");
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    final success = await _acceptRequest();
+
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    if (success) {
+      debugPrint("[ExAcceptionBottomSheet] 수락 성공 → EExchangeAccept로 이동");
+      widget.onAccept();
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const EExchangeAccept(),
+        ),
+      );
+    } else {
+      debugPrint("[ExAcceptionBottomSheet] 수락 실패 → 스낵바 표시");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("수락 처리에 실패했어요. 다시 시도해주세요.")),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,17 +169,17 @@ class ExAcceptionBottomSheet extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  onPressed: () {
-                    onAccept();
-
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const EExchangeAccept(),
-                      ),
-                    );
-                  },
-                  child: const Text(
+                  onPressed: _isLoading ? null : _handleAccept,
+                  child: _isLoading
+                      ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                      : const Text(
                     "수락하기",
                     style: TextStyle(
                       color: Colors.white,
@@ -97,7 +193,9 @@ class ExAcceptionBottomSheet extends StatelessWidget {
               const SizedBox(height: 18),
 
               TextButton(
-                onPressed: () {
+                onPressed: _isLoading
+                    ? null
+                    : () {
                   Navigator.pop(context);
                 },
                 child: const Text(
