@@ -4,18 +4,17 @@ import 'package:chack_chack/employer/mypage/RTodayWorkingPage.dart';
 import 'package:chack_chack/employer/mypage/RWorkPlaceSettingPage.dart';
 import 'package:flutter/material.dart';
 
+import '../../common/account/AccountSettingsPage.dart';
 import '../../../common/widgets/BottomNavBar.dart';
 import '../../common/workplace/selected_work_place_storage.dart';
 import '../crews/RCrewPage.dart';
 import '../schedule/RMainSchedulePage.dart';
 
 import '../../../common/auth/server_token_manager.dart';
-import '../../common/fcm/api/NotificationSettingsApi.dart';
 import 'package:dio/dio.dart';
 import 'api/profile_api.dart';
 
 class RMyPage extends StatefulWidget {
-
   const RMyPage({super.key});
 
   @override
@@ -23,13 +22,8 @@ class RMyPage extends StatefulWidget {
 }
 
 class _RMyPageState extends State<RMyPage> {
-
   final ProfileApi profileApi = ProfileApi(
-    Dio(
-      BaseOptions(
-        baseUrl: "https://chackchack.shop",
-      ),
-    ),
+    Dio(BaseOptions(baseUrl: "https://chackchack.shop")),
   );
 
   String profileName = "";
@@ -45,9 +39,6 @@ class _RMyPageState extends State<RMyPage> {
   String RselectedStore = "";
   String RtempSelectedStore = "";
 
-  // 9.2.1 FCM 푸시 수신 여부 (서버 기본값과 동일하게 true로 시작, 로드되면 실제 값으로 갱신)
-  bool fcmPushEnabled = true;
-
   Future<void> _loadWorkPlaces() async {
     try {
       final token = await ServerTokenManager.getValidAccessToken();
@@ -61,11 +52,7 @@ class _RMyPageState extends State<RMyPage> {
 
       final response = await dio.get(
         "https://chackchack.shop/api/work-places/me",
-        options: Options(
-          headers: {
-            "Authorization": "Bearer $token",
-          },
-        ),
+        options: Options(headers: {"Authorization": "Bearer $token"}),
       );
 
       final List list = response.data["workPlaces"];
@@ -100,7 +87,6 @@ class _RMyPageState extends State<RMyPage> {
     }
   }
 
-
   void _RshowStoreBottomSheet(BuildContext context) {
     RtempSelectedStore = RselectedStore;
 
@@ -117,9 +103,7 @@ class _RMyPageState extends State<RMyPage> {
                 padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
                 decoration: const BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(28),
-                  ),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -206,9 +190,9 @@ class _RMyPageState extends State<RMyPage> {
                               borderRadius: BorderRadius.circular(12),
                               border: selected
                                   ? Border.all(
-                                color: Color(0xFF0084FF),
-                                width: 2,
-                              )
+                                      color: Color(0xFF0084FF),
+                                      width: 2,
+                                    )
                                   : null,
                             ),
                             child: Row(
@@ -300,47 +284,7 @@ class _RMyPageState extends State<RMyPage> {
 
     _loadWorkPlaces();
     _loadProfileName();
-    _loadNotificationSettings();
   }
-
-  // 현재 푸시 수신 설정 조회
-  Future<void> _loadNotificationSettings() async {
-    try {
-      final settings = await NotificationSettingsApi.getSettings();
-
-      if (!mounted) return;
-
-      setState(() {
-        fcmPushEnabled = settings.fcmPushEnabled;
-      });
-    } catch (e) {
-      debugPrint("알림 설정 조회 실패: $e");
-    }
-  }
-
-  // 토글 탭 시 즉시 UI를 바꾸고(낙관적 업데이트), 서버 반영이 실패하면 되돌린다
-  Future<void> _toggleFcmPush(bool value) async {
-    setState(() {
-      fcmPushEnabled = value;
-    });
-
-    try {
-      await NotificationSettingsApi.updateSettings(fcmPushEnabled: value);
-    } catch (e) {
-      debugPrint("알림 설정 변경 실패: $e");
-
-      if (!mounted) return;
-
-      setState(() {
-        fcmPushEnabled = !value;
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("알림 설정 변경에 실패했어요. 다시 시도해주세요.")),
-      );
-    }
-  }
-
 
   Future<void> _loadProfileName() async {
     try {
@@ -351,9 +295,7 @@ class _RMyPageState extends State<RMyPage> {
         return;
       }
 
-      final response = await profileApi.getMyProfile(
-        token: token,
-      );
+      final response = await profileApi.getMyProfile(token: token);
 
       debugPrint("===== PROFILE RESPONSE =====");
       debugPrint(response.toString());
@@ -370,37 +312,43 @@ class _RMyPageState extends State<RMyPage> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
-      backgroundColor:
-      const Color(0xFFF5F5F5),
+      backgroundColor: const Color(0xFFF5F5F5),
 
       /// 공통 BottomNavBar 적용
       bottomNavigationBar: BottomNavBar(
         currentIndex: 0,
         onTap: (index) {
           if (index == 0) {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const RHomePage()));
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const RHomePage()),
+            );
           } else if (index == 1) {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => const RCrewPage()));
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const RCrewPage()),
+            );
           } else if (index == 2) {
-            Navigator.push(context,
-                MaterialPageRoute(builder: (_) => RMainSchedulePage(workPlaceId: selectedWorkPlaceId!,)));
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) =>
+                    RMainSchedulePage(workPlaceId: selectedWorkPlaceId!),
+              ),
+            );
           } else if (index == 4) {
             Navigator.push(
-                context, MaterialPageRoute(builder: (_) => const RMyPage()));
+              context,
+              MaterialPageRoute(builder: (_) => const RMyPage()),
+            );
           }
         },
       ),
 
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 28,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -410,10 +358,7 @@ class _RMyPageState extends State<RMyPage> {
                 children: [
                   const Text(
                     "마이페이지",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
 
                   GestureDetector(
@@ -526,27 +471,7 @@ class _RMyPageState extends State<RMyPage> {
                     },
                   ),
                   const Divider(height: 1, color: Color(0xFFF2F2F2)),
-                  _buildMenuRow(
-                    icon: Icons.send_outlined,
-                    title: "받은 승인 내역",
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 32),
-
-              /// 알림 설정
-              _buildSectionTitle("알림 설정"),
-              const SizedBox(height: 14),
-
-              _buildCard(
-                children: [
-                  _buildSwitchRow(
-                    icon: Icons.notifications_none,
-                    title: "푸시 알림 받기",
-                    value: fcmPushEnabled,
-                    onChanged: _toggleFcmPush,
-                  ),
+                  _buildMenuRow(icon: Icons.send_outlined, title: "받은 승인 내역"),
                 ],
               ),
 
@@ -558,14 +483,19 @@ class _RMyPageState extends State<RMyPage> {
 
               _buildCard(
                 children: [
-                  _buildMenuRow(
-                    icon: Icons.groups_outlined,
-                    title: "고객 센터",
-                  ),
+                  _buildMenuRow(icon: Icons.groups_outlined, title: "고객 센터"),
                   const Divider(height: 1, color: Color(0xFFF2F2F2)),
                   _buildMenuRow(
                     icon: Icons.settings_outlined,
                     title: "계정 설정",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AccountSettingsPage(),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -577,9 +507,7 @@ class _RMyPageState extends State<RMyPage> {
   }
 
   /// 흰 색 컨테이너
-  Widget _buildCard({
-    required List<Widget> children,
-  }) {
+  Widget _buildCard({required List<Widget> children}) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -599,10 +527,7 @@ class _RMyPageState extends State<RMyPage> {
       borderRadius: BorderRadius.circular(18),
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 20,
-          vertical: 20,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         child: Row(
           children: [
             Icon(icon, size: 20),
@@ -616,48 +541,9 @@ class _RMyPageState extends State<RMyPage> {
                 ),
               ),
             ),
-            const Icon(
-              Icons.chevron_right,
-              color: Color(0xFFB8B8BE),
-            ),
+            const Icon(Icons.chevron_right, color: Color(0xFFB8B8BE)),
           ],
         ),
-      ),
-    );
-  }
-
-  /// (아이콘, 제목, 스위치) 아이템 — _buildMenuRow와 달리 탭하면 다음 화면으로 이동하는 대신
-  /// 그 자리에서 값을 바로 켜고 끈다
-  Widget _buildSwitchRow({
-    required IconData icon,
-    required String title,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 20,
-        vertical: 12,
-      ),
-      child: Row(
-        children: [
-          Icon(icon, size: 20),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          Switch(
-            value: value,
-            activeColor: const Color(0xFF0084FF),
-            onChanged: onChanged,
-          ),
-        ],
       ),
     );
   }

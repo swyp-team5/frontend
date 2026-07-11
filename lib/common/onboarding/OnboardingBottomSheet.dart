@@ -196,8 +196,6 @@ class _OnboardingBottomSheetState extends ConsumerState<OnboardingBottomSheet> {
                   label: '카카오로 시작하기',
                   backgroundColor: const Color(0xFFFFE200),
                   assetPath: 'assets/images/logo/kakaotalk.png',
-                  iconWidth: 20,
-                  iconHeight: 20,
                   iconColor: const Color(0xE6111111),
                   isLoading: _loadingProvider == SocialAuthProvider.kakao,
                   onPressed: _isLoading
@@ -298,68 +296,67 @@ class _SocialButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-          width: double.infinity,
-          height: 50,
-          child: ElevatedButton(
-            onPressed: onPressed,
-            style: ElevatedButton.styleFrom(
-              elevation: 0,
-              padding: EdgeInsets.zero,
-              backgroundColor: backgroundColor,
-              disabledBackgroundColor: backgroundColor,
-              foregroundColor: const Color(0xFF111111),
-              disabledForegroundColor: const Color(0xFF111111),
-              side: borderColor == null
-                  ? BorderSide.none
-                  : BorderSide(color: borderColor!, width: 1),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: isLoading
-                ? const SizedBox.square(
-                    dimension: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Color(0xFF111111),
-                    ),
-                  )
-                : Center(
-                    child: SizedBox(
-                      width: _contentWidth,
-                      height: _iconSize,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: _iconSize,
-                            height: _iconSize,
-                            child: Center(
-                              child: Image.asset(
-                                assetPath,
-                                width: iconWidth,
-                                height: iconHeight,
-                                fit: BoxFit.contain,
-                                color: iconColor,
-                                colorBlendMode:
-                                    iconColor == null ? null : BlendMode.srcIn,
-                              ),
-                            ),
+      width: double.infinity,
+      height: 50,
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          elevation: 0,
+          padding: EdgeInsets.zero,
+          backgroundColor: backgroundColor,
+          disabledBackgroundColor: backgroundColor,
+          foregroundColor: const Color(0xFF111111),
+          disabledForegroundColor: const Color(0xFF111111),
+          side: borderColor == null
+              ? BorderSide.none
+              : BorderSide(color: borderColor!, width: 1),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+        child: isLoading
+            ? const SizedBox.square(
+                dimension: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Color(0xFF111111),
+                ),
+              )
+            : Center(
+                child: SizedBox(
+                  width: _contentWidth,
+                  height: _iconSize,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: _iconSize,
+                        height: _iconSize,
+                        child: Center(
+                          child: Image.asset(
+                            assetPath,
+                            width: iconWidth,
+                            height: iconHeight,
+                            fit: BoxFit.contain,
+                            color: iconColor,
+                            colorBlendMode: iconColor == null
+                                ? null
+                                : BlendMode.srcIn,
                           ),
-                          const SizedBox(width: 28),
-                          Expanded(
-                            child: Text(
-                              label,
-                              style: _labelStyle,
-                              maxLines: 1,
-                              overflow: TextOverflow.visible,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: 28),
+                      Expanded(
+                        child: Text(
+                          label,
+                          style: _labelStyle,
+                          maxLines: 1,
+                          overflow: TextOverflow.visible,
+                        ),
+                      ),
+                    ],
                   ),
-          ),
-        );
-      }
-    }
+                ),
+              ),
+      ),
+    );
+  }
+}

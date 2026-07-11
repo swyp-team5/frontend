@@ -337,7 +337,7 @@ class _EMyPageState extends State<EMyPage> {
 
       /// 공통 BottomNavBar 적용
       bottomNavigationBar: BottomNavBar(
-        currentIndex: 3,
+        currentIndex: 0,
         onTap: (index) {
           if (index == 0) {
             Navigator.push(context,
@@ -348,7 +348,7 @@ class _EMyPageState extends State<EMyPage> {
           } else if (index == 2) {
             Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const EMainSchedulePage()));
-          } else if (index == 3) {
+          } else if (index == 4) {
             Navigator.push(
                 context, MaterialPageRoute(builder: (_) => const EMyPage()));
           }
