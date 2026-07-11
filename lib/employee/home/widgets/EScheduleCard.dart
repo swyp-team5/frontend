@@ -11,9 +11,25 @@ class EScheduleCard extends StatelessWidget {
   final VoidCallback? onClose;
   final VoidCallback? onDetailTap;
 
-  /// substituteRequest 타입 카드에서 상세 화면으로 이동할 때 필요
+  /// substituteRequest / shiftRequest 타입 카드에서 상세 화면으로 이동할 때 필요
   final int? workPlaceId;
   final int? workChangeRequestId;
+
+  /// substituteRequest 타입 카드에서 실제 대타 근무 날짜/시간을 표시하기 위해 필요.
+  /// SubstituteRequest 상세 화면의 targetDate / targetTime과 동일한 포맷의
+  /// 문자열을 그대로 받는다. (예: "6월 27일", "16:00~20:00")
+  /// 부모 위젯(EHomePage)에서 AssignmentResolver 등으로 미리 조회해서 넘겨줘야 한다.
+  final String? substituteDateLabel;
+  final String? substituteTimeLabel;
+
+  /// shiftRequest 타입 카드에서 실제 교대 근무 날짜/시간을 표시하기 위해 필요.
+  /// ExchangeRequest 상세 화면의 _applicantDate/_applicantTime, _myDate/_myTime과
+  /// 동일한 값을 그대로 받는다.
+  /// 부모 위젯(EHomePage)에서 미리 조회해서 넘겨줘야 한다.
+  final String? applicantDateLabel;
+  final String? applicantTimeLabel;
+  final String? myDateLabel;
+  final String? myTimeLabel;
 
   const EScheduleCard({
     super.key,
@@ -23,7 +39,41 @@ class EScheduleCard extends StatelessWidget {
     this.onDetailTap,
     this.workPlaceId,
     this.workChangeRequestId,
+    this.substituteDateLabel,
+    this.substituteTimeLabel,
+    this.applicantDateLabel,
+    this.applicantTimeLabel,
+    this.myDateLabel,
+    this.myTimeLabel,
   });
+
+  //-----------------------------------------
+  // 카드에 필요한 실제 데이터가 있는지 여부
+  //-----------------------------------------
+
+  /// shiftRequest / substituteRequest 타입은 실제 날짜 데이터가 없으면
+  /// (즉, 아직 로딩 전이거나 조회 실패 상태라면) 카드를 아예 표시하지 않는다.
+  /// 그 외 타입은 별도의 필수 데이터가 없으므로 항상 표시 대상으로 본다.
+  bool get _hasRequiredData {
+    switch (type) {
+      case HomeCardType.shiftRequest:
+        return applicantDateLabel != null &&
+            applicantDateLabel!.isNotEmpty &&
+            myDateLabel != null &&
+            myDateLabel!.isNotEmpty;
+
+      case HomeCardType.substituteRequest:
+        return substituteDateLabel != null &&
+            substituteDateLabel!.isNotEmpty;
+
+      case HomeCardType.weeklySchedule:
+      case HomeCardType.scheduleCompleted:
+      case HomeCardType.scheduleChanged:
+      case HomeCardType.ownerWorkRequest:
+      case HomeCardType.none:
+        return true;
+    }
+  }
 
   //-----------------------------------------
   // 이미지
@@ -80,23 +130,39 @@ class EScheduleCard extends StatelessWidget {
   }
 
   //-----------------------------------------
-  // 더미 데이터
+  // 교대 요청 - 실제 데이터 기반
   //-----------------------------------------
 
-  DateTime get myScheduleDate => DateTime(2026, 6, 25);
+  /// 실제 교대 신청 날짜.
+  /// _hasRequiredData 체크를 통과한 경우에만 build()에서 사용되므로
+  /// 이 시점에는 applicantDateLabel / myDateLabel이 항상 유효한 값을 가진다.
+  String get shiftDateText {
+    final applicant = applicantDateLabel ?? "-";
+    final mine = myDateLabel ?? "-";
+    return "$applicant ↔ $mine";
+  }
 
-  DateTime get otherScheduleDate => DateTime(2026, 6, 27);
+  //-----------------------------------------
+  // 대타 요청 - 실제 데이터 기반
+  //-----------------------------------------
 
-  String get shiftDateText =>
-      "${myScheduleDate.month}월 ${myScheduleDate.day}일 ↔ "
-          "${otherScheduleDate.month}월 ${otherScheduleDate.day}일";
+  /// 실제 요청받은 근무 날짜/시간.
+  /// _hasRequiredData 체크를 통과한 경우에만 build()에서 사용되므로
+  /// 이 시점에는 substituteDateLabel이 항상 유효한 값을 가진다.
+  String get substituteDateTime {
+    final date = substituteDateLabel;
+    final time = substituteTimeLabel;
 
-  DateTime get substituteDate => DateTime(2026, 6, 27);
+    if (date == null || date.isEmpty) {
+      return "-";
+    }
 
-  String get substituteTime => "16:00 - 20:00";
+    if (time == null || time.isEmpty) {
+      return date;
+    }
 
-  String get substituteDateTime =>
-      "${substituteDate.month}월 ${substituteDate.day}일 $substituteTime";
+    return "$date $time";
+  }
 
   //-----------------------------------------
   // Chip 글자
@@ -200,6 +266,15 @@ class EScheduleCard extends StatelessWidget {
     );
 
     if (type == HomeCardType.none) {
+      return const SizedBox.shrink();
+    }
+
+    if (!_hasRequiredData) {
+      debugPrint(
+        "[EScheduleCard] 필요한 데이터(날짜/시간)가 없어 카드를 표시하지 않습니다. "
+            "type: $type, applicantDateLabel: $applicantDateLabel, "
+            "myDateLabel: $myDateLabel, substituteDateLabel: $substituteDateLabel",
+      );
       return const SizedBox.shrink();
     }
 

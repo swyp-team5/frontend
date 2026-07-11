@@ -17,7 +17,9 @@ import '../../common/auth/server_token_manager.dart';
 import '../../common/widgets/BottomNavBar.dart';
 import '../crews/ECrewPage.dart';
 import '../crews/model/ConfirmedSchedule.dart';
+import '../crews/api/WorkChangeTargetsApi.dart';
 import 'api/WorkChangeRequestListApi.dart';
+import 'model/AssignmentResolver.dart';
 
 enum HomeCardType {
   none,
@@ -53,6 +55,18 @@ class _EHomePageState extends State<EHomePage> {
 
   // ✅ 교대 신청 카드용 id (requestType == SHIFT_SWAP)
   int? shiftWorkChangeRequestId;
+
+  // ✅ 대타 신청 카드에 표시할 실제 근무 날짜/시간
+  // (SubstituteRequest 상세 화면의 targetDate/targetTime과 동일한 값)
+  String? substituteDateLabel;
+  String? substituteTimeLabel;
+
+  // ✅ 교대 신청 카드에 표시할 실제 근무 날짜/시간
+  // (ExchangeRequest 상세 화면의 _applicantDate/_applicantTime, _myDate/_myTime과 동일한 값)
+  String? applicantDateLabel;
+  String? applicantTimeLabel;
+  String? myDateLabel;
+  String? myTimeLabel;
 
   // ✅ 카드별로 닫혔는지 여부 (개발용: 6개 타입 전부 보여주기 위해 단일 bool 대신 Set 사용)
   final Set<HomeCardType> hiddenCardTypes = {};
@@ -193,6 +207,14 @@ class _EHomePageState extends State<EHomePage> {
         shiftWorkChangeRequestId = pendingShiftSwap.isNotEmpty
             ? pendingShiftSwap.first.workChangeRequestId
             : null;
+
+        // 요청이 바뀌었으니 이전 카드에 남아있던 날짜/시간 라벨은 일단 초기화
+        substituteDateLabel = null;
+        substituteTimeLabel = null;
+        applicantDateLabel = null;
+        applicantTimeLabel = null;
+        myDateLabel = null;
+        myTimeLabel = null;
       });
 
       debugPrint(
@@ -201,9 +223,147 @@ class _EHomePageState extends State<EHomePage> {
       debugPrint(
         "[EHomePage] 교대 요청 카드용 id 로딩 성공: $shiftWorkChangeRequestId",
       );
+
+      // ✅ 대타 요청 카드에 표시할 실제 근무 날짜/시간 조회
+      if (pendingSubstitute.isNotEmpty) {
+        _loadSubstituteScheduleLabels(
+          workPlaceId: workPlaceId,
+          request: pendingSubstitute.first,
+        );
+      }
+
+      // ✅ 교대 요청 카드에 표시할 실제 근무 날짜/시간 조회
+      if (pendingShiftSwap.isNotEmpty) {
+        _loadShiftScheduleLabels(
+          workPlaceId: workPlaceId,
+          request: pendingShiftSwap.first,
+        );
+      }
     } catch (e) {
       debugPrint("[EHomePage] 요청 카드 로딩 실패: $e");
     }
+  }
+
+  /// SubstituteRequest 상세 화면(_load)과 동일한 방식으로,
+  /// 대타 요청의 실제 근무 날짜/시간을 조회해 EScheduleCard에 표시할
+  /// substituteDateLabel/substituteTimeLabel을 채운다.
+  ///
+  /// SUBSTITUTE 타입은 targetAssignmentId가 없으므로 requestAssignmentId(대타 근무 자체)를
+  /// 그대로 사용한다. (SubstituteRequest._load()의 targetSide 로직과 동일)
+  Future<void> _loadSubstituteScheduleLabels({
+    required int workPlaceId,
+    required dynamic request,
+  }) async {
+    try {
+      final createdAt = DateTime.parse(request.createdAt as String);
+      final (fromDate, toDate) =
+      AssignmentResolver.defaultRangeAround(createdAt);
+
+      final assignmentMap = await AssignmentResolver.buildAssignmentMap(
+        workPlaceId: workPlaceId,
+        fromDate: fromDate,
+        toDate: toDate,
+      );
+
+      final requestSide = request.requestAssignmentId != null
+          ? assignmentMap[request.requestAssignmentId]
+          : null;
+
+      final targetSide = request.targetAssignmentId != null
+          ? assignmentMap[request.targetAssignmentId]
+          : requestSide;
+
+      if (!mounted) return;
+
+      setState(() {
+        substituteDateLabel = targetSide?.dateLabel ?? requestSide?.dateLabel;
+        substituteTimeLabel = targetSide?.timeLabel ?? requestSide?.timeLabel;
+      });
+
+      debugPrint(
+        "[EHomePage] 대타 카드 날짜/시간 로딩 성공: "
+            "$substituteDateLabel $substituteTimeLabel",
+      );
+    } catch (e) {
+      debugPrint("[EHomePage] 대타 카드 날짜/시간 로딩 실패: $e");
+    }
+  }
+
+  /// ExchangeRequest 상세 화면(_fetchAssignmentTimes)과 동일한 방식으로,
+  /// 교대 요청의 신청자 근무 / 내 근무 날짜·시간을 조회해 EScheduleCard에 표시할
+  /// applicantDateLabel/applicantTimeLabel, myDateLabel/myTimeLabel을 채운다.
+  ///
+  /// SHIFT_SWAP은 requestAssignmentId(신청자 근무)와 targetAssignmentId(내 근무)가
+  /// 서로 다른 두 근무이므로 각각 별도로 매핑한다.
+  Future<void> _loadShiftScheduleLabels({
+    required int workPlaceId,
+    required dynamic request,
+  }) async {
+    try {
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final createdAt =
+          DateTime.tryParse(request.createdAt as String) ?? now;
+      final createdDate =
+      DateTime(createdAt.year, createdAt.month, createdAt.day);
+
+      final fromDate = createdDate.isBefore(today) ? today : createdDate;
+      final toDate = fromDate.add(const Duration(days: 60));
+
+      final targets = await WorkChangeTargetsApi.fetchWorkers(
+        workPlaceId: workPlaceId,
+        fromDate: _formatDate(fromDate),
+        toDate: _formatDate(toDate),
+      );
+
+      final Map<int, _AssignmentTimeInfo> assignmentMap = {};
+      for (final day in targets.days) {
+        for (final timeDetail in day.timeDetails) {
+          for (final worker in timeDetail.workers) {
+            assignmentMap[worker.assignmentId] = _AssignmentTimeInfo(
+              date: day.workDate,
+              timeName: timeDetail.timeName,
+              startTime: timeDetail.startTime,
+              closeTime: timeDetail.closeTime,
+            );
+          }
+        }
+      }
+
+      final applicantInfo = request.requestAssignmentId != null
+          ? assignmentMap[request.requestAssignmentId]
+          : null;
+
+      // SUBSTITUTE와 달리 SHIFT_SWAP은 서로 다른 근무를 맞바꾸는 것이므로
+      // targetAssignmentId가 없는 경우에는 폴백하지 않고 그대로 null 처리한다.
+      final myInfo = request.targetAssignmentId != null
+          ? assignmentMap[request.targetAssignmentId]
+          : null;
+
+      if (!mounted) return;
+
+      setState(() {
+        applicantDateLabel = applicantInfo?.dateLabel;
+        applicantTimeLabel = applicantInfo?.timeLabel;
+        myDateLabel = myInfo?.dateLabel;
+        myTimeLabel = myInfo?.timeLabel;
+      });
+
+      debugPrint(
+        "[EHomePage] 교대 카드 날짜/시간 로딩 성공: "
+            "신청자=$applicantDateLabel $applicantTimeLabel, "
+            "나=$myDateLabel $myTimeLabel",
+      );
+    } catch (e) {
+      debugPrint("[EHomePage] 교대 카드 날짜/시간 로딩 실패: $e");
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    final y = date.year.toString().padLeft(4, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    final d = date.day.toString().padLeft(2, '0');
+    return "$y-$m-$d";
   }
 
   Future<void> _loadConfirmedSchedules() async {
@@ -403,6 +563,22 @@ class _EHomePageState extends State<EHomePage> {
                     daysLeft: daysLeft,
                     workPlaceId: workPlaceId,
                     workChangeRequestId: _workChangeRequestIdFor(type),
+                    substituteDateLabel: type == HomeCardType.substituteRequest
+                        ? substituteDateLabel
+                        : null,
+                    substituteTimeLabel: type == HomeCardType.substituteRequest
+                        ? substituteTimeLabel
+                        : null,
+                    applicantDateLabel: type == HomeCardType.shiftRequest
+                        ? applicantDateLabel
+                        : null,
+                    applicantTimeLabel: type == HomeCardType.shiftRequest
+                        ? applicantTimeLabel
+                        : null,
+                    myDateLabel:
+                    type == HomeCardType.shiftRequest ? myDateLabel : null,
+                    myTimeLabel:
+                    type == HomeCardType.shiftRequest ? myTimeLabel : null,
                     onClose: () {
                       setState(() {
                         hiddenCardTypes.add(type);
@@ -435,4 +611,30 @@ class _EHomePageState extends State<EHomePage> {
       ),
     );
   }
+}
+
+/// assignmentId 하나에 대응하는 근무 날짜/시간 정보
+/// (ExchangeRequest.dart의 _AssignmentTimeInfo와 동일한 역할, EHomePage 전용)
+class _AssignmentTimeInfo {
+  final DateTime date;
+  final String timeName;
+  final String startTime;
+  final String closeTime;
+
+  _AssignmentTimeInfo({
+    required this.date,
+    required this.timeName,
+    required this.startTime,
+    required this.closeTime,
+  });
+
+  String get dateLabel => "${date.month}월 ${date.day}일";
+
+  String get timeLabel {
+    final start = _trimSeconds(startTime);
+    final close = _trimSeconds(closeTime);
+    return "$timeName $start~$close";
+  }
+
+  static String _trimSeconds(String t) => t.length >= 5 ? t.substring(0, 5) : t;
 }
