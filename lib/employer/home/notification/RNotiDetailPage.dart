@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 
 import '../../../common/auth/server_token_manager.dart';
+import '../../mypage/api/profile_api.dart';
 import 'RNotiEditPage.dart';
 import 'RNotificationModel.dart';
 import 'RNotificationProvider.dart';
@@ -29,10 +30,14 @@ class RNotiDetailPage extends ConsumerStatefulWidget {
 class _RNotiDetailPageState extends ConsumerState<RNotiDetailPage> {
   late final Dio dio;
   late final NoticeApi noticeApi;
+  late final ProfileApi profileApi;
 
   NoticeModel? notice;
   bool isLoading = true;
   String? error;
+
+  // 작성자(사장님) 프로필 - 공지 상세 조회와 별개로 독립 조회
+  String? ownerProfileImageUrl;
 
   @override
   void initState() {
@@ -41,12 +46,38 @@ class _RNotiDetailPageState extends ConsumerState<RNotiDetailPage> {
     dio = Dio();
     dio.options.baseUrl = "https://chackchack.shop";
     noticeApi = NoticeApi(dio);
+    profileApi = ProfileApi(Dio(BaseOptions(baseUrl: "https://chackchack.shop")));
 
     // 목록에서 받은 데이터로 우선 보여주고, 최신 상세를 다시 조회
     notice = widget.initialNotice;
     isLoading = widget.initialNotice == null;
 
     _fetchDetail();
+    _loadOwnerProfile();
+  }
+
+  /// 사장님(작성자) 프로필 조회 - 공지 상세 조회 성공 여부와 무관하게 독립적으로 동작
+  Future<void> _loadOwnerProfile() async {
+    try {
+      final token = await ServerTokenManager.getValidAccessToken();
+
+      if (token == null) {
+        debugPrint("[RNotiDetailPage] 토큰 없음");
+        return;
+      }
+
+      final profile = await profileApi.getMyProfile(token: token);
+
+      debugPrint("[RNotiDetailPage] 사장님 프로필 조회 성공: $profile");
+
+      if (!mounted) return;
+
+      setState(() {
+        ownerProfileImageUrl = profile["profileImage"]?["imageUrl"];
+      });
+    } catch (e) {
+      debugPrint("🔴 [RNotiDetailPage] 사장님 프로필 조회 실패: $e");
+    }
   }
 
   Future<void> _fetchDetail() async {
@@ -312,13 +343,15 @@ class _RNotiDetailPageState extends ConsumerState<RNotiDetailPage> {
                       /// 작성자
                       Row(
                         children: [
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade300,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
+                          CircleAvatar(
+                            radius: 12,
+                            backgroundColor: Colors.grey.shade300,
+                            backgroundImage: (ownerProfileImageUrl != null &&
+                                ownerProfileImageUrl!.isNotEmpty)
+                                ? NetworkImage(ownerProfileImageUrl!)
+                                : const AssetImage(
+                                "assets/images/profile.png")
+                            as ImageProvider,
                           ),
                           const SizedBox(width: 12),
                           Expanded(

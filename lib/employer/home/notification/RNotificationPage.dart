@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:dio/dio.dart';
+
 import '../../../common/widgets/BottomNavBar.dart';
+import '../../../common/auth/server_token_manager.dart';
 import '../../crews/RCrewPage.dart';
 import '../../mypage/RMyPage.dart';
+import '../../mypage/api/profile_api.dart';
 import '../RHomePage.dart';
 import 'RNotiDetailPage.dart';
 import 'RNotificationProvider.dart';
@@ -22,6 +26,18 @@ class RNotificationPage extends ConsumerStatefulWidget {
 class _RNotificationPageState extends ConsumerState<RNotificationPage> {
   final ScrollController _scrollController = ScrollController();
 
+  // 사장님(작성자) 프로필 - 공지 리스트와 별개로 독립 조회
+  String ownerName = "사장님";
+  String? ownerProfileImageUrl;
+
+  final ProfileApi profileApi = ProfileApi(
+    Dio(
+      BaseOptions(
+        baseUrl: "https://chackchack.shop",
+      ),
+    ),
+  );
+
   @override
   void initState() {
     super.initState();
@@ -29,6 +45,8 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
     Future.microtask(() {
       ref.read(RNotificationProvider.notifier).fetchFirstPage();
     });
+
+    _loadOwnerProfile();
 
     _scrollController.addListener(() {
       if (_scrollController.position.pixels >=
@@ -42,6 +60,31 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
   void dispose() {
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// 사장님(나) 프로필 조회 - 공지 목록 조회 성공 여부와 무관하게 독립적으로 동작
+  Future<void> _loadOwnerProfile() async {
+    try {
+      final token = await ServerTokenManager.getValidAccessToken();
+
+      if (token == null) {
+        debugPrint("[RNotificationPage] 토큰 없음");
+        return;
+      }
+
+      final profile = await profileApi.getMyProfile(token: token);
+
+      debugPrint("[RNotificationPage] 사장님 프로필 조회 성공: $profile");
+
+      if (!mounted) return;
+
+      setState(() {
+        ownerName = profile["name"]?.toString() ?? "사장님";
+        ownerProfileImageUrl = profile["profileImage"]?["imageUrl"];
+      });
+    } catch (e) {
+      debugPrint("🔴 [RNotificationPage] 사장님 프로필 조회 실패: $e");
+    }
   }
 
   /// 서버가 같은 objectKey/URL 경로에 이미지를 덮어쓰는 구조라면,
@@ -171,14 +214,17 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
                                 /// 작성자
                                 Row(
                                   children: [
-                                    Container(
-                                      width: 40,
-                                      height: 40,
-                                      decoration: BoxDecoration(
-                                        color: Colors.grey.shade300,
-                                        borderRadius:
-                                        BorderRadius.circular(12),
-                                      ),
+                                    CircleAvatar(
+                                      radius: 20,
+                                      backgroundColor: Colors.grey.shade300,
+                                      backgroundImage: (ownerProfileImageUrl !=
+                                          null &&
+                                          ownerProfileImageUrl!.isNotEmpty)
+                                          ? NetworkImage(
+                                          ownerProfileImageUrl!)
+                                          : const AssetImage(
+                                          "assets/images/profile.png")
+                                      as ImageProvider,
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
