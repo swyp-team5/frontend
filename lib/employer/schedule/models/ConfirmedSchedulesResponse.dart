@@ -80,11 +80,13 @@ class ConfirmedTimeDetail {
 }
 
 class ConfirmedWorker {
+  final int assignmentId;
   final int memberId;
   final String name;
   final String? profileImageUrl;
 
   ConfirmedWorker({
+    required this.assignmentId,
     required this.memberId,
     required this.name,
     this.profileImageUrl,
@@ -92,6 +94,7 @@ class ConfirmedWorker {
 
   factory ConfirmedWorker.fromJson(Map<String, dynamic> json) {
     return ConfirmedWorker(
+      assignmentId: json['assignmentId'] as int,
       memberId: json['memberId'] as int,
       name: json['name'] as String,
       profileImageUrl: json['profileImageUrl'] as String?,

@@ -42,8 +42,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
 
-      // home: home ?? const AuthGate(),
-      home: OnboardingPage(),
+      home: home ?? const AuthGate(),
+      // home: OnboardingPage(),
     );
   }
 }
