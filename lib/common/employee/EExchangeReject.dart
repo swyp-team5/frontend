@@ -2,8 +2,13 @@ import 'package:chack_chack/employee/home/EHomePage.dart';
 import 'package:flutter/material.dart';
 
 class EExchangeReject extends StatelessWidget {
+  final int workPlaceId;
+  final int workChangeRequestId;
+
   const EExchangeReject({
     super.key,
+    required this.workPlaceId,
+    required this.workChangeRequestId,
   });
 
   @override

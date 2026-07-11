@@ -168,6 +168,7 @@ class _SubstituteRequestState extends State<SubstituteRequest> {
               borderRadius: BorderRadius.circular(22),
             ),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: _WorkInfo(
@@ -293,6 +294,7 @@ class _WorkInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
@@ -302,6 +304,9 @@ class _WorkInfo extends StatelessWidget {
           ),
           child: Text(
             name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
             style: TextStyle(
               color: textColor,
               fontSize: 13,
@@ -312,6 +317,9 @@ class _WorkInfo extends StatelessWidget {
         const SizedBox(height: 12),
         Text(
           date,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
           style: const TextStyle(
             fontSize: 16,
             color: Colors.black,
@@ -321,6 +329,9 @@ class _WorkInfo extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           time,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
           style: const TextStyle(
             fontSize: 14,
             color: Color(0xFF505050),
@@ -341,6 +352,7 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
@@ -350,10 +362,15 @@ class _InfoRow extends StatelessWidget {
             fontWeight: FontWeight.w500,
           ),
         ),
-        const Spacer(),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          ),
         ),
       ],
     );

@@ -278,10 +278,33 @@ class EScheduleCard extends StatelessWidget {
                           onPressed: () {
                             switch (type) {
                               case HomeCardType.shiftRequest:
+                                debugPrint(
+                                  "[EScheduleCard] 자세히 보기 tap (shiftRequest) - "
+                                      "workPlaceId: $workPlaceId, "
+                                      "workChangeRequestId: $workChangeRequestId",
+                                );
+
+                                if (workPlaceId == null || workChangeRequestId == null) {
+                                  debugPrint(
+                                    "[EScheduleCard] id가 없어 이동을 취소합니다. "
+                                        "-> 이 카드를 생성하는 부모 위젯(EHomePage 등)에서 "
+                                        "workPlaceId/workChangeRequestId(교대용)를 넘기고 있는지 확인하세요.",
+                                  );
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text("요청 정보를 불러올 수 없어요."),
+                                    ),
+                                  );
+                                  return;
+                                }
+
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => const ExchangeRequest(),
+                                    builder: (_) => ExchangeRequest(
+                                      workPlaceId: workPlaceId!,
+                                      workChangeRequestId: workChangeRequestId!,
+                                    ),
                                   ),
                                 );
                                 break;

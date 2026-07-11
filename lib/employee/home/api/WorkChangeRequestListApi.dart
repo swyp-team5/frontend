@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 
 import '../../../common/auth/server_token_manager.dart';
 import '../../crews/model/WorkChangeRequestResponse.dart';
@@ -67,6 +68,11 @@ class WorkChangeRequestListApi {
             "Authorization": "Bearer $token",
           },
         ),
+      );
+
+      debugPrint(
+        "[WorkChangeRequestListApi] GET ${response.requestOptions.uri} "
+            "-> ${response.data}",
       );
 
       return WorkChangeRequestPage.fromJson(response.data);

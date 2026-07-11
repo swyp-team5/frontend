@@ -48,8 +48,11 @@ class _EHomePageState extends State<EHomePage> {
   int? workPlaceId;
   String? accessToken; // ✅ 배너용 accessToken 상태 추가
 
-  // ✅ 대타 신청 카드용 id
+  // ✅ 대타 신청 카드용 id (requestType == SUBSTITUTE)
   int? substituteWorkChangeRequestId;
+
+  // ✅ 교대 신청 카드용 id (requestType == SHIFT_SWAP)
+  int? shiftWorkChangeRequestId;
 
   // ✅ 카드별로 닫혔는지 여부 (개발용: 6개 타입 전부 보여주기 위해 단일 bool 대신 Set 사용)
   final Set<HomeCardType> hiddenCardTypes = {};
@@ -80,12 +83,51 @@ class _EHomePageState extends State<EHomePage> {
 
       final List workPlaces = response.data["workPlaces"] ?? [];
 
+      // ✅ 이 계정이 소속된 근무지 전체 목록을 확인하기 위한 로그
+      debugPrint(
+        "[EHomePage] /api/work-places/me 응답 workPlaces(${workPlaces.length}개): "
+            "$workPlaces",
+      );
+
       if (workPlaces.isEmpty) {
         debugPrint("workPlaces empty");
         return;
       }
 
-      final workPlace = workPlaces.first;
+      // ✅ 근무지가 여러 개일 수 있으므로, 무조건 first를 쓰지 않고
+      //    이전에 선택해둔 근무지(selectedWorkPlaceId)가 있으면 그걸 우선 사용한다.
+      final prefs = await SharedPreferences.getInstance();
+      final int? savedWorkPlaceId = prefs.getInt("selectedWorkPlaceId");
+
+      debugPrint(
+        "[EHomePage] SharedPreferences에 저장된 selectedWorkPlaceId: $savedWorkPlaceId",
+      );
+
+      Map<String, dynamic> workPlace;
+
+      if (savedWorkPlaceId != null) {
+        final matched = workPlaces.firstWhere(
+              (w) => w["workPlaceId"] == savedWorkPlaceId,
+          orElse: () => null,
+        );
+
+        if (matched != null) {
+          workPlace = matched as Map<String, dynamic>;
+          debugPrint(
+            "[EHomePage] 저장된 workPlaceId($savedWorkPlaceId)와 일치하는 근무지를 사용합니다.",
+          );
+        } else {
+          // 저장된 id가 더 이상 이 계정의 근무지 목록에 없으면 첫 번째로 폴백
+          workPlace = workPlaces.first as Map<String, dynamic>;
+          debugPrint(
+            "[EHomePage] 저장된 workPlaceId($savedWorkPlaceId)가 목록에 없어 "
+                "첫 번째 근무지로 대체합니다.",
+          );
+        }
+      } else {
+        workPlace = workPlaces.first as Map<String, dynamic>;
+        debugPrint("[EHomePage] 저장된 선택값이 없어 첫 번째 근무지를 사용합니다.");
+      }
 
       final int? id = workPlace["workPlaceId"];
       final String name = (workPlace["name"] ?? "").toString();
@@ -94,8 +136,6 @@ class _EHomePageState extends State<EHomePage> {
         debugPrint("workPlaceId null");
         return;
       }
-
-      final prefs = await SharedPreferences.getInstance();
 
       await prefs.setInt("selectedWorkPlaceId", id);
       await prefs.setString("selectedWorkPlaceName", name);
@@ -110,18 +150,19 @@ class _EHomePageState extends State<EHomePage> {
 
       debugPrint("근무지 로딩 성공: $id / $name");
 
-      // workPlaceId가 확정된 뒤에 대타 신청 카드용 데이터도 로딩
-      _loadSubstituteRequestCard(id);
+      // workPlaceId가 확정된 뒤에 요청 카드용 데이터도 로딩
+      _loadWorkChangeRequestCards(id);
     } catch (e) {
       debugPrint("workPlace 로딩 실패: $e");
     }
   }
 
-  /// 홈 카드(대타 신청)에 표시할 workChangeRequestId를 가져옵니다.
-  /// 아직 처리되지 않은(REQUESTED) 대타(SUBSTITUTE) 요청 중 가장 최근 것을 사용합니다.
-  Future<void> _loadSubstituteRequestCard(int workPlaceId) async {
+  /// 홈 카드(교대 신청 / 대타 신청)에 표시할 workChangeRequestId를 가져옵니다.
+  /// 아직 처리되지 않은(REQUESTED) 요청 목록을 한 번 조회한 뒤,
+  /// SHIFT_SWAP과 SUBSTITUTE 타입별로 가장 최근 것을 각각 골라 저장합니다.
+  Future<void> _loadWorkChangeRequestCards(int workPlaceId) async {
     try {
-      // 이 카드는 수락/거절 액션(RECEIVED)으로 이어지는 카드라서
+      // 이 카드들은 수락/거절 액션(RECEIVED)으로 이어지는 카드라서
       // "내가 받은 요청" 기준으로 조회합니다.
       final result = await _workChangeRequestApi.fetchRequests(
         workPlaceId: workPlaceId,
@@ -131,30 +172,37 @@ class _EHomePageState extends State<EHomePage> {
       );
 
       debugPrint(
-        "[EHomePage] work-change-requests 응답 ${result.content.length}건",
+        "[EHomePage] work-change-requests 응답 ${result.content.length}건 "
+            "(workPlaceId: $workPlaceId, scope: RECEIVED)",
       );
 
-      final pending = result.content.where(
+      final pendingSubstitute = result.content.where(
             (e) => e.requestType == "SUBSTITUTE" && e.status == "REQUESTED",
       );
 
-      if (pending.isEmpty) {
-        debugPrint("[EHomePage] 처리 대기 중인 대타 요청이 없어요.");
-        return;
-      }
-
-      final target = pending.first;
+      final pendingShiftSwap = result.content.where(
+            (e) => e.requestType == "SHIFT_SWAP" && e.status == "REQUESTED",
+      );
 
       if (!mounted) return;
+
       setState(() {
-        substituteWorkChangeRequestId = target.workChangeRequestId;
+        substituteWorkChangeRequestId = pendingSubstitute.isNotEmpty
+            ? pendingSubstitute.first.workChangeRequestId
+            : null;
+        shiftWorkChangeRequestId = pendingShiftSwap.isNotEmpty
+            ? pendingShiftSwap.first.workChangeRequestId
+            : null;
       });
 
       debugPrint(
-        "[EHomePage] 대타 요청 카드용 id 로딩 성공: ${target.workChangeRequestId}",
+        "[EHomePage] 대타 요청 카드용 id 로딩 성공: $substituteWorkChangeRequestId",
+      );
+      debugPrint(
+        "[EHomePage] 교대 요청 카드용 id 로딩 성공: $shiftWorkChangeRequestId",
       );
     } catch (e) {
-      debugPrint("[EHomePage] 대타 요청 카드 로딩 실패: $e");
+      debugPrint("[EHomePage] 요청 카드 로딩 실패: $e");
     }
   }
 
@@ -252,6 +300,20 @@ class _EHomePageState extends State<EHomePage> {
     HomeCardType.ownerWorkRequest,
   ];
 
+  /// 카드 타입에 맞는 workChangeRequestId를 반환합니다.
+  /// shiftRequest -> 교대(SHIFT_SWAP)용 id, substituteRequest -> 대타(SUBSTITUTE)용 id,
+  /// 그 외 타입은 workChangeRequestId가 필요 없으므로 null.
+  int? _workChangeRequestIdFor(HomeCardType type) {
+    switch (type) {
+      case HomeCardType.shiftRequest:
+        return shiftWorkChangeRequestId;
+      case HomeCardType.substituteRequest:
+        return substituteWorkChangeRequestId;
+      default:
+        return null;
+    }
+  }
+
   void _handleDetailTap(HomeCardType type) {
     switch (type) {
       case HomeCardType.weeklySchedule:
@@ -340,7 +402,7 @@ class _EHomePageState extends State<EHomePage> {
                     type: type,
                     daysLeft: daysLeft,
                     workPlaceId: workPlaceId,
-                    workChangeRequestId: substituteWorkChangeRequestId,
+                    workChangeRequestId: _workChangeRequestIdFor(type),
                     onClose: () {
                       setState(() {
                         hiddenCardTypes.add(type);

@@ -1,25 +1,266 @@
 import 'package:flutter/material.dart';
 
 import '../../../common/employee/EExchangeReject.dart';
+import '../../../employer/crews/model/RCrewModel.dart';
+import '../../crews/model/WorkChangeRequestResponse.dart';
+import '../api/WorkChangeRequestListApi.dart';
 import 'ExAcceptionBottomSheet.dart';
+import 'package:dio/dio.dart';
+import '../../../../common/auth/server_token_manager.dart';
 
-class ExchangeRequest extends StatelessWidget {
-  const ExchangeRequest({super.key});
+// TODO: 모델 파일 경로가 다르면 확인 후 수정하세요.
+import '../../crews/api/WorkChangeTargetsApi.dart';
+import '../../crews/model/WorkChangeTargetsResponse.dart';
+
+/// assignmentId 하나에 대응하는 근무 날짜/시간 정보
+class _AssignmentTimeInfo {
+  final DateTime date;
+  final String dayName;
+  final String timeName;
+  final String startTime;
+  final String closeTime;
+
+  _AssignmentTimeInfo({
+    required this.date,
+    required this.dayName,
+    required this.timeName,
+    required this.startTime,
+    required this.closeTime,
+  });
+
+  String get dateLabel => "${date.month}월 ${date.day}일";
+
+  String get timeLabel {
+    final start = _trimSeconds(startTime);
+    final close = _trimSeconds(closeTime);
+    return "$timeName $start~$close";
+  }
+
+  static String _trimSeconds(String t) => t.length >= 5 ? t.substring(0, 5) : t;
+}
+
+class ExchangeRequest extends StatefulWidget {
+  final int workPlaceId;
+  final int workChangeRequestId;
+
+  const ExchangeRequest({
+    super.key,
+    required this.workPlaceId,
+    required this.workChangeRequestId,
+  });
+
+  @override
+  State<ExchangeRequest> createState() => _ExchangeRequestState();
+}
+
+class _ExchangeRequestState extends State<ExchangeRequest> {
+  final WorkChangeRequestListApi _api = WorkChangeRequestListApi();
+  final Dio _dio = Dio(BaseOptions(baseUrl: "https://chackchack.shop"));
+
+  bool _isLoading = true;
+  String? _error;
+
+  String? _applicantName;
+  String? _reason;
+
+  // 신청자(왼쪽) / 나(오른쪽) 근무 날짜·시간
+  String? _applicantDate;
+  String? _applicantTime;
+  String? _myDate;
+  String? _myTime;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      // 요청 상세와 크루(이름 매핑용) 목록을 함께 불러온다.
+      // Future.wait([...])로 서로 다른 타입의 Future를 한 리스트에 담으면
+      // 리스트의 타입이 공통 상위 타입인 Object로 통일되어버려서
+      // detail.requesterMemberId, detail.reason 같은 getter를 찾지 못하는
+      // 컴파일 오류가 발생한다.
+      // 대신 각 Future를 먼저 "시작"만 해두고(동시 실행은 그대로 유지됨)
+      // 개별 변수에 담아 각각 await하면 원래 타입이 그대로 보존된다.
+      final requestFuture = _api.fetchRequestById(
+        workPlaceId: widget.workPlaceId,
+        workChangeRequestId: widget.workChangeRequestId,
+        scope: "RECEIVED",
+      );
+      final crewNamesFuture = _fetchCrewNames();
+
+      final detail = await requestFuture;
+      final crewNames = await crewNamesFuture;
+
+      if (!mounted) return;
+
+      if (detail == null) {
+        setState(() {
+          _error = "요청 정보를 찾을 수 없어요.";
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // requestAssignmentId / targetAssignmentId에 해당하는 날짜·시간을 찾는다.
+      final assignmentTimes = await _fetchAssignmentTimes(detail);
+
+      if (!mounted) return;
+
+      final applicantInfo =
+      detail.requestAssignmentId != null ? assignmentTimes[detail.requestAssignmentId] : null;
+
+      // SUBSTITUTE(대타) 요청은 서로 다른 두 근무를 맞바꾸는 게 아니라
+      // 신청자의 근무 하나가 그대로 나에게 넘어오는 방식이라 targetAssignmentId가 없다.
+      // 이 경우 오른쪽("나")에도 같은 근무 정보를 보여줘야
+      // "이 근무가 내게 배정됩니다"라는 의미가 자연스럽게 전달된다.
+      final myInfo = detail.targetAssignmentId != null
+          ? assignmentTimes[detail.targetAssignmentId]
+          : (detail.requestType == "SUBSTITUTE" ? applicantInfo : null);
+
+      setState(() {
+        // 신청자 이름 자리에는 오직 이름만
+        _applicantName = crewNames[detail.requesterMemberId] ??
+            "회원 ${detail.requesterMemberId}";
+        // 사유 자리에는 오직 사유만
+        _reason = detail.reason.isNotEmpty ? detail.reason : "사유 없음";
+
+        _applicantDate = applicantInfo?.dateLabel ?? "-";
+        _applicantTime = applicantInfo?.timeLabel ?? "-";
+        _myDate = myInfo?.dateLabel ?? "-";
+        _myTime = myInfo?.timeLabel ?? "-";
+
+        _isLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = "요청 정보를 불러오지 못했어요.";
+        _isLoading = false;
+      });
+    }
+  }
+
+  /// memberId -> name 매핑
+  Future<Map<int, String>> _fetchCrewNames() async {
+    final Map<int, String> names = {};
+    try {
+      final token = await ServerTokenManager.getValidAccessToken();
+      if (token == null) return names;
+
+      final response = await _dio.get(
+        "/api/work-places/${widget.workPlaceId}/crews",
+        options: Options(
+          headers: {"Authorization": "Bearer $token"},
+        ),
+      );
+
+      final List list = response.data["crews"] ?? [];
+      final crews = list.map((e) => RCrewModel.fromJson(e)).toList();
+
+      for (final crew in crews) {
+        names[crew.memberId] = crew.name;
+      }
+    } catch (_) {
+      // 이름 매핑 실패해도 화면 자체는 보여줘야 하므로 조용히 무시.
+    }
+    return names;
+  }
+
+  /// requestAssignmentId / targetAssignmentId에 해당하는 날짜·시간을 찾기 위해
+  /// 확정 스케줄(work-change-targets)을 조회하고 assignmentId -> 시간 정보로 매핑한다.
+  ///
+  /// 정확한 날짜를 미리 알 수 없으므로, 요청 생성일(createdAt) 기준
+  /// 앞뒤로 넉넉한 기간을 조회한다. 필요하면 범위를 프로젝트 상황에 맞게 조정하세요.
+  Future<Map<int, _AssignmentTimeInfo>> _fetchAssignmentTimes(
+      WorkChangeRequestResponse detail,
+      ) async {
+    final Map<int, _AssignmentTimeInfo> map = {};
+
+    // 둘 다 없으면 조회할 필요가 없다.
+    if (detail.requestAssignmentId == null && detail.targetAssignmentId == null) {
+      return map;
+    }
+
+    try {
+      // 서버 정책: fromDate는 오늘 이전일 수 없다
+      // ("교대/대타 대상 근무는 오늘 이후의 확정 근무만 조회할 수 있습니다.")
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+      final createdAt = DateTime.tryParse(detail.createdAt) ?? now;
+      final createdDate = DateTime(createdAt.year, createdAt.month, createdAt.day);
+
+      // 오늘과 요청 생성일 중 더 이른 날짜를 fromDate로 쓰되, 오늘 이전으로는 내려가지 않는다.
+      final fromDate = createdDate.isBefore(today) ? today : createdDate;
+      final toDate = fromDate.add(const Duration(days: 60));
+
+      debugPrint(
+        "[ExchangeRequest] fetchAssignmentTimes 요청: "
+            "workPlaceId=${widget.workPlaceId}, "
+            "fromDate=${_formatDate(fromDate)}, toDate=${_formatDate(toDate)}, "
+            "requestAssignmentId=${detail.requestAssignmentId}, "
+            "targetAssignmentId=${detail.targetAssignmentId}",
+      );
+
+      final targets = await WorkChangeTargetsApi.fetchWorkers(
+        workPlaceId: widget.workPlaceId,
+        fromDate: _formatDate(fromDate),
+        toDate: _formatDate(toDate),
+      );
+
+      debugPrint(
+        "[ExchangeRequest] fetchAssignmentTimes 응답: days=${targets.days.length}개",
+      );
+
+      for (final day in targets.days) {
+        for (final timeDetail in day.timeDetails) {
+          for (final worker in timeDetail.workers) {
+            debugPrint(
+              "[ExchangeRequest]  - assignmentId=${worker.assignmentId}, "
+                  "date=${day.workDate}, time=${timeDetail.timeName}",
+            );
+            map[worker.assignmentId] = _AssignmentTimeInfo(
+              date: day.workDate,
+              dayName: day.dayName,
+              timeName: timeDetail.timeName,
+              startTime: timeDetail.startTime,
+              closeTime: timeDetail.closeTime,
+            );
+          }
+        }
+      }
+    } on DioException catch (e) {
+      debugPrint(
+        "[ExchangeRequest] fetchAssignmentTimes DioException: "
+            "status=${e.response?.statusCode}, data=${e.response?.data}, "
+            "requestUri=${e.requestOptions.uri}",
+      );
+      // 시간 정보 조회 실패해도 화면 자체는 보여줘야 하므로 화면은 그대로 진행.
+    } catch (e, st) {
+      debugPrint("[ExchangeRequest] fetchAssignmentTimes 실패: $e");
+      debugPrint("$st");
+      // 시간 정보 조회 실패해도 화면 자체는 보여줘야 하므로 화면은 그대로 진행.
+    }
+
+    return map;
+  }
+
+  String _formatDate(DateTime date) {
+    final y = date.year.toString().padLeft(4, '0');
+    final m = date.month.toString().padLeft(2, '0');
+    final d = date.day.toString().padLeft(2, '0');
+    return "$y-$m-$d";
+  }
 
   @override
   Widget build(BuildContext context) {
-    // 더미 데이터
-    const applicant = "윤서준";
-    const myName = "나";
-
-    const applicantDate = "7월 9일";
-    const applicantTime = "13:00 - 18:00";
-
-    const myDate = "7월 8일";
-    const myTime = "13:00 - 18:00";
-
-    const reason = "기타 / 동아리 면접";
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -32,11 +273,10 @@ class ExchangeRequest extends StatelessWidget {
                 vertical: 30,
               ),
               child: SizedBox(
-                height: 24, // 아이콘 높이 맞추기용
+                height: 24,
                 child: Stack(
                   alignment: Alignment.center,
                   children: [
-                    /// 왼쪽 뒤로가기
                     Positioned(
                       left: 0,
                       child: GestureDetector(
@@ -47,8 +287,6 @@ class ExchangeRequest extends StatelessWidget {
                         ),
                       ),
                     ),
-
-                    /// 완전 가운데 타이틀
                     const Center(
                       child: Text(
                         "교대 신청 내역",
@@ -64,7 +302,11 @@ class ExchangeRequest extends StatelessWidget {
             ),
 
             Expanded(
-              child: Padding(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _error != null
+                  ? Center(child: Text(_error!))
+                  : Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 30),
                 child: Column(
                   children: [
@@ -73,7 +315,7 @@ class ExchangeRequest extends StatelessWidget {
                     /// 교대 카드
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 30,
+                        horizontal: 20,
                         vertical: 30,
                       ),
                       decoration: BoxDecoration(
@@ -84,30 +326,30 @@ class ExchangeRequest extends StatelessWidget {
                         children: [
                           Expanded(
                             child: _WorkInfo(
-                              name: applicant,
+                              name: _applicantName ?? "",
                               badgeColor: Colors.white,
                               textColor: const Color(0xff00315F),
-                              date: applicantDate,
-                              time: applicantTime,
+                              date: _applicantDate ?? "-",
+                              time: _applicantTime ?? "-",
                             ),
                           ),
 
                           const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 14),
+                            padding: EdgeInsets.symmetric(horizontal: 10),
                             child: Icon(
                               Icons.swap_horiz,
                               color: Color(0xff8F8F8F),
-                              size: 34,
+                              size: 30,
                             ),
                           ),
 
                           Expanded(
                             child: _WorkInfo(
-                              name: myName,
+                              name: "나",
                               badgeColor: const Color(0xffE6F3FF),
                               textColor: const Color(0xff0063BF),
-                              date: myDate,
-                              time: myTime,
+                              date: _myDate ?? "-",
+                              time: _myTime ?? "-",
                             ),
                           ),
                         ],
@@ -116,11 +358,11 @@ class ExchangeRequest extends StatelessWidget {
 
                     const SizedBox(height: 30),
 
-                    _InfoRow(title: "교대 신청자", value: applicant),
+                    _InfoRow(title: "교대 신청자", value: _applicantName ?? ""),
 
                     const SizedBox(height: 30),
 
-                    _InfoRow(title: "교대 신청 사유", value: reason),
+                    _InfoRow(title: "교대 신청 사유", value: _reason ?? ""),
 
                     const Spacer(),
 
@@ -137,7 +379,11 @@ class ExchangeRequest extends StatelessWidget {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => const EExchangeReject(),
+                                    builder: (_) => EExchangeReject(
+                                      workPlaceId: widget.workPlaceId,
+                                      workChangeRequestId:
+                                      widget.workChangeRequestId,
+                                    ),
                                   ),
                                 );
                               },
@@ -177,6 +423,7 @@ class ExchangeRequest extends StatelessWidget {
                                       Navigator.pop(context);
 
                                       // TODO: 교대 수락 API 호출
+                                      // widget.workPlaceId, widget.workChangeRequestId 사용
                                     },
                                   ),
                                 );
@@ -225,6 +472,7 @@ class _WorkInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Container(
           padding: const EdgeInsets.symmetric(
@@ -237,6 +485,8 @@ class _WorkInfo extends StatelessWidget {
           ),
           child: Text(
             name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: TextStyle(
               color: textColor,
               fontSize: 13,
@@ -247,6 +497,9 @@ class _WorkInfo extends StatelessWidget {
         const SizedBox(height: 12),
         Text(
           date,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
           style: const TextStyle(
             fontSize: 16,
             color: Colors.black,
@@ -256,6 +509,9 @@ class _WorkInfo extends StatelessWidget {
         const SizedBox(height: 8),
         Text(
           time,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
           style: const TextStyle(
             fontSize: 14,
             color: Color(0xFF505050),
@@ -279,6 +535,7 @@ class _InfoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
@@ -288,16 +545,20 @@ class _InfoRow extends StatelessWidget {
             fontWeight: FontWeight.w500,
           ),
         ),
-        const Spacer(),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
       ],
     );
   }
-
 }

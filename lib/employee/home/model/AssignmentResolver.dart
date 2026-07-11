@@ -66,15 +66,21 @@ class AssignmentResolver {
     return hhmmss.length >= 5 ? hhmmss.substring(0, 5) : hhmmss;
   }
 
-  /// createdAt 기준 앞뒤로 넉넉한 기본 조회 범위를 만들어줍니다.
-  /// (실제 근무일을 모르니 넓게 잡음 — 필요시 프로젝트 상황에 맞게 조정하세요)
+  /// createdAt 기준 기본 조회 범위를 만들어줍니다.
+  ///
+  /// 서버 정책: "교대/대타 대상 근무는 오늘 이후의 확정 근무만 조회할 수 있습니다."
+  /// 즉 fromDate는 절대 오늘 이전으로 내려갈 수 없다. createdAt이 오늘보다
+  /// 과거여도(예: 어제 생성된 요청을 오늘 조회) fromDate는 오늘로 고정한다.
   static (String fromDate, String toDate) defaultRangeAround(
       DateTime pivot, {
-        int daysBefore = 14,
         int daysAfter = 60,
       }) {
-    final from = pivot.subtract(Duration(days: daysBefore));
-    final to = pivot.add(Duration(days: daysAfter));
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final pivotDate = DateTime(pivot.year, pivot.month, pivot.day);
+
+    final from = pivotDate.isBefore(today) ? today : pivotDate;
+    final to = from.add(Duration(days: daysAfter));
     return (_formatDate(from), _formatDate(to));
   }
 
