@@ -34,8 +34,11 @@ class _RCrewPageState extends State<RCrewPage> {
   String ownerName = "사장님";
   String? ownerProfileImageUrl;
 
+  int? invitationId;
   String inviteCode = "";
-  String inviteUrl = "";
+  String inviteUrl = "";       // 커스텀 스킴 (chack-chack://crew-invitations/{code}) - 레거시/내부용
+  String inviteShareUrl = "";  // 실제 공유·복사에 쓰는 https App Links URL
+  DateTime? inviteExpiresAt;
   bool isCreatingInvitation = false;
 
   int? workPlaceId;
@@ -79,9 +82,16 @@ class _RCrewPageState extends State<RCrewPage> {
 
       debugPrint(response.data.toString());
 
+      final data = response.data;
+
       setState(() {
-        inviteCode = response.data["inviteCode"] ?? "";
-        inviteUrl = response.data["inviteUrl"] ?? "";
+        invitationId = data["invitationId"];
+        inviteCode = data["inviteCode"] ?? "";
+        inviteUrl = data["inviteUrl"] ?? "";
+        inviteShareUrl = data["inviteShareUrl"] ?? "";
+        inviteExpiresAt = data["expiresAt"] != null
+            ? DateTime.tryParse(data["expiresAt"])
+            : null;
       });
     } on DioException catch (e) {
       debugPrint(e.response?.data.toString());
@@ -192,7 +202,7 @@ class _RCrewPageState extends State<RCrewPage> {
 
                 const SizedBox(height: 20),
 
-                /// 초대 링크
+                /// 초대 링크 (공유용 https URL 사용 - 안드로이드/iOS App Links로 앱이 바로 열림)
                 const Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -218,7 +228,7 @@ class _RCrewPageState extends State<RCrewPage> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Text(
-                    inviteUrl,
+                    inviteShareUrl,
                     style: const TextStyle(
                       fontSize: 15,
                       color: Colors.black54,
@@ -269,10 +279,10 @@ class _RCrewPageState extends State<RCrewPage> {
                   height: 56,
                   child: ElevatedButton(
                     onPressed: () async {
-                      // TODO: 링크 및 코드 복사
+                      // 링크(공유용 https URL) 및 코드 복사
                       await Clipboard.setData(
                         ClipboardData(
-                          text: "$inviteUrl\n$inviteCode",
+                          text: "$inviteShareUrl\n$inviteCode",
                         ),
                       );
 
