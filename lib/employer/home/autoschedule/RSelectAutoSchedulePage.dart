@@ -26,6 +26,7 @@ class _RSelectAutoSchedulePageState extends State<RSelectAutoSchedulePage> {
   int selectedScenario = 0;
 
   bool _isLoading = true;
+  bool _isResetting = false;
   String? _error;
   List<ScheduleScenario> scenarios = [];
 
@@ -175,6 +176,59 @@ class _RSelectAutoSchedulePageState extends State<RSelectAutoSchedulePage> {
     }
   }
 
+  Future<void> _onResetConditionsTap() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("스케줄 조건 초기화"),
+        content: const Text("설정된 스케줄 조건을 초기화할까요?\n이 작업은 되돌릴 수 없어요."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("취소"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              "초기화",
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+    if (!mounted) return;
+
+    setState(() => _isResetting = true);
+
+    try {
+      await ScheduleConditionsApi.resetConditions(
+        workPlaceId: widget.preview.workPlaceId,
+        weekScheduleId: widget.preview.weekScheduleId,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("스케줄 조건이 초기화되었어요.")),
+      );
+
+      // 초기화 후 최신 상태로 다시 불러오기
+      await _load();
+    } catch (e) {
+      debugPrint("스케줄 조건 초기화 실패: $e");
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) setState(() => _isResetting = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final nextMonday = weekDays.first;
@@ -185,17 +239,44 @@ class _RSelectAutoSchedulePageState extends State<RSelectAutoSchedulePage> {
       body: SafeArea(
         child: Column(
           children: [
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 30, 20, 0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  "스케줄 선택",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 30, 20, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "스케줄 선택",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
+                  TextButton(
+                    onPressed: _isResetting ? null : _onResetConditionsTap,
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 0),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    child: _isResetting
+                        ? const SizedBox(
+                      width: 14,
+                      height: 14,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.red,
+                      ),
+                    )
+                        : const Text(
+                      "스케줄 조건 초기화",
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
 

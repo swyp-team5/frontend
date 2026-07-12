@@ -42,4 +42,49 @@ class ScheduleConditionsApi {
       rethrow;
     }
   }
+
+  /// 스케줄 조건 초기화
+  /// DELETE /api/work-places/{workPlaceId}/schedule-conditions/{weekScheduleId}
+  /// 성공 시 204 No Content
+  static Future<void> resetConditions({
+    required int workPlaceId,
+    required int weekScheduleId,
+  }) async {
+    final token = await ServerTokenManager.getAccessToken();
+
+    if (token == null || token.isEmpty) {
+      throw Exception("인증이 필요합니다. 다시 로그인해주세요.");
+    }
+
+    final url =
+        "$_baseUrl/api/work-places/$workPlaceId/schedule-conditions/$weekScheduleId";
+
+    debugPrint("📤 [schedule-conditions DELETE] 요청 URL: $url");
+
+    final dio = Dio();
+
+    try {
+      final res = await dio.delete(
+        url,
+        options: Options(headers: {"Authorization": "Bearer $token"}),
+      );
+
+      debugPrint(
+          "✅ [schedule-conditions DELETE] 성공 — statusCode: ${res.statusCode}");
+
+      if (res.statusCode != 204) {
+        throw Exception("스케줄 조건 초기화 실패 (${res.statusCode})");
+      }
+    } on DioException catch (e) {
+      debugPrint(
+          "🔴 [schedule-conditions DELETE] 실패 — statusCode: ${e.response?.statusCode}");
+      debugPrint("🔴 [schedule-conditions DELETE] 실패 — 응답 body: ${e.response?.data}");
+
+      final message =
+      e.response?.data is Map ? e.response?.data["message"] : null;
+      throw Exception(
+        message ?? "스케줄 조건 초기화 실패 (${e.response?.statusCode})",
+      );
+    }
+  }
 }
