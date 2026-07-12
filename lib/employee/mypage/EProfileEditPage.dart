@@ -94,6 +94,38 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
     }
   }
 
+  Future<void> deleteProfileImage() async {
+    try {
+      final token = await ServerTokenManager.getAccessToken();
+
+      if (token == null) {
+        throw Exception("로그인이 필요합니다.");
+      }
+
+      await profileApi.deleteProfileImage(
+        token: token,
+      );
+
+      final profile = await profileApi.getMyProfile(
+        token: token,
+      );
+
+      profileImageUrl = profile["profileImage"]?["imageUrl"];
+
+      if (!mounted) return;
+
+      setState(() {});
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("프로필 이미지가 삭제되었습니다."),
+        ),
+      );
+    } catch (e) {
+      debugPrint(e.toString());
+    }
+  }
+
   /// 프로필 이미지 선택
   Future<void> _showGalleryBottomSheet() async {
     final PermissionState ps =
@@ -714,10 +746,9 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
                                 ],
                               ),
                             );
-                            //
-                            // if (result == true) {
-                            //   await deleteProfileImage();
-                            // }
+                            if (result == true) {
+                              await deleteProfileImage();
+                            }
                           },
                           child: Container(
                             width: 26,
