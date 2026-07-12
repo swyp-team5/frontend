@@ -4,9 +4,11 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 // 포그라운드에서 FCM 메시지를 받았을 때 실제 알림 배너를 띄워주는 서비스.
 // 안드로이드는 앱이 포그라운드일 때 FCM notification payload를 자동으로 배너로 띄워주지 않기 때문에,
 // flutter_local_notifications로 직접 시스템 알림을 만들어줘야 한다.
+// iOS도 DarwinInitializationSettings를 넘겨주지 않으면
+// "iOS settings must be set when targeting iOS platform" 에러가 발생한다.
 class FcmNotificationService {
   static final FlutterLocalNotificationsPlugin _plugin =
-      FlutterLocalNotificationsPlugin();
+  FlutterLocalNotificationsPlugin();
 
   // AndroidManifest의 default_notification_channel_id와 반드시 일치시켜야 한다.
   static const _channel = AndroidNotificationChannel(
@@ -18,14 +20,24 @@ class FcmNotificationService {
 
   static Future<void> initialize() async {
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const initSettings = InitializationSettings(android: androidInit);
+
+    const iosInit = DarwinInitializationSettings(
+      requestAlertPermission: true,
+      requestBadgePermission: true,
+      requestSoundPermission: true,
+    );
+
+    const initSettings = InitializationSettings(
+      android: androidInit,
+      iOS: iosInit,
+    );
 
     await _plugin.initialize(initSettings);
 
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(_channel);
+    final androidPlugin = _plugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+
+    await androidPlugin?.createNotificationChannel(_channel);
   }
 
   static Future<void> showFromRemoteMessage(RemoteMessage message) async {
@@ -44,6 +56,7 @@ class FcmNotificationService {
           importance: Importance.high,
           priority: Priority.high,
         ),
+        iOS: const DarwinNotificationDetails(),
       ),
     );
   }

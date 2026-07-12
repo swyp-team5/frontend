@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 
 import 'package:chack_chack/employer/mypage/RMyPage.dart';
 import 'package:chack_chack/employer/schedule/RMainSchedulePage.dart';
@@ -36,8 +37,8 @@ class _RCrewPageState extends State<RCrewPage> {
 
   int? invitationId;
   String inviteCode = "";
-  String inviteUrl = "";       // 커스텀 스킴 (chack-chack://crew-invitations/{code}) - 레거시/내부용
-  String inviteShareUrl = "";  // 실제 공유·복사에 쓰는 https App Links URL
+  String inviteUrl = "";       // 커스텀 스킴 (chack-chack://crew-invitations/{code}) - iOS용
+  String inviteShareUrl = "";  // https App Links URL - Android용
   DateTime? inviteExpiresAt;
   bool isCreatingInvitation = false;
 
@@ -50,6 +51,16 @@ class _RCrewPageState extends State<RCrewPage> {
       ),
     ),
   );
+
+  /// 플랫폼별로 공유/복사에 사용할 초대 링크를 결정한다.
+  /// - iOS: 커스텀 스킴(inviteUrl)
+  /// - Android 및 그 외: https App Links(inviteShareUrl)
+  String get _platformInviteUrl {
+    if (Platform.isIOS) {
+      return inviteUrl;
+    }
+    return inviteShareUrl;
+  }
 
   Future<void> _createCrewInvitation() async {
     try {
@@ -202,7 +213,7 @@ class _RCrewPageState extends State<RCrewPage> {
 
                 const SizedBox(height: 20),
 
-                /// 초대 링크 (공유용 https URL 사용 - 안드로이드/iOS App Links로 앱이 바로 열림)
+                /// 초대 링크 (플랫폼별: iOS는 커스텀 스킴, Android는 https App Links)
                 const Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -228,7 +239,7 @@ class _RCrewPageState extends State<RCrewPage> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Text(
-                    inviteShareUrl,
+                    _platformInviteUrl,
                     style: const TextStyle(
                       fontSize: 15,
                       color: Colors.black54,
@@ -279,10 +290,10 @@ class _RCrewPageState extends State<RCrewPage> {
                   height: 56,
                   child: ElevatedButton(
                     onPressed: () async {
-                      // 링크(공유용 https URL) 및 코드 복사
+                      // 링크(플랫폼별 URL) 및 코드 복사
                       await Clipboard.setData(
                         ClipboardData(
-                          text: "$inviteShareUrl\n$inviteCode",
+                          text: "$_platformInviteUrl\n$inviteCode",
                         ),
                       );
 
