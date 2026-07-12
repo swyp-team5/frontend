@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:chack_chack/common/employer/RAutoScheduling.dart';
 import 'package:chack_chack/common/fcm/AlarmListPage.dart';
+import 'package:chack_chack/common/fcm/providers/AlarmProvider.dart';
 import 'package:chack_chack/employer/home/notification/RNotificationPage.dart';
 import 'package:chack_chack/employer/home/schedule/RMakingSchedulePage.dart';
 import 'package:chack_chack/employer/home/schedule/RRecentSchedulePage.dart';
@@ -15,6 +16,7 @@ import 'package:chack_chack/employer/home/widgets/RScheduleCard.dart';
 import 'package:chack_chack/employer/home/widgets/RTodayWorkCard.dart';
 import 'package:chack_chack/employer/home/widgets/RWorkChangeRequestListPage.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../../common/auth/server_token_manager.dart';
 import '../../common/workplace/selected_work_place_storage.dart';
@@ -606,6 +608,13 @@ class _RHomePageState extends State<RHomePage> {
   void initState() {
     super.initState();
     _init();
+
+    // 홈 진입 시 알림함을 한 번 조회해서, 종 아이콘에 미확인 배지를 띄울 수 있게 한다.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ProviderScope.containerOf(context, listen: false)
+          .read(alarmListProvider.notifier)
+          .fetchFirstPage();
+    });
   }
 
   /// ✅ _init()은 이 하나만 유지 (중복 제거)
@@ -714,17 +723,25 @@ class _RHomePageState extends State<RHomePage> {
           child: Column(
             children: [
               /// Header
-              RHomeHeader(
-                storeName: selectedStoreName,
-                onStoreTap: () {
-                  _RshowStoreBottomSheet(context);
-                },
-                onNotificationTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const AlarmListPage(),
-                    ),
+              Consumer(
+                builder: (context, ref, _) {
+                  final hasUnread = ref.watch(
+                    alarmListProvider.select((s) => s.hasUnread),
+                  );
+                  return RHomeHeader(
+                    storeName: selectedStoreName,
+                    hasUnread: hasUnread,
+                    onStoreTap: () {
+                      _RshowStoreBottomSheet(context);
+                    },
+                    onNotificationTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AlarmListPage(),
+                        ),
+                      );
+                    },
                   );
                 },
               ),

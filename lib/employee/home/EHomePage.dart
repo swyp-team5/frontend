@@ -8,7 +8,9 @@ import 'package:chack_chack/employee/home/widgets/EScheduleCard.dart';
 import 'package:chack_chack/employee/mypage/EMyPage.dart';
 import 'package:chack_chack/employee/schedule/EMainSchedulePage.dart';
 import 'package:chack_chack/common/fcm/AlarmListPage.dart';
+import 'package:chack_chack/common/fcm/providers/AlarmProvider.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -424,6 +426,13 @@ class _EHomePageState extends State<EHomePage> {
     _checkTokens();
     _loadMyWorkPlace();
     _loadConfirmedSchedules();
+
+    // 홈 진입 시 알림함을 한 번 조회해서, 종 아이콘에 미확인 배지를 띄울 수 있게 한다.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ProviderScope.containerOf(context, listen: false)
+          .read(alarmListProvider.notifier)
+          .fetchFirstPage();
+    });
   }
 
   /// 토큰 저장 여부 확인 로그
@@ -531,14 +540,22 @@ class _EHomePageState extends State<EHomePage> {
           child: Column(
             children: [
               /// Header
-              EHomeHeader(
-                workPlaceName: workPlaceName,
-                onNotificationTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const AlarmListPage(),
-                    ),
+              Consumer(
+                builder: (context, ref, _) {
+                  final hasUnread = ref.watch(
+                    alarmListProvider.select((s) => s.hasUnread),
+                  );
+                  return EHomeHeader(
+                    workPlaceName: workPlaceName,
+                    hasUnread: hasUnread,
+                    onNotificationTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AlarmListPage(),
+                        ),
+                      );
+                    },
                   );
                 },
               ),

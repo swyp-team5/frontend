@@ -5,11 +5,13 @@ import 'package:flutter/material.dart';
 class EHomeHeader extends StatelessWidget {
   final String workPlaceName;
   final VoidCallback? onNotificationTap;
+  final bool hasUnread;
 
   const EHomeHeader({
     super.key,
     required this.workPlaceName,
     this.onNotificationTap,
+    this.hasUnread = false,
   });
 
   @override
@@ -62,7 +64,25 @@ class EHomeHeader extends StatelessWidget {
             // const SizedBox(width: 10),
             GestureDetector(
               onTap: onNotificationTap,
-              child: const Icon(Icons.notifications_none, size: 28),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(Icons.notifications_none, size: 28),
+                  if (hasUnread)
+                    Positioned(
+                      right: -1,
+                      top: -1,
+                      child: Container(
+                        width: 9,
+                        height: 9,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFFF3B30),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ],
         ),
