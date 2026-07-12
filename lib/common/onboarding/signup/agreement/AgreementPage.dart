@@ -123,27 +123,22 @@ class _AgreementPageState extends ConsumerState<AgreementPage> {
               ),
             ),
           ),
-          IconButton(
-            // content가 없는 약관(예: "만 14세 이상입니다")은 상세보기 자체가 없으므로 비활성화한다.
-            onPressed: term.content == null
-                ? null
-                : () {
-              showModalBottomSheet(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (_) => TermsDetailBottomSheet(
-                  title: term.title,
-                  content: term.content!,
-                ),
-              );
-            },
-            icon: Icon(
-              Icons.arrow_forward_ios,
-              size: 18,
-              color: term.content == null ? const Color(0xFFD9D9D9) : null,
+          // content가 없는 약관(예: "만 14세 이상입니다")은 상세보기 자체가 없으므로 버튼을 아예 감춘다.
+          if (term.content != null)
+            IconButton(
+              onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  backgroundColor: Colors.transparent,
+                  builder: (_) => TermsDetailBottomSheet(
+                    title: term.title,
+                    content: term.content!,
+                  ),
+                );
+              },
+              icon: const Icon(Icons.arrow_forward_ios, size: 18),
             ),
-          ),
         ],
       ),
     );
