@@ -317,7 +317,7 @@ class _RMyPageState extends State<RMyPage> {
 
       /// 공통 BottomNavBar 적용
       bottomNavigationBar: BottomNavBar(
-        currentIndex: 0,
+        currentIndex: 3,
         onTap: (index) {
           if (index == 0) {
             Navigator.push(
@@ -337,7 +337,7 @@ class _RMyPageState extends State<RMyPage> {
                     RMainSchedulePage(workPlaceId: selectedWorkPlaceId!),
               ),
             );
-          } else if (index == 4) {
+          } else if (index == 3) {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (_) => const RMyPage()),

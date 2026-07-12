@@ -106,8 +106,8 @@ class ECrewDetailPage extends StatelessWidget {
                     title: "개인 정보",
                     children: [
                       _row("이름", crew.name),
-                      const Divider(color: Color(0xFFF1F1F5),),
-                      _row("휴대폰 번호", crew.phoneNumber),
+                      // const Divider(color: Color(0xFFF1F1F5),),
+                      // _row("휴대폰 번호", crew.phoneNumber),
                     ],
                   ),
                 ]
