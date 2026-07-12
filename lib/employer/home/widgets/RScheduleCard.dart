@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import '../RHomePage.dart';
+import '../autoschedule/api/ScheduleConditionsApi.dart';
 import 'RSubmitStatus.dart';
 
-class RScheduleCard extends StatelessWidget {
+class RScheduleCard extends StatefulWidget {
   final HomeCardType type;
   final int daysLeft;
   final VoidCallback? onMakeScheduleTap;
@@ -10,6 +11,7 @@ class RScheduleCard extends StatelessWidget {
   final int? workPlaceId;
   final int? weekScheduleId;
   final int? notSubmittedCount; // ✅ 추가: 서버에서 받아온 미제출 인원 수
+  final VoidCallback? onResetConditions; // ✅ 추가: 조건 초기화 성공 후 부모에서 갱신하도록 알림
 
   const RScheduleCard({
     super.key,
@@ -20,10 +22,18 @@ class RScheduleCard extends StatelessWidget {
     this.workPlaceId,
     this.weekScheduleId,
     this.notSubmittedCount, // ✅ 추가
+    this.onResetConditions, // ✅ 추가
   });
 
+  @override
+  State<RScheduleCard> createState() => _RScheduleCardState();
+}
+
+class _RScheduleCardState extends State<RScheduleCard> {
+  bool _isResetting = false;
+
   String get _imagePath {
-    switch (type) {
+    switch (widget.type) {
       case HomeCardType.weeklySchedule:
         return "assets/images/r_weeklySchedule_card.png";
 
@@ -39,7 +49,7 @@ class RScheduleCard extends StatelessWidget {
   }
 
   String get _buttonText {
-    switch (type) {
+    switch (widget.type) {
       case HomeCardType.weeklySchedule:
         return "스케줄 만들기";
 
@@ -72,9 +82,72 @@ class RScheduleCard extends StatelessWidget {
     return "${nextMonday.month}월 ${nextMonday.day}일 - ${nextSunday.month}월 ${nextSunday.day}일";
   }
 
+  Future<void> _onResetConditionsTap() async {
+    if (widget.workPlaceId == null || widget.weekScheduleId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "스케줄 정보를 불러오지 못했어요. (workPlaceId 또는 weekScheduleId 없음)",
+          ),
+        ),
+      );
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("스케줄 조건 초기화"),
+        content: const Text("설정된 스케줄 조건을 초기화할까요?\n이 작업은 되돌릴 수 없어요."),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("취소"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              "초기화",
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+    if (!mounted) return;
+
+    setState(() => _isResetting = true);
+
+    try {
+      await ScheduleConditionsApi.resetConditions(
+        workPlaceId: widget.workPlaceId!,
+        weekScheduleId: widget.weekScheduleId!,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("스케줄 조건이 초기화되었어요.")),
+      );
+
+      widget.onResetConditions?.call();
+    } catch (e) {
+      debugPrint("스케줄 조건 초기화 실패: $e");
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))),
+      );
+    } finally {
+      if (mounted) setState(() => _isResetting = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (type == HomeCardType.none) {
+    if (widget.type == HomeCardType.none) {
       return const SizedBox.shrink();
     }
 
@@ -99,7 +172,7 @@ class RScheduleCard extends StatelessWidget {
               top: 16,
               right: 16,
               child: GestureDetector(
-                onTap: onClose,
+                onTap: widget.onClose,
                 child: Container(
                   width: 28,
                   height: 28,
@@ -117,7 +190,7 @@ class RScheduleCard extends StatelessWidget {
             ),
 
             /// 다음주 스케줄 제출
-            if (type == HomeCardType.weeklySchedule)
+            if (widget.type == HomeCardType.weeklySchedule)
               Positioned(
                 left: 20,
                 bottom: 115,
@@ -142,7 +215,7 @@ class RScheduleCard extends StatelessWidget {
               ),
 
             /// 스케줄 생성 가능
-            if (type == HomeCardType.scheduleCreationAvailable)
+            if (widget.type == HomeCardType.scheduleCreationAvailable)
               Positioned(
                 left: 20,
                 bottom: 115,
@@ -157,8 +230,8 @@ class RScheduleCard extends StatelessWidget {
                   ),
                   child: Text(
                     // notSubmittedCount가 있으면 그 값을, 없으면 로딩 중 문구
-                    notSubmittedCount != null
-                        ? "미제출 근무자 $notSubmittedCount명"
+                    widget.notSubmittedCount != null
+                        ? "미제출 근무자 ${widget.notSubmittedCount}명"
                         : "미제출 인원 확인 중",
                     style: const TextStyle(
                       color: Color(0xFF0084FF),
@@ -170,7 +243,7 @@ class RScheduleCard extends StatelessWidget {
               ),
 
             /// 제출 현황
-            if (type == HomeCardType.submissionStatus)
+            if (widget.type == HomeCardType.submissionStatus)
               Positioned(
                 left: 20,
                 bottom: 115,
@@ -184,11 +257,43 @@ class RScheduleCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    "마감까지 ${daysLeft}일",
+                    "마감까지 ${widget.daysLeft}일",
                     style: const TextStyle(
                       color: Color(0xFF0084FF),
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+
+            /// 스케줄 조건 초기화 (스케줄 만들기 버튼 바로 위, weeklySchedule 타입에서만 노출)
+            if (widget.type == HomeCardType.weeklySchedule)
+              Positioned(
+                left: 24,
+                bottom: 16 + 52 + 8, // 하단 버튼(52) + 여백(8) 위쪽
+                child: TextButton(
+                  onPressed: _isResetting ? null : _onResetConditionsTap,
+                  style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(0, 0),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: _isResetting
+                      ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.red,
+                    ),
+                  )
+                      : const Text(
+                    "스케줄 조건 초기화",
+                    style: TextStyle(
+                      color: Colors.red,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
@@ -204,10 +309,11 @@ class RScheduleCard extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: () {
                     debugPrint(
-                        "[RScheduleCard] 버튼 클릭 - type=$type, workPlaceId=$workPlaceId, weekScheduleId=$weekScheduleId");
+                        "[RScheduleCard] 버튼 클릭 - type=${widget.type}, workPlaceId=${widget.workPlaceId}, weekScheduleId=${widget.weekScheduleId}");
 
-                    if (type == HomeCardType.submissionStatus) {
-                      if (workPlaceId == null || weekScheduleId == null) {
+                    if (widget.type == HomeCardType.submissionStatus) {
+                      if (widget.workPlaceId == null ||
+                          widget.weekScheduleId == null) {
                         debugPrint(
                             "[RScheduleCard] 이동 취소 - workPlaceId 또는 weekScheduleId가 null");
 
@@ -225,13 +331,13 @@ class RScheduleCard extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (_) => RSubmitStatusPage(
-                            workPlaceId: workPlaceId!,
-                            weekScheduleId: weekScheduleId!,
+                            workPlaceId: widget.workPlaceId!,
+                            weekScheduleId: widget.weekScheduleId!,
                           ),
                         ),
                       );
                     } else {
-                      onMakeScheduleTap?.call();
+                      widget.onMakeScheduleTap?.call();
                     }
                   },
                   style: ElevatedButton.styleFrom(
