@@ -1,3 +1,4 @@
+import 'package:chack_chack/employer/home/notification/widgets/NoticeImageCacheBuster.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -88,17 +89,24 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
   }
 
   /// 서버가 같은 objectKey/URL 경로에 이미지를 덮어쓰는 구조라면,
-  /// Flutter의 Image.network는 URL을 캐시 키로 사용하기 때문에
-  /// 수정 후에도 예전 이미지가 계속 보일 수 있다.
-  /// notice의 갱신 시점을 나타내는 값(가능하면 updatedAt, 없으면 date)을
-  /// 쿼리 파라미터로 붙여서 캐시를 무효화한다.
+  /// Flutter의 Image 위젯은 NetworkImage의 URL이 이전과 완전히 같으면
+  /// (ImageCache를 비워도) 새로 네트워크 요청을 하지 않고 기존 이미지
+  /// 스트림을 그대로 유지해버린다. 그래서 "실제로 값이 바뀌는" 쿼리
+  /// 파라미터를 URL 뒤에 붙여서 캐시를 무효화해야 한다.
   ///
-  /// TODO: NoticeModel에 updatedAt(또는 그에 준하는) 필드가 있다면
-  /// notice.date 대신 그 값을 사용하는 것이 더 정확하다.
+  /// 우선순위:
+  /// 1) NoticeImageCacheBuster에 기록된 값이 있으면 그걸 사용한다.
+  ///    → RNotiEditPage에서 수정(이미지 포함)이 성공할 때마다
+  ///      해당 noticeId의 버전을 현재 시각으로 갱신해두기 때문에,
+  ///      수정 직후에는 반드시 새로운 값이 붙어 새 이미지를 받아온다.
+  /// 2) 기록된 값이 없으면(한 번도 수정된 적 없는 공지) 기존 방식대로
+  ///    noticeId_date를 사용한다.
   String _cacheBustedUrl(NoticeModel notice) {
     final url = notice.imageUrl!;
     final separator = url.contains('?') ? '&' : '?';
-    return '$url${separator}v=${notice.noticeId}_${notice.date}';
+    final bumpedVersion = NoticeImageCacheBuster.versionFor(notice.noticeId);
+    final version = bumpedVersion?.toString() ?? '${notice.noticeId}_${notice.date}';
+    return '$url${separator}v=$version';
   }
 
   @override
@@ -330,6 +338,15 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
                                             // ✅ 캐시 무효화 파라미터를 붙여서
                                             // 수정 후에도 새 이미지가 보이도록 함
                                             _cacheBustedUrl(notice),
+                                            // notice.noticeId를 key로 넘겨서,
+                                            // URL 문자열이 우연히 같더라도
+                                            // Flutter가 이 Image 위젯을
+                                            // "다른 위젯"으로 인식하고
+                                            // 새로 이미지를 다시 resolve하도록
+                                            // 보장한다.
+                                            key: ValueKey(
+                                              '${notice.noticeId}_${NoticeImageCacheBuster.versionFor(notice.noticeId) ?? notice.date}',
+                                            ),
                                             width: 110,
                                             height: 110,
                                             fit: BoxFit.cover,

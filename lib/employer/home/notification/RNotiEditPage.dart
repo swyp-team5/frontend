@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:chack_chack/employer/home/notification/widgets/NoticeImageCacheBuster.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/painting.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:photo_manager/photo_manager.dart';
 import 'package:dio/dio.dart';
@@ -123,6 +125,23 @@ class _RNotiEditPageState extends ConsumerState<RNotiEditPage> {
       );
 
       debugPrint("updateNotice 성공: ${updated.noticeId}");
+
+      // ⚠️ 서버가 같은 objectKey/URL 경로에 이미지를 덮어쓰는 구조라서,
+      //    수정 전/후 imageUrl 문자열이 동일할 수 있다.
+      //    그런데 Flutter의 Image 위젯은 NetworkImage의 URL이 이전과
+      //    "완전히 동일"하면, ImageCache를 비워도 아예 새로 네트워크
+      //    요청을 하지 않고 기존에 표시 중이던 이미지 스트림을 그대로
+      //    유지해버린다 (didUpdateWidget에서 provider가 == 이면 스킵).
+      //    → 그래서 imageCache.clear()만으로는 목록 화면의 이미지가
+      //      바뀌지 않는다.
+      //    실제로 "값이 바뀌는" 캐시버전을 기록해서, 목록 화면이
+      //    이 noticeId의 이미지를 그릴 때 URL 뒤에 새 쿼리 파라미터를
+      //    붙이도록 한다 (RNotificationPage._cacheBustedUrl 참고).
+      NoticeImageCacheBuster.bump(widget.notice.noticeId);
+
+      // 혹시 모를 인메모리 캐시 잔여분도 함께 정리 (안전장치)
+      PaintingBinding.instance.imageCache.clear();
+      PaintingBinding.instance.imageCache.clearLiveImages();
 
       // 목록 상태 갱신 (RNotificationProvider가 noticeId 기반 갱신 메서드를 제공한다면 사용)
       // 예: ref.read(RNotificationProvider.notifier).replaceNotice(updated);

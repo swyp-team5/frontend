@@ -1,31 +1,26 @@
 import 'package:flutter/material.dart';
-
 import 'ECrewCodePage.dart';
 
 class ECrewFirstPage extends StatelessWidget {
-  const ECrewFirstPage({super.key});
+  final String? inviteCode;
+
+  const ECrewFirstPage({super.key, this.inviteCode});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-
       body: SafeArea(
         child: Column(
           children: [
             const Spacer(),
-
-            /// 이미지
             Image.asset(
               "assets/images/e_crew_invite.png",
               width: 200,
               height: 200,
               fit: BoxFit.contain,
             ),
-
             const SizedBox(height: 36),
-
-            /// 제목
             const Text(
               "크루에 초대되었어요!",
               textAlign: TextAlign.center,
@@ -36,10 +31,7 @@ class ECrewFirstPage extends StatelessWidget {
                 color: Colors.black,
               ),
             ),
-
             const SizedBox(height: 28),
-
-            /// 설명
             const Text(
               "초대 코드를 입력하면\n크루에 참여할 수 있어요",
               textAlign: TextAlign.center,
@@ -50,9 +42,7 @@ class ECrewFirstPage extends StatelessWidget {
                 fontWeight: FontWeight.w500,
               ),
             ),
-
             const Spacer(),
-
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 28),
               child: SizedBox(
@@ -60,11 +50,10 @@ class ECrewFirstPage extends StatelessWidget {
                 height: 60,
                 child: ElevatedButton(
                   onPressed: () {
-                    // TODO : 초대코드 입력 페이지 이동
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const ECrewCodePage(),
+                        builder: (_) => ECrewCodePage(initialCode: inviteCode),
                       ),
                     );
                   },

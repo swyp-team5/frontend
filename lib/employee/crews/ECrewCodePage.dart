@@ -6,7 +6,9 @@ import 'package:dio/dio.dart';
 import '../../common/auth/server_token_manager.dart';
 
 class ECrewCodePage extends StatefulWidget {
-  const ECrewCodePage({super.key});
+  final String? initialCode;
+
+  const ECrewCodePage({super.key, this.initialCode});
 
   @override
   State<ECrewCodePage> createState() => _ECrewCodePageState();
@@ -25,6 +27,25 @@ class _ECrewCodePageState extends State<ECrewCodePage> {
 
   bool get isCompleted =>
       controllers.every((e) => e.text.isNotEmpty);
+
+  @override
+  void initState() {
+    super.initState();
+
+    final code = widget.initialCode;
+
+    // 딥링크로 들어온 6자리 숫자 코드가 있으면 자동으로 채워넣기
+    if (code != null && code.length == 6 && int.tryParse(code) != null) {
+      for (int i = 0; i < 6; i++) {
+        controllers[i].text = code[i];
+      }
+
+      // 화면이 다 그려진 직후 자동으로 검증까지 진행
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _checkInviteCode();
+      });
+    }
+  }
 
   @override
   void dispose() {
