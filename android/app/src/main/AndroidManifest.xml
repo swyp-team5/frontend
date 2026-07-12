@@ -23,14 +23,37 @@
                  while the Flutter UI initializes. After that, this theme continues
                  to determine the Window background behind the Flutter UI. -->
             <meta-data
-              android:name="io.flutter.embedding.android.NormalTheme"
-              android:resource="@style/NormalTheme"
-              />
+                android:name="io.flutter.embedding.android.NormalTheme"
+                android:resource="@style/NormalTheme"
+                />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
 
+            <!-- ✅ https App Links (카카오톡/문자 등에서 자동으로 링크화되고,
+                 앱 설치 시 브라우저 대신 앱으로 바로 열림).
+                 https://chackchack.shop/.well-known/assetlinks.json 에
+                 이 앱의 SHA256 서명 지문이 등록되어 있어야
+                 android:autoVerify="true" 검증이 통과해서
+                 브라우저를 거치지 않고 바로 앱으로 열린다. -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW"/>
+
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+
+                <data
+                    android:scheme="https"
+                    android:host="chackchack.shop"
+                    android:pathPrefix="/crew-invitations"/>
+            </intent-filter>
+
+            <!-- ⚠️ 기존 커스텀 스킴. 카카오톡/문자 앱이 http(s)가 아닌
+                 스킴은 텍스트에서 링크로 인식하지 않아 탭이 안 되는
+                 문제가 있었음 (안드로이드 딥링크 미동작 원인).
+                 앱 내부에서 QR코드 등 다른 경로로 이 스킴을 직접
+                 사용하는 곳이 없다면 삭제해도 무방하다. -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
 
@@ -64,17 +87,6 @@
                     android:scheme="kakao05952ada0dceff8e149cd664e5459465"
                     android:host="oauth"/>
             </intent-filter>
-
-            <!--<intent-filter android:autoVerify="true">
-                <action android:name="android.intent.action.VIEW"/>
-
-                <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
-
-                <data
-                    android:scheme="chack-chack"
-                    android:host="crew-invitations"/>
-            </intent-filter>-->
 
         </activity>
     </application>

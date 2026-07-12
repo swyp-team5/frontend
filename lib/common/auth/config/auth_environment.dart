@@ -5,7 +5,7 @@ class AuthEnvironment {
   );
 
   static const googleServerClientId = String.fromEnvironment(
-    '628121456031-3t4n7pd1dnfv1golshci2q9erg4bdgoa.apps.googleusercontent.com',
+    'GOOGLE_SERVER_CLIENT_ID',
   );
 
   static const kakaoNativeAppKey = String.fromEnvironment(

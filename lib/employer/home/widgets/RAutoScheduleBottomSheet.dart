@@ -1,7 +1,6 @@
 import 'package:chack_chack/common/employer/RAutoScheduling.dart';
 import 'package:chack_chack/employer/home/autoschedule/RSelectAutoSchedulePage.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../api/SubmitStatusApi.dart';
 import '../autoschedule/api/ScheduleGenerationRunApi.dart';
@@ -28,62 +27,44 @@ class _RAutoScheduleBottomSheetState extends State<RAutoScheduleBottomSheet> {
   bool _isGenerating = false;
   bool _isRegenerating = false;
 
-  /// workPlaceId + weekScheduleId 조합으로 저장 키 생성
-  String get _runIdKey =>
-      "scheduleGenerationRunId_${widget.workPlaceId}_${widget.weekScheduleId}";
-  String get _previewIdKey =>
-      "schedulePreviewId_${widget.workPlaceId}_${widget.weekScheduleId}";
-  String get _candidateCountKey =>
-      "candidateCount_${widget.workPlaceId}_${widget.weekScheduleId}";
+  /// 후보 없음(NoScheduleCandidateException) 발생 시 안내 다이얼로그를 띄우는 공통 함수
+  Future<void> _showNoCandidateDialog(NoScheduleCandidateException e) async {
+    if (!mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text("스케줄 생성 불가"),
+        content: Text(e.guidanceText),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("확인"),
+          ),
+        ],
+      ),
+    );
+    // 다이얼로그 확인 후에는 다음 화면으로 넘어가지 않고
+    // 바텀시트에 그대로 머무름 (조건 수정 후 다시 시도할 수 있도록)
+  }
 
   Future<void> _onNextTap() async {
     setState(() => _isGenerating = true);
 
     try {
-      final prefs = await SharedPreferences.getInstance();
+      debugPrint("=== _onNextTap 시작 (생성) ===");
 
-      final savedRunId = prefs.getInt(_runIdKey);
-      final savedPreviewId = prefs.getInt(_previewIdKey);
-      final savedCandidateCount = prefs.getInt(_candidateCountKey);
-
-      debugPrint(
-          "🔍 [_onNextTap] 저장값 확인 — runIdKey=$_runIdKey, savedRunId=$savedRunId, savedPreviewId=$savedPreviewId, savedCandidateCount=$savedCandidateCount");
-
-      if (savedRunId != null &&
-          savedPreviewId != null &&
-          savedCandidateCount != null) {
-        debugPrint(
-            "🟡 [_onNextTap] 이미 생성된 결과 재사용 — runId=$savedRunId, previewId=$savedPreviewId");
-
-        final preview = await SchedulePreviewApi.getPreview(
-          workPlaceId: widget.workPlaceId,
-          weekScheduleId: widget.weekScheduleId,
-          runId: savedRunId,
-        );
-
-        if (!mounted) return;
-
-        widget.onNext?.call();
-        Navigator.pop(context);
-
-        Navigator.of(context, rootNavigator: true).push(
-          MaterialPageRoute(
-            builder: (_) => RSelectAutoSchedulePage(preview: preview),
-          ),
-        );
-        return;
-      }
-
-      debugPrint("=== _onNextTap 시작 (최초 생성) ===");
-
+      // ⚠️ 예전에는 SharedPreferences에 runId/previewId를 캐싱해두고
+      //    재사용했는데, 그러면 직원들이 그 이후에 새로 근무시간을
+      //    제출해도 최초 생성 시점의 (심지어 후보 0건짜리) 결과를
+      //    계속 보여주는 문제가 있었다.
+      //    → 매번 최신 제출 데이터 기준으로 새로 생성 요청을 보낸다.
+      //      (서버의 generate()가 변경 없으면 기존 run을 그대로
+      //       반환하는 멱등 처리라면 여기서 매번 호출해도 비용 문제 없음)
       final result = await ScheduleGenerationRunApi.generate(
         workPlaceId: widget.workPlaceId,
         weekScheduleId: widget.weekScheduleId,
       );
-
-      await prefs.setInt(_runIdKey, result.scheduleGenerationRunId);
-      await prefs.setInt(_previewIdKey, result.schedulePreviewId);
-      await prefs.setInt(_candidateCountKey, result.candidateCount);
 
       if (!mounted) return;
 
@@ -102,22 +83,8 @@ class _RAutoScheduleBottomSheetState extends State<RAutoScheduleBottomSheet> {
         ),
       );
     } on NoScheduleCandidateException catch (e) {
-      debugPrint("🟠 [_onNextTap] 후보 없음 — 빈 결과로 다음 화면 이동: ${e.message}");
-
-      if (!mounted) return;
-
-      widget.onNext?.call();
-      Navigator.pop(context);
-
-      Navigator.of(context, rootNavigator: true).push(
-        MaterialPageRoute(
-          builder: (_) => RAutoSchedulingPage(
-            workPlaceId: widget.workPlaceId,
-            weekScheduleId: widget.weekScheduleId,
-            noCandidates: true,
-          ),
-        ),
-      );
+      debugPrint("🟠 [_onNextTap] 후보 없음: ${e.guidanceText}");
+      await _showNoCandidateDialog(e);
     } catch (e) {
       debugPrint("🔴 [_onNextTap] 실패: $e");
 
@@ -142,11 +109,6 @@ class _RAutoScheduleBottomSheetState extends State<RAutoScheduleBottomSheet> {
         weekScheduleId: widget.weekScheduleId,
       );
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(_runIdKey, result.scheduleGenerationRunId);
-      await prefs.setInt(_previewIdKey, result.schedulePreviewId);
-      await prefs.setInt(_candidateCountKey, result.candidateCount);
-
       if (!mounted) return;
 
       widget.onNext?.call();
@@ -164,22 +126,8 @@ class _RAutoScheduleBottomSheetState extends State<RAutoScheduleBottomSheet> {
         ),
       );
     } on NoScheduleCandidateException catch (e) {
-      debugPrint("🟠 [_onRegenerateTap] 후보 없음 — 빈 결과로 다음 화면 이동: ${e.message}");
-
-      if (!mounted) return;
-
-      widget.onNext?.call();
-      Navigator.pop(context);
-
-      Navigator.of(context, rootNavigator: true).push(
-        MaterialPageRoute(
-          builder: (_) => RAutoSchedulingPage(
-            workPlaceId: widget.workPlaceId,
-            weekScheduleId: widget.weekScheduleId,
-            noCandidates: true,
-          ),
-        ),
-      );
+      debugPrint("🟠 [_onRegenerateTap] 후보 없음: ${e.guidanceText}");
+      await _showNoCandidateDialog(e);
     } catch (e) {
       debugPrint("🔴 [_onRegenerateTap] 실패: $e");
 

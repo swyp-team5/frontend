@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'api/CrewsApi.dart';
 import 'api/ScheduleConditionsApi.dart';
+import 'api/ScheduleGenerationRunApi.dart'; // NoScheduleCandidateException 사용
 import 'models/ScheduleConditionsLatestResponse.dart';
 import 'models/SchedulePreviewResponse.dart';
 import 'models/ScheduleScenario.dart';
@@ -155,6 +156,15 @@ class _RSelectAutoSchedulePageState extends State<RSelectAutoSchedulePage> {
         scenarios = builtScenarios;
         _isLoading = false;
       });
+    } on NoScheduleCandidateException catch (e) {
+      // 서버가 조건 불일치(409 / code 4005)로 후보를 만들지 못한 경우
+      // guidanceText: 서버 message + 상황별 액션 가이드 문구
+      debugPrint("스케줄 시안 구성 실패(후보 없음): ${e.guidanceText}");
+      if (!mounted) return;
+      setState(() {
+        _error = e.guidanceText;
+        _isLoading = false;
+      });
     } catch (e) {
       debugPrint("스케줄 시안 구성 실패: $e");
       if (!mounted) return;
@@ -267,13 +277,13 @@ class _RSelectAutoSchedulePageState extends State<RSelectAutoSchedulePage> {
                 ),
               )
                   : RWeekCalendar(
-              scenarios: scenarios,
-              selectedIndex: selectedScenario,
-              preview: widget.preview,
-              onSelect: (index) {
-                setState(() => selectedScenario = index);
-              },
-            ),
+                scenarios: scenarios,
+                selectedIndex: selectedScenario,
+                preview: widget.preview,
+                onSelect: (index) {
+                  setState(() => selectedScenario = index);
+                },
+              ),
             ),
           ],
         ),

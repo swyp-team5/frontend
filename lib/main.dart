@@ -77,16 +77,42 @@ class _MyAppState extends State<MyApp> {
   void _handleDeepLink(Uri uri) {
     debugPrint("딥링크 수신: $uri");
 
-    // chack-chack://crew-invitations/470314
-    if (uri.host == "crew-invitations" && uri.pathSegments.isNotEmpty) {
-      final inviteCode = uri.pathSegments.first;
+    // 크루 초대 링크. 아래 두 형태를 모두 지원한다.
+    //   ① https App Links (카카오톡/문자 등에서 자동 링크화됨, 권장)
+    //      https://chackchack.shop/crew-invitations/470314
+    //   ② 기존 커스텀 스킴 (하위 호환용 — 신규 채널에서는 링크화가
+    //      안 될 수 있으니 서서히 걷어낼 예정)
+    //      chack-chack://crew-invitations/470314
+    final inviteCode = _extractCrewInviteCode(uri);
 
+    if (inviteCode != null) {
       navigatorKey.currentState?.push(
         MaterialPageRoute(
           builder: (_) => ECrewFirstPage(inviteCode: inviteCode),
         ),
       );
     }
+  }
+
+  /// 크루 초대 딥링크에서 초대 코드를 추출한다.
+  /// 매칭되는 형태가 없으면 null을 반환한다.
+  String? _extractCrewInviteCode(Uri uri) {
+    // ① https://chackchack.shop/crew-invitations/{code}
+    if (uri.scheme == "https" &&
+        uri.host == "chackchack.shop" &&
+        uri.pathSegments.length >= 2 &&
+        uri.pathSegments[0] == "crew-invitations") {
+      return uri.pathSegments[1];
+    }
+
+    // ② chack-chack://crew-invitations/{code} (레거시)
+    if (uri.scheme == "chack-chack" &&
+        uri.host == "crew-invitations" &&
+        uri.pathSegments.isNotEmpty) {
+      return uri.pathSegments.first;
+    }
+
+    return null;
   }
 
   @override
@@ -101,8 +127,8 @@ class _MyAppState extends State<MyApp> {
       navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
 
-      // home: widget.home ?? const AuthGate(),
-      home: OnboardingPage(),
+      home: widget.home ?? const AuthGate(),
+      // home: OnboardingPage(),
     );
   }
 }

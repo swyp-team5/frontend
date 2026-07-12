@@ -30,6 +30,15 @@ class RAutoSchedulingPage extends StatefulWidget {
 }
 
 class _RAutoSchedulingPageState extends State<RAutoSchedulingPage> {
+  // ⚠️ 임시 조치: 서버의 스케줄 생성이 비동기(백그라운드)로 처리되는 것으로
+  //    보이는데, 완료 여부를 알려주는 status 값의 스펙을 아직 몰라서
+  //    status 기반 폴링을 못 만드는 상태다.
+  //    대신 getPreview()를 candidates가 채워질 때까지 짧은 간격으로
+  //    재시도한다. 백엔드에서 status 값 / 별도 상태 조회 API 스펙을
+  //    확인해주면, 아래 폴링 로직을 status 기반으로 교체해야 한다.
+  static const int _maxPollAttempts = 6;
+  static const Duration _pollInterval = Duration(seconds: 2);
+
   @override
   void initState() {
     super.initState();
@@ -63,34 +72,56 @@ class _RAutoSchedulingPageState extends State<RAutoSchedulingPage> {
       return;
     }
 
-    debugPrint("=== [RAutoSchedulingPage] preview 조회 시작 ===");
+    debugPrint("=== [RAutoSchedulingPage] preview 조회 시작 (폴링) ===");
     debugPrint(
         "workPlaceId=${widget.workPlaceId}, weekScheduleId=${widget.weekScheduleId}, runId=${widget.scheduleGenerationRunId}");
 
     try {
-      final results = await Future.wait([
-        SchedulePreviewApi.getPreview(
+      SchedulePreviewResponse? preview;
+
+      for (int attempt = 1; attempt <= _maxPollAttempts; attempt++) {
+        debugPrint("🔁 [RAutoSchedulingPage] preview 조회 시도 $attempt/$_maxPollAttempts");
+
+        final fetched = await SchedulePreviewApi.getPreview(
           workPlaceId: widget.workPlaceId,
           weekScheduleId: widget.weekScheduleId,
           runId: widget.scheduleGenerationRunId!,
-        ),
-        Future.delayed(const Duration(seconds: 2)),
-      ]);
+        );
+
+        debugPrint(
+            "🔁 [RAutoSchedulingPage] 시도 $attempt 결과 — candidateCount=${fetched.candidateCount}, candidates=${fetched.candidates.length}개");
+
+        if (fetched.candidates.isNotEmpty) {
+          // 후보가 채워졌으면 바로 사용
+          preview = fetched;
+          break;
+        }
+
+        // 아직 후보가 비어있음 → 마지막 시도가 아니면 대기 후 재시도
+        preview = fetched; // 마지막으로 받은 값은 계속 보관 (전부 실패 시 이걸로 이동)
+
+        if (attempt < _maxPollAttempts) {
+          await Future.delayed(_pollInterval);
+        }
+      }
 
       if (!mounted) {
         debugPrint("⚠️ [RAutoSchedulingPage] 위젯이 이미 dispose됨 — 이동 취소");
         return;
       }
 
-      final preview = results[0] as SchedulePreviewResponse;
-
       debugPrint(
-          "🟢 [RAutoSchedulingPage] preview 조회 성공 — candidateCount=${preview.candidateCount}");
+          "🟢 [RAutoSchedulingPage] 폴링 종료 — 최종 candidateCount=${preview!.candidateCount}");
+
+      if (preview.candidates.isEmpty) {
+        debugPrint(
+            "🟠 [RAutoSchedulingPage] 최대 재시도 후에도 후보가 비어있음 — 백엔드 확인 필요");
+      }
 
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => RSelectAutoSchedulePage(preview: preview),
+          builder: (_) => RSelectAutoSchedulePage(preview: preview!),
         ),
       );
     } catch (e) {
