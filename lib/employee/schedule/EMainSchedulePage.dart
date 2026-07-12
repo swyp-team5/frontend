@@ -368,12 +368,12 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
                         ),
                       ),
 
-                      IconButton(
-                        onPressed: () {
-                          // TODO : 필터
-                        },
-                        icon: const Icon(Icons.tune),
-                      ),
+                      // IconButton(
+                      //   onPressed: () {
+                      //     // TODO : 필터
+                      //   },
+                      //   icon: const Icon(Icons.tune),
+                      // ),
                     ],
                   ),
                 ),

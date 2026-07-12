@@ -282,12 +282,12 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
 
                       const Spacer(),
 
-                      IconButton(
-                        onPressed: () {
-                          // TODO : 필터
-                        },
-                        icon: const Icon(Icons.tune),
-                      ),
+                      // IconButton(
+                      //   onPressed: () {
+                      //     // TODO : 필터
+                      //   },
+                      //   icon: const Icon(Icons.tune),
+                      // ),
 
                       PopupMenuButton<String>(
                         color: Colors.white,
