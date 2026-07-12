@@ -19,6 +19,10 @@ class AlarmListState {
     this.hasNext = true,
   });
 
+  // 홈 화면 종 아이콘에 빨간 점을 띄울지 판단하는 값.
+  // 별도의 "미확인 개수" API가 없어서, 이미 불러온 목록에 안 읽은 알림이 있는지로 계산한다.
+  bool get hasUnread => alarms.any((a) => !a.read);
+
   AlarmListState copyWith({
     List<AlarmItem>? alarms,
     bool? isLoading,
