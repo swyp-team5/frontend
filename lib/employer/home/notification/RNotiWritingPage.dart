@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:photo_manager/photo_manager.dart';
 import '../../../common/auth/server_token_manager.dart';
+import '../../../common/image_upload/upload_image_normalizer.dart';
 import '../../../common/onboarding/providers/signup_provider.dart';
 import '../../../common/widgets/BottomNavBar.dart';
 import '../../crews/RCrewPage.dart';
@@ -372,7 +373,7 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
                             ? null
                             : () async {
                           final file =
-                          await tempSelectedAsset!.originFile;
+                          await UploadImageNormalizer.normalizeAssetForUpload(tempSelectedAsset!);
 
                           if (file != null) {
                             setState(() {

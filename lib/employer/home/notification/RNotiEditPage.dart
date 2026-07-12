@@ -9,6 +9,7 @@ import 'package:photo_manager/photo_manager.dart';
 import 'package:dio/dio.dart';
 
 import '../../../common/auth/server_token_manager.dart';
+import '../../../common/image_upload/upload_image_normalizer.dart';
 import 'RNotificationModel.dart';
 import 'RNotificationProvider.dart';
 import 'api/notice_api.dart';
@@ -494,7 +495,7 @@ class _RNotiEditPageState extends ConsumerState<RNotiEditPage> {
                             setModalState(() => isPickingFile = true);
 
                             final file =
-                            await tempSelectedAsset!.originFile;
+                            await UploadImageNormalizer.normalizeAssetForUpload(tempSelectedAsset!);
 
                             if (file == null) {
                               setModalState(
