@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'package:photo_manager/photo_manager.dart';
 
 import '../../common/auth/server_token_manager.dart';
+import '../../common/image_upload/upload_image_normalizer.dart';
 import 'RWorkPlaceSettingPage.dart';
 import 'api/profile_api.dart';
 import 'package:dio/dio.dart';
@@ -303,7 +304,7 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
                             ? null
                             : () async {
                           final file =
-                          await selectedAsset!.originFile;
+                          await UploadImageNormalizer.normalizeAssetForUpload(selectedAsset!);
 
                           if (file != null) {
 
