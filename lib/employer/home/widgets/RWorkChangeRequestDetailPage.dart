@@ -82,6 +82,34 @@ class _RWorkChangeRequestDetailPageState
     return widget.item.requestType;
   }
 
+  /// 상태값에 따른 배지 텍스트 (RWorkChangeRequestListPage의 _badgeText와 동일 규칙)
+  String _statusBadgeText() {
+    switch (widget.item.status.toUpperCase()) {
+      case "ACCEPTED_BY_TARGET":
+        return "답변 대기";
+      case "APPROVED":
+        return "수락 완료";
+      case "REJECTED_BY_OWNER":
+        return "거절 완료";
+      default:
+        return widget.item.status;
+    }
+  }
+
+  /// 상태값에 따른 배지 색상 (RWorkChangeRequestListPage의 _badgeColor와 동일 규칙)
+  Color _statusBadgeColor() {
+    switch (widget.item.status.toUpperCase()) {
+      case "ACCEPTED_BY_TARGET":
+        return const Color(0xFF00B475);
+      case "APPROVED":
+        return const Color(0xFF0084FF);
+      case "REJECTED_BY_OWNER":
+        return const Color(0xFFFF4D4F);
+      default:
+        return const Color(0xFF8E8E93);
+    }
+  }
+
   /// requestAssignmentId / targetAssignmentId에 해당하는 날짜·시간을 찾기 위해
   /// 사장님(owner) 권한으로 조회 가능한 확정 근무표(ConfirmedSchedulesApi)를
   /// 조회하고 assignmentId -> 시간 정보로 매핑한다.
@@ -231,25 +259,25 @@ class _RWorkChangeRequestDetailPageState
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        // const SizedBox(width: 8),
-                        // Container(
-                        //   padding: const EdgeInsets.symmetric(
-                        //     horizontal: 10,
-                        //     vertical: 4,
-                        //   ),
-                        //   decoration: BoxDecoration(
-                        //     color: const Color(0xFF00B475).withOpacity(.12),
-                        //     borderRadius: BorderRadius.circular(20),
-                        //   ),
-                        //   child: const Text(
-                        //     "답변 대기",
-                        //     style: TextStyle(
-                        //       fontSize: 12,
-                        //       fontWeight: FontWeight.w600,
-                        //       color: Color(0xFF00B475),
-                        //     ),
-                        //   ),
-                        // ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _statusBadgeColor().withOpacity(.12),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            _statusBadgeText(),
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: _statusBadgeColor(),
+                            ),
+                          ),
+                        ),
                       ],
                     ),
 
