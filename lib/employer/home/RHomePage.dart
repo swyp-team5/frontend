@@ -61,6 +61,10 @@ class _RHomePageState extends State<RHomePage> {
 
   int? notSubmittedCount;
 
+  // ✅ 슬라이드 카드용 컨트롤러 & 현재 페이지 인덱스
+  final PageController _scheduleCardPageController = PageController();
+  int _currentSchedulePage = 0;
+
   // ✅ 공통 Dio 인스턴스 (baseUrl 지정 필수)
   final Dio _dio = Dio(
     BaseOptions(baseUrl: "https://chackchack.shop"),
@@ -617,6 +621,12 @@ class _RHomePageState extends State<RHomePage> {
     });
   }
 
+  @override
+  void dispose() {
+    _scheduleCardPageController.dispose();
+    super.dispose();
+  }
+
   /// ✅ _init()은 이 하나만 유지 (중복 제거)
   Future<void> _init() async {
     final access = await ServerTokenManager.getAccessToken();
@@ -681,6 +691,12 @@ class _RHomePageState extends State<RHomePage> {
         .where((type) =>
     type != HomeCardType.none && !closedCardTypes.contains(type))
         .toList();
+
+    // ✅ 카드가 닫혀서 개수가 줄었을 때 PageView 인덱스가 범위를 벗어나지 않도록 보정
+    if (visibleCardTypes.isNotEmpty &&
+        _currentSchedulePage > visibleCardTypes.length - 1) {
+      _currentSchedulePage = visibleCardTypes.length - 1;
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F7),
@@ -770,25 +786,73 @@ class _RHomePageState extends State<RHomePage> {
 
               const SizedBox(height: 16),
 
-              /// Schedule Cards (여러 장 동시 표시)
-              ...visibleCardTypes.map((type) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 14),
-                  child: RScheduleCard(
-                    type: type,
-                    daysLeft: daysLeft,
-                    workPlaceId: selectedWorkPlaceId,
-                    weekScheduleId: weekScheduleId,
-                    notSubmittedCount: notSubmittedCount,
-                    onClose: () {
+              /// Schedule Cards (한 위치에서 좌우로 넘기는 슬라이드 형식)
+              if (visibleCardTypes.isNotEmpty) ...[
+                SizedBox(
+                  // RScheduleCard의 실제 디자인 높이에 맞춰 이 값을 조정
+                  height: 230,
+                  child: PageView.builder(
+                    controller: _scheduleCardPageController,
+                    itemCount: visibleCardTypes.length,
+                    onPageChanged: (index) {
                       setState(() {
-                        closedCardTypes.add(type);
+                        _currentSchedulePage = index;
                       });
                     },
-                    onMakeScheduleTap: () => _onMakeScheduleTap(type),
+                    itemBuilder: (context, index) {
+                      final type = visibleCardTypes[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: RScheduleCard(
+                          type: type,
+                          daysLeft: daysLeft,
+                          workPlaceId: selectedWorkPlaceId,
+                          weekScheduleId: weekScheduleId,
+                          notSubmittedCount: notSubmittedCount,
+                          onClose: () {
+                            setState(() {
+                              closedCardTypes.add(type);
+
+                              // 마지막 카드를 닫은 경우 인덱스가 범위를 벗어나지 않도록 보정
+                              final remaining = visibleCardTypes.length - 1;
+                              if (_currentSchedulePage > remaining - 1 &&
+                                  _currentSchedulePage > 0) {
+                                _currentSchedulePage--;
+                              }
+                            });
+                          },
+                          onMakeScheduleTap: () => _onMakeScheduleTap(type),
+                        ),
+                      );
+                    },
                   ),
-                );
-              }),
+                ),
+
+                const SizedBox(height: 10),
+
+                /// 페이지 인디케이터 (카드가 2장 이상일 때만 표시)
+                if (visibleCardTypes.length > 1)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(visibleCardTypes.length, (index) {
+                      final isActive = index == _currentSchedulePage;
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        width: isActive ? 18 : 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: isActive
+                              ? const Color(0xFF0084FF)
+                              : const Color(0xFFD9D9D9),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      );
+                    }),
+                  ),
+
+                const SizedBox(height: 14),
+              ],
 
               /// Notice Write
               RNoticeWriteCard(

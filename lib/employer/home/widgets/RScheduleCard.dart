@@ -167,28 +167,6 @@ class _RScheduleCardState extends State<RScheduleCard> {
               ),
             ),
 
-            /// X 버튼
-            Positioned(
-              top: 16,
-              right: 16,
-              child: GestureDetector(
-                onTap: widget.onClose,
-                child: Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.25),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.close,
-                    size: 18,
-                    color: Colors.grey,
-                  ),
-                ),
-              ),
-            ),
-
             /// 다음주 스케줄 제출
             if (widget.type == HomeCardType.weeklySchedule)
               Positioned(
