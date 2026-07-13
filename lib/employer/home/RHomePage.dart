@@ -870,31 +870,6 @@ class _RHomePageState extends State<RHomePage> {
 
               const SizedBox(height: 14),
 
-              /// Request List (근무자들이 보낸 근무변경 요청 목록)
-              RRequestListCard(
-                onTap: () {
-                  if (selectedWorkPlaceId == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text("근무지 정보를 불러오는 중입니다."),
-                      ),
-                    );
-                    return;
-                  }
-
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => RWorkChangeRequestListPage(
-                        workPlaceId: selectedWorkPlaceId!,
-                      ),
-                    ),
-                  );
-                },
-              ),
-
-              const SizedBox(height: 14),
-
               /// Today Work
               if (selectedWorkPlaceId != null)
                 RTodayWorkCard(

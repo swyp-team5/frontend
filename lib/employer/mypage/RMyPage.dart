@@ -8,6 +8,7 @@ import '../../common/account/AccountSettingsPage.dart';
 import '../../../common/widgets/BottomNavBar.dart';
 import '../../common/workplace/selected_work_place_storage.dart';
 import '../crews/RCrewPage.dart';
+import '../home/widgets/RWorkChangeRequestListPage.dart';
 import '../schedule/RMainSchedulePage.dart';
 
 import '../../../common/auth/server_token_manager.dart';
@@ -471,7 +472,27 @@ class _RMyPageState extends State<RMyPage> {
                     },
                   ),
                   const Divider(height: 1, color: Color(0xFFF2F2F2)),
-                  _buildMenuRow(icon: Icons.send_outlined, title: "받은 승인 내역"),
+                  _buildMenuRow(
+                    icon: Icons.send_outlined,
+                    title: "받은 승인 내역",
+                    onTap: () {
+                      if (selectedWorkPlaceId == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("매장을 먼저 선택해주세요")),
+                        );
+                        return;
+                      }
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => RWorkChangeRequestListPage(
+                            workPlaceId: selectedWorkPlaceId!,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ],
               ),
 
