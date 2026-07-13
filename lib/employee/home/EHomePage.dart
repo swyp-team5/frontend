@@ -50,32 +50,36 @@ class _EHomePageState extends State<EHomePage> {
 
   String workPlaceName = "";
   int? workPlaceId;
-  String? accessToken; // ✅ 배너용 accessToken 상태 추가
+  String? accessToken; // 배너용 accessToken 상태 추가
 
-  // ✅ 대타 신청 카드용 id (requestType == SUBSTITUTE)
+  /// 대타 신청 카드용 id (requestType == SUBSTITUTE)
   int? substituteWorkChangeRequestId;
 
-  // ✅ 교대 신청 카드용 id (requestType == SHIFT_SWAP)
+  /// 교대 신청 카드용 id (requestType == SHIFT_SWAP)
   int? shiftWorkChangeRequestId;
 
-  // ✅ 대타 신청 카드에 표시할 실제 근무 날짜/시간
+  /// 대타 신청 카드에 표시할 실제 근무 날짜/시간
   // (SubstituteRequest 상세 화면의 targetDate/targetTime과 동일한 값)
   String? substituteDateLabel;
   String? substituteTimeLabel;
 
-  // ✅ 교대 신청 카드에 표시할 실제 근무 날짜/시간
+  /// 교대 신청 카드에 표시할 실제 근무 날짜/시간
   // (ExchangeRequest 상세 화면의 _applicantDate/_applicantTime, _myDate/_myTime과 동일한 값)
   String? applicantDateLabel;
   String? applicantTimeLabel;
   String? myDateLabel;
   String? myTimeLabel;
 
-  // ✅ 카드별로 닫혔는지 여부 (개발용: 6개 타입 전부 보여주기 위해 단일 bool 대신 Set 사용)
+  /// 카드별로 닫혔는지 여부 (개발용: 6개 타입 전부 보여주기 위해 단일 bool 대신 Set 사용)
   final Set<HomeCardType> hiddenCardTypes = {};
 
   Set<DateTime> workedDates = {};
 
-  // ✅ 공통 Dio 인스턴스 (여러 위젯에서 재사용)
+  /// 슬라이드 카드용 컨트롤러 & 현재 페이지 인덱스
+  final PageController _scheduleCardPageController = PageController();
+  int _currentSchedulePage = 0;
+
+  /// 공통 Dio 인스턴스 (여러 위젯에서 재사용)
   final Dio _dio = Dio(
     BaseOptions(baseUrl: "https://chackchack.shop"),
   );
@@ -99,7 +103,7 @@ class _EHomePageState extends State<EHomePage> {
 
       final List workPlaces = response.data["workPlaces"] ?? [];
 
-      // ✅ 이 계정이 소속된 근무지 전체 목록을 확인하기 위한 로그
+      /// 이 계정이 소속된 근무지 전체 목록을 확인하기 위한 로그
       debugPrint(
         "[EHomePage] /api/work-places/me 응답 workPlaces(${workPlaces.length}개): "
             "$workPlaces",
@@ -110,7 +114,7 @@ class _EHomePageState extends State<EHomePage> {
         return;
       }
 
-      // ✅ 근무지가 여러 개일 수 있으므로, 무조건 first를 쓰지 않고
+      /// 근무지가 여러 개일 수 있으므로, 무조건 first를 쓰지 않고
       //    이전에 선택해둔 근무지(selectedWorkPlaceId)가 있으면 그걸 우선 사용한다.
       final prefs = await SharedPreferences.getInstance();
       final int? savedWorkPlaceId = prefs.getInt("selectedWorkPlaceId");
@@ -226,7 +230,7 @@ class _EHomePageState extends State<EHomePage> {
         "[EHomePage] 교대 요청 카드용 id 로딩 성공: $shiftWorkChangeRequestId",
       );
 
-      // ✅ 대타 요청 카드에 표시할 실제 근무 날짜/시간 조회
+      /// 대타 요청 카드에 표시할 실제 근무 날짜/시간 조회
       if (pendingSubstitute.isNotEmpty) {
         _loadSubstituteScheduleLabels(
           workPlaceId: workPlaceId,
@@ -234,7 +238,7 @@ class _EHomePageState extends State<EHomePage> {
         );
       }
 
-      // ✅ 교대 요청 카드에 표시할 실제 근무 날짜/시간 조회
+      /// 교대 요청 카드에 표시할 실제 근무 날짜/시간 조회
       if (pendingShiftSwap.isNotEmpty) {
         _loadShiftScheduleLabels(
           workPlaceId: workPlaceId,
@@ -435,6 +439,12 @@ class _EHomePageState extends State<EHomePage> {
     });
   }
 
+  @override
+  void dispose() {
+    _scheduleCardPageController.dispose();
+    super.dispose();
+  }
+
   /// 토큰 저장 여부 확인 로그
   Future<void> _checkTokens() async {
     try {
@@ -508,6 +518,28 @@ class _EHomePageState extends State<EHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    /// 실제로 화면에 보여줄 카드 타입들 (닫힌 카드는 제외)
+    final visibleCardTypes = _allCardTypes.where((type) {
+      if (hiddenCardTypes.contains(type)) return false;
+
+      /// 교대/대타 신청 카드는 실제 요청(id)이 있을 때만 슬라이드에 포함
+      //    (값이 없으면 리스트에서 아예 제외해 빈 슬라이드가 보이지 않도록 함)
+      if (type == HomeCardType.shiftRequest) {
+        return shiftWorkChangeRequestId != null;
+      }
+      if (type == HomeCardType.substituteRequest) {
+        return substituteWorkChangeRequestId != null;
+      }
+
+      return true;
+    }).toList();
+
+    /// 카드가 닫혀서 개수가 줄었을 때 PageView 인덱스가 범위를 벗어나지 않도록 보정
+    if (visibleCardTypes.isNotEmpty &&
+        _currentSchedulePage > visibleCardTypes.length - 1) {
+      _currentSchedulePage = visibleCardTypes.length - 1;
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F7),
       bottomNavigationBar: BottomNavBar(
@@ -572,39 +604,92 @@ class _EHomePageState extends State<EHomePage> {
                 const SizedBox.shrink(), // 로딩 전엔 배너 숨김 (필요 시 스켈레톤으로 교체 가능)
               const SizedBox(height: 16),
 
-              /// Schedule Cards (개발용: 6개 타입 전부 표시)
-              for (final type in _allCardTypes)
-                if (!hiddenCardTypes.contains(type)) ...[
-                  EScheduleCard(
-                    type: type,
-                    daysLeft: daysLeft,
-                    workPlaceId: workPlaceId,
-                    workChangeRequestId: _workChangeRequestIdFor(type),
-                    substituteDateLabel: type == HomeCardType.substituteRequest
-                        ? substituteDateLabel
-                        : null,
-                    substituteTimeLabel: type == HomeCardType.substituteRequest
-                        ? substituteTimeLabel
-                        : null,
-                    applicantDateLabel: type == HomeCardType.shiftRequest
-                        ? applicantDateLabel
-                        : null,
-                    applicantTimeLabel: type == HomeCardType.shiftRequest
-                        ? applicantTimeLabel
-                        : null,
-                    myDateLabel:
-                    type == HomeCardType.shiftRequest ? myDateLabel : null,
-                    myTimeLabel:
-                    type == HomeCardType.shiftRequest ? myTimeLabel : null,
-                    onClose: () {
+              /// Schedule Cards (한 위치에서 좌우로 넘기는 슬라이드 형식)
+              if (visibleCardTypes.isNotEmpty) ...[
+                SizedBox(
+                  // EScheduleCard의 실제 디자인 높이에 맞춰 이 값을 조정
+                  height: 140,
+                  child: PageView.builder(
+                    controller: _scheduleCardPageController,
+                    itemCount: visibleCardTypes.length,
+                    onPageChanged: (index) {
                       setState(() {
-                        hiddenCardTypes.add(type);
+                        _currentSchedulePage = index;
                       });
                     },
-                    onDetailTap: () => _handleDetailTap(type),
+                    itemBuilder: (context, index) {
+                      final type = visibleCardTypes[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        child: EScheduleCard(
+                          type: type,
+                          daysLeft: daysLeft,
+                          workPlaceId: workPlaceId,
+                          workChangeRequestId: _workChangeRequestIdFor(type),
+                          substituteDateLabel:
+                          type == HomeCardType.substituteRequest
+                              ? substituteDateLabel
+                              : null,
+                          substituteTimeLabel:
+                          type == HomeCardType.substituteRequest
+                              ? substituteTimeLabel
+                              : null,
+                          applicantDateLabel: type == HomeCardType.shiftRequest
+                              ? applicantDateLabel
+                              : null,
+                          applicantTimeLabel: type == HomeCardType.shiftRequest
+                              ? applicantTimeLabel
+                              : null,
+                          myDateLabel: type == HomeCardType.shiftRequest
+                              ? myDateLabel
+                              : null,
+                          myTimeLabel: type == HomeCardType.shiftRequest
+                              ? myTimeLabel
+                              : null,
+                          onClose: () {
+                            setState(() {
+                              hiddenCardTypes.add(type);
+
+                              // 마지막 카드를 닫은 경우 인덱스가 범위를 벗어나지 않도록 보정
+                              final remaining = visibleCardTypes.length - 1;
+                              if (_currentSchedulePage > remaining - 1 &&
+                                  _currentSchedulePage > 0) {
+                                _currentSchedulePage--;
+                              }
+                            });
+                          },
+                          onDetailTap: () => _handleDetailTap(type),
+                        ),
+                      );
+                    },
                   ),
-                  const SizedBox(height: 14),
-                ],
+                ),
+
+                const SizedBox(height: 10),
+
+                /// 페이지 인디케이터 (카드가 2장 이상일 때만 표시)
+                if (visibleCardTypes.length > 1)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(visibleCardTypes.length, (index) {
+                      final isActive = index == _currentSchedulePage;
+                      return AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        margin: const EdgeInsets.symmetric(horizontal: 3),
+                        width: isActive ? 18 : 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: isActive
+                              ? const Color(0xFF0084FF)
+                              : const Color(0xFFD9D9D9),
+                          borderRadius: BorderRadius.circular(999),
+                        ),
+                      );
+                    }),
+                  ),
+
+                const SizedBox(height: 14),
+              ],
 
               // /// CheckIn Card
               // const ECheckInCard(),
