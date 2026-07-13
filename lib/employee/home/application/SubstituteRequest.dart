@@ -231,9 +231,7 @@ class _SubstituteRequestState extends State<SubstituteRequest> {
     // (근무자 이름을 못 찾으면 memberId로 표시)
     final applicantName =
         data.requestSide?.workerName ?? "멤버 #${request.requesterMemberId}";
-    final targetName = request.targetMemberId != null
-        ? (data.targetSide?.workerName ?? "멤버 #${request.targetMemberId}")
-        : widget.myName;
+    final targetName = widget.myName; // 오른쪽엔 항상 '나'로 고정
 
     final applicantDate = data.requestSide?.dateLabel ?? "-";
     final applicantTime = data.requestSide?.timeLabel ?? "-";

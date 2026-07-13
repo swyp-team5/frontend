@@ -2,7 +2,18 @@ import 'package:flutter/material.dart';
 
 import '../../crews/model/WorkChangeRequestResponse.dart';
 import '../api/WorkChangeRequestListApi.dart';
+import '../model/AssignmentResolver.dart';
 
+/// 목록 한 줄에 필요한 데이터: 원본 요청 + 미리 조회해둔 상대 회원 이름
+class _SentRequestItem {
+  const _SentRequestItem({
+    required this.request,
+    required this.targetName,
+  });
+
+  final WorkChangeRequestResponse request;
+  final String targetName;
+}
 
 /// 내가 보낸(SENT) 대타/교대 요청 목록 화면
 class SentWorkChangeRequestsPage extends StatefulWidget {
@@ -21,7 +32,10 @@ class SentWorkChangeRequestsPage extends StatefulWidget {
 class _SentWorkChangeRequestsPageState
     extends State<SentWorkChangeRequestsPage> {
   final _api = WorkChangeRequestListApi();
-  late Future<List<WorkChangeRequestResponse>> _future;
+  late Future<List<_SentRequestItem>> _future;
+
+  /// 0: 전체보기, 1: 대기 중
+  int _selectedTab = 0;
 
   @override
   void initState() {
@@ -29,14 +43,56 @@ class _SentWorkChangeRequestsPageState
     _future = _load();
   }
 
-  Future<List<WorkChangeRequestResponse>> _load() async {
+  Future<List<_SentRequestItem>> _load() async {
     final result = await _api.fetchRequests(
       workPlaceId: widget.workPlaceId,
       scope: "SENT",
       page: 0,
       size: 20,
     );
-    return result.content;
+
+    final requests = result.content;
+
+    // 요청마다 상대 회원(target) 쪽 근무 정보를 조회해서 이름을 채워 넣는다.
+    final items = await Future.wait(
+      requests.map((request) async {
+        final name = await _resolveTargetName(request);
+        return _SentRequestItem(request: request, targetName: name);
+      }),
+    );
+
+    return items;
+  }
+
+  /// 상대 회원 이름 조회.
+  /// targetAssignmentId가 있으면 그 근무를, 없으면(SUBSTITUTE) requestAssignmentId 근무를
+  /// 기준으로 AssignmentResolver에서 workerName을 찾아온다.
+  /// 이름을 찾지 못하면 "멤버 #id"로 대체 표시한다.
+  Future<String> _resolveTargetName(WorkChangeRequestResponse request) async {
+    if (request.targetMemberId == null) {
+      return "대상 미정";
+    }
+
+    try {
+      final createdAt = DateTime.parse(request.createdAt);
+      final (fromDate, toDate) =
+      AssignmentResolver.defaultRangeAround(createdAt);
+
+      final assignmentMap = await AssignmentResolver.buildAssignmentMap(
+        workPlaceId: widget.workPlaceId,
+        fromDate: fromDate,
+        toDate: toDate,
+      );
+
+      final assignmentId =
+          request.targetAssignmentId ?? request.requestAssignmentId;
+      final resolved =
+      assignmentId != null ? assignmentMap[assignmentId] : null;
+
+      return resolved?.workerName ?? "멤버 #${request.targetMemberId}";
+    } catch (_) {
+      return "멤버 #${request.targetMemberId}";
+    }
   }
 
   Future<void> _refresh() async {
@@ -45,6 +101,13 @@ class _SentWorkChangeRequestsPageState
       _future = future;
     });
     await future;
+  }
+
+  List<_SentRequestItem> _filter(List<_SentRequestItem> items) {
+    if (_selectedTab == 1) {
+      return items.where((e) => e.request.status == "REQUESTED").toList();
+    }
+    return items;
   }
 
   @override
@@ -89,8 +152,54 @@ class _SentWorkChangeRequestsPageState
               ),
             ),
 
+            /// 탭 (전체보기 / 대기 중)
+            _SentRequestTabBar(
+              selectedIndex: _selectedTab,
+              onChanged: (index) {
+                setState(() {
+                  _selectedTab = index;
+                });
+              },
+            ),
+
+            // /// 안내 배너
+            // Padding(
+            //   padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
+            //   child: Container(
+            //     width: double.infinity,
+            //     padding: const EdgeInsets.symmetric(
+            //       horizontal: 14,
+            //       vertical: 12,
+            //     ),
+            //     decoration: BoxDecoration(
+            //       color: const Color(0xFFF0F0F3),
+            //       borderRadius: BorderRadius.circular(10),
+            //     ),
+            //     child: Row(
+            //       children: [
+            //         const Icon(
+            //           Icons.info_outline,
+            //           size: 16,
+            //           color: Color(0xFF9A9A9A),
+            //         ),
+            //         const SizedBox(width: 6),
+            //         Expanded(
+            //           child: Text(
+            //             "보낸 요청 내역은 최대 3일까지 보관돼요",
+            //             style: const TextStyle(
+            //               fontSize: 12.5,
+            //               color: Color(0xFF8F8F8F),
+            //               fontWeight: FontWeight.w500,
+            //             ),
+            //           ),
+            //         ),
+            //       ],
+            //     ),
+            //   ),
+            // ),
+
             Expanded(
-              child: FutureBuilder<List<WorkChangeRequestResponse>>(
+              child: FutureBuilder<List<_SentRequestItem>>(
                 future: _future,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -103,16 +212,22 @@ class _SentWorkChangeRequestsPageState
                     );
                   }
 
-                  final items = snapshot.data ?? [];
+                  final items = _filter(snapshot.data ?? []);
 
                   if (items.isEmpty) {
                     return RefreshIndicator(
                       onRefresh: _refresh,
                       child: ListView(
                         physics: const AlwaysScrollableScrollPhysics(),
-                        children: const [
-                          SizedBox(height: 120),
-                          Center(child: Text("보낸 요청이 없어요.")),
+                        children: [
+                          const SizedBox(height: 120),
+                          Center(
+                            child: Text(
+                              _selectedTab == 1
+                                  ? "대기 중인 요청이 없어요."
+                                  : "보낸 요청이 없어요.",
+                            ),
+                          ),
                         ],
                       ),
                     );
@@ -123,13 +238,17 @@ class _SentWorkChangeRequestsPageState
                     child: ListView.separated(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 20,
-                        vertical: 12,
+                        vertical: 20,
                       ),
                       physics: const AlwaysScrollableScrollPhysics(),
                       itemCount: items.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      separatorBuilder: (_, __) => const Divider(
+                        height: 40,
+                        thickness: 1,
+                        color: Color(0xFFECECEC),
+                      ),
                       itemBuilder: (context, index) {
-                        return _SentRequestCard(request: items[index]);
+                        return _SentRequestCard(item: items[index]);
                       },
                     ),
                   );
@@ -143,17 +262,80 @@ class _SentWorkChangeRequestsPageState
   }
 }
 
-class _SentRequestCard extends StatelessWidget {
-  const _SentRequestCard({required this.request});
+/// 전체보기 / 대기 중 탭 바
+class _SentRequestTabBar extends StatelessWidget {
+  const _SentRequestTabBar({
+    required this.selectedIndex,
+    required this.onChanged,
+  });
 
-  final WorkChangeRequestResponse request;
+  final int selectedIndex;
+  final ValueChanged<int> onChanged;
+
+  static const _tabs = ["전체보기", "대기 중"];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: Color(0xFFEAEAEA), width: 1),
+        ),
+      ),
+      child: Row(
+        children: List.generate(_tabs.length, (index) {
+          final isSelected = index == selectedIndex;
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => onChanged(index),
+              behavior: HitTestBehavior.opaque,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                padding: const EdgeInsets.only(bottom: 12),
+                decoration: BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(
+                      color: isSelected
+                          ? Colors.black
+                          : Colors.transparent,
+                      width: 2,
+                    ),
+                  ),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  _tabs[index],
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight:
+                    isSelected ? FontWeight.w700 : FontWeight.w500,
+                    color: isSelected
+                        ? Colors.black
+                        : const Color(0xFFB0B0B0),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+}
+
+class _SentRequestCard extends StatelessWidget {
+  const _SentRequestCard({required this.item});
+
+  final _SentRequestItem item;
+
+  WorkChangeRequestResponse get request => item.request;
 
   String get _typeLabel {
     switch (request.requestType) {
       case "SUBSTITUTE":
-        return "대타 요청";
+        return "대타 근무";
       case "SHIFT_SWAP":
-        return "교대 요청";
+        return "교대 근무";
       default:
         return request.requestType;
     }
@@ -162,11 +344,14 @@ class _SentRequestCard extends StatelessWidget {
   String get _statusLabel {
     switch (request.status) {
       case "REQUESTED":
-        return "응답 대기중";
+      // 교대(SHIFT_SWAP)는 상대의 "응답"을, 대타(SUBSTITUTE)는 관리자의 "승인"을 기다리는 흐름을 반영
+        return request.requestType == "SUBSTITUTE"
+            ? "승인 대기 중"
+            : "응답 대기 중";
       case "ACCEPTED":
-        return "수락됨";
+        return "수락 완료";
       case "REJECTED":
-        return "거절됨";
+        return "거절 완료";
       case "CANCELED":
         return "취소됨";
       default:
@@ -177,9 +362,9 @@ class _SentRequestCard extends StatelessWidget {
   Color get _statusColor {
     switch (request.status) {
       case "REQUESTED":
-        return const Color(0xFF7D67FD);
-      case "ACCEPTED":
         return const Color(0xFF00B475);
+      case "ACCEPTED":
+        return const Color(0xFF3D7DFF);
       case "REJECTED":
         return const Color(0xFFFF5C5C);
       default:
@@ -187,95 +372,64 @@ class _SentRequestCard extends StatelessWidget {
     }
   }
 
-  String get _createdAtLabel {
-    final dt = DateTime.tryParse(request.createdAt);
-    if (dt == null) return request.createdAt;
-    return "${dt.month}월 ${dt.day}일 ${dt.hour.toString().padLeft(2, '0')}:"
-        "${dt.minute.toString().padLeft(2, '0')} 신청";
+  Color get _statusBackgroundColor {
+    switch (request.status) {
+      case "REQUESTED":
+        return const Color(0xFFD8F5E9);
+      case "ACCEPTED":
+        return const Color(0xFFDDE8FF);
+      case "REJECTED":
+        return const Color(0xFFFFE1E1);
+      default:
+        return const Color(0xFFECECEC);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFDDD7FE),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  _typeLabel,
-                  style: const TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF6450D4),
-                  ),
+              Text(
+                item.targetName,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF505050),
                 ),
               ),
-              const Spacer(),
-              Row(
-                children: [
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      color: _statusColor,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    _statusLabel,
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: _statusColor,
-                    ),
-                  ),
-                ],
+              const SizedBox(height: 4),
+              Text(
+                _typeLabel,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            request.reason,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-              color: Colors.black,
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: _statusBackgroundColor,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            _statusLabel,
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+              color: _statusColor,
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            _createdAtLabel,
-            style: const TextStyle(
-              fontSize: 12,
-              color: Color(0xFF9A9A9A),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

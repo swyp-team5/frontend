@@ -8,6 +8,7 @@ import '../../common/account/AccountSettingsPage.dart';
 import '../../employer/mypage/api/profile_api.dart';
 import '../crews/ECrewPage.dart';
 import '../home/EHomePage.dart';
+import '../home/application/SentWorkChangeRequestsPage.dart';
 import '../schedule/EMainSchedulePage.dart';
 import 'EProfileEditPage.dart';
 
@@ -39,12 +40,18 @@ class _EMyPageState extends State<EMyPage> {
   String EselectedStore = "";
   String EtempSelectedStore = "";
 
+  // 선택된 매장의 workPlaceId. SentWorkChangeRequestsPage 등 workPlaceId가
+  // 필요한 화면으로 이동할 때 사용한다.
+  int? selectedWorkPlaceId;
+  int? EtempSelectedWorkPlaceId;
+
   // 9.2.1 FCM 푸시 수신 여부 (서버 기본값과 동일하게 true로 시작, 로드되면 실제 값으로 갱신)
   bool fcmPushEnabled = true;
 
 
   void _EshowStoreBottomSheet(BuildContext context) {
     EtempSelectedStore = EselectedStore;
+    EtempSelectedWorkPlaceId = selectedWorkPlaceId;
 
     showModalBottomSheet(
       context: context,
@@ -132,6 +139,7 @@ class _EMyPageState extends State<EMyPage> {
                           onTap: () {
                             setModalState(() {
                               EtempSelectedStore = name;
+                              EtempSelectedWorkPlaceId = store["workPlaceId"];
                             });
                           },
                           child: Container(
@@ -180,6 +188,7 @@ class _EMyPageState extends State<EMyPage> {
 
                           setState(() {
                             EselectedStore = EtempSelectedStore;
+                            selectedWorkPlaceId = EtempSelectedWorkPlaceId;
                           });
 
                           Navigator.pop(context);
@@ -291,13 +300,21 @@ class _EMyPageState extends State<EMyPage> {
         stores = List<Map<String, dynamic>>.from(list);
       });
 
+      // 이미 저장된(선택된) 매장 이름이 있으면 그 매장의 id를 매칭해서 채워준다.
+      // 없으면 첫 번째 매장을 기본 선택으로 사용한다.
       if (stores.isNotEmpty) {
-        final first = stores.first;
-        final name = first["name"] ?? "";
+        Map<String, dynamic> target = stores.firstWhere(
+              (store) => store["name"] == EselectedStore,
+          orElse: () => stores.first,
+        );
+
+        final name = target["name"] ?? "";
 
         setState(() {
           EselectedStore = name;
           EtempSelectedStore = name;
+          selectedWorkPlaceId = target["workPlaceId"];
+          EtempSelectedWorkPlaceId = target["workPlaceId"];
         });
       }
 
@@ -435,11 +452,11 @@ class _EMyPageState extends State<EMyPage> {
                     icon: Icons.calendar_month_outlined,
                     title: "근무 스케줄",
                   ),
-                  const Divider(height: 1, color: Color(0xFFF2F2F2)),
-                  _buildMenuRow(
-                    icon: Icons.access_time_outlined,
-                    title: "출퇴근 기록",
-                  ),
+                  // const Divider(height: 1, color: Color(0xFFF2F2F2)),
+                  // _buildMenuRow(
+                  //   icon: Icons.access_time_outlined,
+                  //   title: "출퇴근 기록",
+                  // ),
                 ],
               ),
 
@@ -452,12 +469,29 @@ class _EMyPageState extends State<EMyPage> {
               _buildCard(
                 children: [
                   _buildMenuRow(
-                    icon: Icons.send_outlined,
+                    icon: Icons.call_made,
                     title: "보낸 요청 내역",
+                    onTap: () {
+                      if (selectedWorkPlaceId == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("매장을 먼저 선택해주세요")),
+                        );
+                        return;
+                      }
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SentWorkChangeRequestsPage(
+                            workPlaceId: selectedWorkPlaceId!,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                   const Divider(height: 1, color: Color(0xFFF2F2F2)),
                   _buildMenuRow(
-                    icon: Icons.send_outlined,
+                    icon: Icons.call_received,
                     title: "받은 요청 내역",
                   ),
                 ],

@@ -465,58 +465,6 @@ class EScheduleCard extends StatelessWidget {
                             ],
                           ),
                         ),
-
-                        /// 보낸 요청(SENT) 목록으로 이동하는 버튼
-                        if (type == HomeCardType.substituteRequest ||
-                            type == HomeCardType.shiftRequest) ...[
-                          const SizedBox(width: 8),
-                          TextButton(
-                            onPressed: () {
-                              if (workPlaceId == null) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text("근무지 정보를 불러오는 중입니다."),
-                                  ),
-                                );
-                                return;
-                              }
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => SentWorkChangeRequestsPage(
-                                    workPlaceId: workPlaceId!,
-                                  ),
-                                ),
-                              );
-                            },
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              alignment: Alignment.centerLeft,
-                              foregroundColor: detailColor,
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  "내가 보낸 요청 보기",
-                                  style: TextStyle(
-                                    color: detailColor,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(width: 2),
-                                Icon(
-                                  Icons.chevron_right,
-                                  size: 18,
-                                  color: detailColor,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
                       ],
                     ),
                   ),

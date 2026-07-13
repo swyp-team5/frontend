@@ -468,38 +468,38 @@ class _RWorkChangeRequestListPageState extends State<RWorkChangeRequestListPage>
           ),
 
           Container(height: 1, color: const Color(0xFFEDEDED)),
-
-          /// ✅ 안내 배너 (탭에 따라 문구 변경)
-          Container(
-            width: double.infinity,
-            margin: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF5F5F7),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              children: [
-                const Icon(
-                  Icons.info_outline,
-                  size: 16,
-                  color: Color(0xFF9A9A9A),
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    _selectedTabIndex == 0
-                        ? "답변하지 않은 내역은 최대 3일까지 보관돼요"
-                        : "답변 완료 내역은 7일까지 보관돼요",
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF767676),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          //
+          // /// 안내 배너 (탭에 따라 문구 변경)
+          // Container(
+          //   width: double.infinity,
+          //   margin: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+          //   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          //   decoration: BoxDecoration(
+          //     color: const Color(0xFFF5F5F7),
+          //     borderRadius: BorderRadius.circular(10),
+          //   ),
+          //   child: Row(
+          //     children: [
+          //       const Icon(
+          //         Icons.info_outline,
+          //         size: 16,
+          //         color: Color(0xFF9A9A9A),
+          //       ),
+          //       const SizedBox(width: 6),
+          //       Expanded(
+          //         child: Text(
+          //           _selectedTabIndex == 0
+          //               ? "답변하지 않은 내역은 최대 3일까지 보관돼요"
+          //               : "답변 완료 내역은 7일까지 보관돼요",
+          //           style: const TextStyle(
+          //             fontSize: 12,
+          //             color: Color(0xFF767676),
+          //           ),
+          //         ),
+          //       ),
+          //     ],
+          //   ),
+          // ),
 
           Expanded(
             child: RefreshIndicator(

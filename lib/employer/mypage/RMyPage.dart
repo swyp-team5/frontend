@@ -473,7 +473,7 @@ class _RMyPageState extends State<RMyPage> {
                   ),
                   const Divider(height: 1, color: Color(0xFFF2F2F2)),
                   _buildMenuRow(
-                    icon: Icons.send_outlined,
+                    icon: Icons.call_received,
                     title: "받은 승인 내역",
                     onTap: () {
                       if (selectedWorkPlaceId == null) {

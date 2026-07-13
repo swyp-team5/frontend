@@ -602,7 +602,7 @@ class _EHomePageState extends State<EHomePage> {
                 )
               else
                 const SizedBox.shrink(), // 로딩 전엔 배너 숨김 (필요 시 스켈레톤으로 교체 가능)
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
               /// Schedule Cards (한 위치에서 좌우로 넘기는 슬라이드 형식)
               if (visibleCardTypes.isNotEmpty) ...[
@@ -688,7 +688,7 @@ class _EHomePageState extends State<EHomePage> {
                     }),
                   ),
 
-                const SizedBox(height: 14),
+                const SizedBox(height: 20),
               ],
 
               // /// CheckIn Card
