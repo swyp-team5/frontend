@@ -106,6 +106,16 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
     _confirmedWeekScheduleIdForSelectedDate = widget.confirmedWeekScheduleId;
   }
 
+  /// 근무 날짜 변경 바텀시트에서 선택 가능한 날짜.
+  /// 18-6 정책상 "같은 확정 주간 스케줄 안의 날짜"로만 이동할 수 있으므로,
+  /// 원래 슬롯(widget.date)이 속한 주의 월~일 7일만 활성화한다(근무 유무와 무관, API 호출 불필요).
+  Set<String> get _enabledDates {
+    final monday = _mondayOf(widget.date);
+    return {
+      for (int i = 0; i < 7; i++) _formatDate(monday.add(Duration(days: i))),
+    };
+  }
+
   TimeOfDay _toTimeOfDay(String time) {
     final parts = time.split(":");
 
@@ -756,6 +766,7 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
                           backgroundColor: Colors.white,
                           builder: (_) => REditCalendarBottomSheet(
                             initialDate: selectedDate,
+                            enabledDates: _enabledDates,
                           ),
                         );
 
