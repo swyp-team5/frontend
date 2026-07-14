@@ -7,6 +7,7 @@ import '../fcm/FcmSetupService.dart';
 import '../fcm/api/FcmTokenApi.dart';
 import '../fcm/api/NotificationSettingsApi.dart';
 import '../onboarding/OnboardingPage.dart';
+import 'WithdrawalReasonPage.dart';
 import 'account_settings_api.dart';
 
 class AccountSettingsPage extends StatefulWidget {
@@ -236,37 +237,18 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
     );
   }
 
-  Future<void> _confirmWithdrawal() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('정말 탈퇴하시겠어요?'),
-          content: const Text('탈퇴 신청 후 계정 이용이 제한될 수 있어요.'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: const Text('취소'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: const Text(
-                '탈퇴',
-                style: TextStyle(color: Color(0xFFFF3B30)),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-
-    if (confirmed != true) {
-      return;
-    }
-
-    await _runAccountAction(
-      action: widget.withdraw ?? _accountApi.withdraw,
-      successMessage: '회원 탈퇴가 신청됐어요.',
+  // 기존 _confirmWithdrawal() 전체 삭제 후 아래로 교체
+  Future<void> _goToWithdrawalReasonPage() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => WithdrawalReasonPage(
+          onWithdraw: (reasons, etcDetail) => _runAccountAction(
+            action: widget.withdraw ?? _accountApi.withdraw,
+            successMessage: '회원 탈퇴가 신청됐어요.',
+          ),
+        ),
+      ),
     );
   }
 
@@ -365,7 +347,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                         _MenuRow(
                           title: '회원 탈퇴',
                           textColor: const Color(0xFFFF3B30),
-                          onTap: _isProcessing ? null : _confirmWithdrawal,
+                          onTap: _isProcessing ? null : _goToWithdrawalReasonPage, // 변경
                         ),
                       ],
                     ),

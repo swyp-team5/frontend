@@ -442,12 +442,29 @@ class _RMyPageState extends State<RMyPage> {
                   _buildMenuRow(
                     icon: Icons.calendar_month_outlined,
                     title: "근무 스케줄",
+                    onTap: () {
+                      if (selectedWorkPlaceId == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("매장을 먼저 선택해주세요")),
+                        );
+                        return;
+                      }
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => RMainSchedulePage(
+                            workPlaceId: selectedWorkPlaceId!,
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                  const Divider(height: 1, color: Color(0xFFF2F2F2)),
-                  _buildMenuRow(
-                    icon: Icons.access_time_outlined,
-                    title: "출퇴근 기록",
-                  ),
+                  // const Divider(height: 1, color: Color(0xFFF2F2F2)),
+                  // _buildMenuRow(
+                  //   icon: Icons.access_time_outlined,
+                  //   title: "출퇴근 기록",
+                  // ),
                 ],
               ),
 
@@ -504,8 +521,8 @@ class _RMyPageState extends State<RMyPage> {
 
               _buildCard(
                 children: [
-                  _buildMenuRow(icon: Icons.groups_outlined, title: "고객 센터"),
-                  const Divider(height: 1, color: Color(0xFFF2F2F2)),
+                  // _buildMenuRow(icon: Icons.groups_outlined, title: "고객 센터"),
+                  // const Divider(height: 1, color: Color(0xFFF2F2F2)),
                   _buildMenuRow(
                     icon: Icons.settings_outlined,
                     title: "계정 설정",
