@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../common/widgets/BottomNavBar.dart';
 import '../crews/ECrewPage.dart';
@@ -45,6 +46,8 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
 
   final Set<String> holidays = {};
 
+  /// ✅ 현재 선택된 매장. SharedPreferences에서 로딩하며,
+  /// 응답 데이터로 덮어쓰지 않는다 (이전 버그: 응답 첫 항목으로 역산하던 방식 제거).
   int? selectedWorkPlaceId;
 
   DateTime? _loadedWeekStart;
@@ -70,6 +73,21 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
   }
 
   Future<void> _initialize() async {
+    // ✅ 현재 선택된 매장을 SharedPreferences에서 먼저 읽어온다.
+    // (EHomePage/EMyPage에서 매장을 변경하면 이 값이 갱신되어 있음)
+    final prefs = await SharedPreferences.getInstance();
+    final storedWorkPlaceId = prefs.getInt("selectedWorkPlaceId");
+
+    if (mounted) {
+      setState(() {
+        selectedWorkPlaceId = storedWorkPlaceId;
+      });
+    } else {
+      selectedWorkPlaceId = storedWorkPlaceId;
+    }
+
+    debugPrint("[EMainSchedulePage] 초기 selectedWorkPlaceId: $selectedWorkPlaceId");
+
     if (isAllViewSelected) {
       await _loadWeeklyWorkers(force: true);
     } else {
@@ -100,11 +118,19 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
     return "${parts[0]}:${parts[1]}";
   }
 
+  /// ✅ workPlaceId로 걸러서 매핑.
+  /// selectedWorkPlaceId가 null이면(예외적 상황) 필터링 없이 전체를 보여준다.
   Map<String, List<MySchedule>> _mapMySchedules(
-      MyConfirmedSchedulesResponse response) {
+      MyConfirmedSchedulesResponse response,
+      int? workPlaceId,
+      ) {
     final Map<String, List<MySchedule>> result = {};
 
     for (final item in response.schedules) {
+      if (workPlaceId != null && item.workPlaceId != workPlaceId) {
+        continue;
+      }
+
       result.putIfAbsent(item.workDate, () => []);
       result[item.workDate]!.add(
         MySchedule(
@@ -118,6 +144,7 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
 
     debugPrint(
       "🟢 [EMainSchedulePage] 매핑 완료 - "
+          "workPlaceId: $workPlaceId, "
           "날짜 수: ${result.length}, "
           "총 스케줄 수: ${result.values.fold<int>(0, (sum, list) => sum + list.length)}",
     );
@@ -140,7 +167,8 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
 
     debugPrint(
       "🔵 [EMainSchedulePage] 확정 근무표 요청 시작 - "
-          "from: ${range.$1}, to: ${range.$2}, force: $force",
+          "from: ${range.$1}, to: ${range.$2}, "
+          "workPlaceId: $selectedWorkPlaceId, force: $force",
     );
 
     setState(() {
@@ -163,11 +191,9 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
       if (!mounted) return;
 
       setState(() {
-        myConfirmedSchedules = _mapMySchedules(response);
-
-        if (response.schedules.isNotEmpty) {
-          selectedWorkPlaceId = response.schedules.first.workPlaceId;
-        }
+        // ✅ 현재 선택된 매장 기준으로 필터링해서 반영
+        // (selectedWorkPlaceId를 응답으로 덮어쓰지 않음 — SharedPreferences가 유일한 출처)
+        myConfirmedSchedules = _mapMySchedules(response, selectedWorkPlaceId);
 
         _loadedFrom = range.$1;
         _loadedTo = range.$2;
@@ -186,7 +212,10 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
   }
 
   Future<void> _loadWeeklyWorkers({bool force = false}) async {
-    if (selectedWorkPlaceId == null) return;
+    if (selectedWorkPlaceId == null) {
+      debugPrint("[EMainSchedulePage] selectedWorkPlaceId가 없어서 전체 보기 조회 스킵");
+      return;
+    }
 
     final monday = DateTime(
       selectedDate.year,

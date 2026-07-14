@@ -4,12 +4,14 @@ import 'package:flutter/material.dart';
 
 class EHomeHeader extends StatelessWidget {
   final String workPlaceName;
+  final VoidCallback? onStoreTap;
   final VoidCallback? onNotificationTap;
   final bool hasUnread;
 
   const EHomeHeader({
     super.key,
     required this.workPlaceName,
+    this.onStoreTap,
     this.onNotificationTap,
     this.hasUnread = false,
   });
@@ -19,18 +21,22 @@ class EHomeHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Row(
-          children: [
-            Text(
-              workPlaceName.isEmpty ? "" : workPlaceName,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+        GestureDetector(
+          onTap: onStoreTap,
+          behavior: HitTestBehavior.opaque,
+          child: Row(
+            children: [
+              Text(
+                workPlaceName.isEmpty ? "" : workPlaceName,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            const SizedBox(width: 4),
-            const Icon(Icons.keyboard_arrow_down),
-          ],
+              const SizedBox(width: 4),
+              const Icon(Icons.keyboard_arrow_down),
+            ],
+          ),
         ),
 
         Row(

@@ -186,6 +186,17 @@ class _EMyPageState extends State<EMyPage> {
                             EtempSelectedStore,
                           );
 
+                          // ✅ 추가: EHomePage 등 다른 화면이 SharedPreferences로
+                          // workPlaceId를 직접 읽기 때문에 id도 함께 저장해야 함
+                          // (기존 코드는 이름만 저장하고 id는 저장하지 않아서
+                          //  다른 화면과 동기화가 안 되는 원인이 될 수 있었음)
+                          if (EtempSelectedWorkPlaceId != null) {
+                            await prefs.setInt(
+                              "selectedWorkPlaceId",
+                              EtempSelectedWorkPlaceId!,
+                            );
+                          }
+
                           setState(() {
                             EselectedStore = EtempSelectedStore;
                             selectedWorkPlaceId = EtempSelectedWorkPlaceId;

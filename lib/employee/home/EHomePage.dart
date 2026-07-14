@@ -52,6 +52,9 @@ class _EHomePageState extends State<EHomePage> {
   int? workPlaceId;
   String? accessToken; // 배너용 accessToken 상태 추가
 
+  /// ✅ 매장 변경 바텀시트에 표시할 전체 매장 목록
+  List<Map<String, dynamic>> stores = [];
+
   /// 대타 신청 카드용 id (requestType == SUBSTITUTE)
   int? substituteWorkChangeRequestId;
 
@@ -109,8 +112,15 @@ class _EHomePageState extends State<EHomePage> {
             "$workPlaces",
       );
 
+      final loadedStores = List<Map<String, dynamic>>.from(workPlaces);
+
       if (workPlaces.isEmpty) {
         debugPrint("workPlaces empty");
+        if (mounted) {
+          setState(() {
+            stores = loadedStores;
+          });
+        }
         return;
       }
 
@@ -166,15 +176,249 @@ class _EHomePageState extends State<EHomePage> {
         workPlaceId = id;
         workPlaceName = name;
         accessToken = token; // 배너에 넘길 토큰 저장
+        stores = loadedStores; // ✅ 매장 변경 바텀시트용 목록 저장
       });
 
       debugPrint("근무지 로딩 성공: $id / $name");
 
-      // workPlaceId가 확정된 뒤에 요청 카드용 데이터도 로딩
+      // ✅ workPlaceId가 확정된 뒤에 요청 카드 / 근무 일정을 함께 로딩한다.
+      // (initState에서 _loadConfirmedSchedules()를 병렬로 호출하면
+      //  이 시점보다 먼저 실행되어 workPlaceId가 아직 null인 채로
+      //  스킵되는 경쟁 조건이 있었음 — 그래서 여기서 명시적으로 호출)
       _loadWorkChangeRequestCards(id);
+      _loadConfirmedSchedules();
     } catch (e) {
       debugPrint("workPlace 로딩 실패: $e");
     }
+  }
+
+  /// ✅ 헤더에서 매장명을 탭했을 때 뜨는 매장 변경 바텀시트
+  /// (RHomePage / EMyPage와 동일한 UI 패턴)
+  void _EshowStoreBottomSheet(BuildContext context) {
+    if (stores.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("매장 목록을 불러오는 중입니다. 잠시 후 다시 시도해주세요.")),
+      );
+      return;
+    }
+
+    int? tempWorkPlaceId = workPlaceId;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return SafeArea(
+              top: false,
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(28),
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    /// 핸들
+                    Container(
+                      width: 42,
+                      height: 5,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD9D9D9),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                    ),
+
+                    const SizedBox(height: 22),
+
+                    /// 제목
+                    SizedBox(
+                      width: double.infinity,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          const Text(
+                            "매장 변경",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Positioned(
+                            right: 0,
+                            child: GestureDetector(
+                              onTap: () => Navigator.pop(context),
+                              child: Container(
+                                width: 28,
+                                height: 28,
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFF2F2F6),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.close),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    Container(
+                      width: double.infinity,
+                      height: 1,
+                      color: const Color(0xFFE5E5E5),
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    /// 매장 목록
+                    ...stores.map((store) {
+                      final selected =
+                          store["workPlaceId"] == tempWorkPlaceId;
+
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(18),
+                          onTap: () {
+                            setModalState(() {
+                              tempWorkPlaceId = store["workPlaceId"];
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 22,
+                            ),
+                            decoration: BoxDecoration(
+                              color: selected
+                                  ? const Color(0xFFE6F3FF)
+                                  : const Color(0xFFF5F5F7),
+                              borderRadius: BorderRadius.circular(12),
+                              border: selected
+                                  ? Border.all(
+                                color: const Color(0xFF0084FF),
+                                width: 2,
+                              )
+                                  : null,
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    store["name"] ?? "",
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                                if (selected)
+                                  Container(
+                                    width: 22,
+                                    height: 22,
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFF0084FF),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Center(
+                                      child: Icon(
+                                        Icons.check,
+                                        size: 16,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+
+                    const SizedBox(height: 20),
+
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: () async {
+                          final selectedStore = stores.firstWhere(
+                                (e) => e["workPlaceId"] == tempWorkPlaceId,
+                          );
+
+                          final int newWorkPlaceId =
+                          selectedStore["workPlaceId"];
+                          final String newWorkPlaceName =
+                              selectedStore["name"] ?? "";
+
+                          // ✅ 다른 화면(EMyPage 등)도 참조하는 값이므로
+                          // SharedPreferences를 즉시 갱신
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.setInt(
+                            "selectedWorkPlaceId",
+                            newWorkPlaceId,
+                          );
+                          await prefs.setString(
+                            "selectedWorkPlaceName",
+                            newWorkPlaceName,
+                          );
+
+                          if (!mounted || !context.mounted) return;
+
+                          setState(() {
+                            workPlaceId = newWorkPlaceId;
+                            workPlaceName = newWorkPlaceName;
+
+                            // 매장이 바뀌었으니 이전 매장 기준으로 불러온
+                            // 요청 카드 데이터는 일단 초기화
+                            substituteWorkChangeRequestId = null;
+                            shiftWorkChangeRequestId = null;
+                            substituteDateLabel = null;
+                            substituteTimeLabel = null;
+                            applicantDateLabel = null;
+                            applicantTimeLabel = null;
+                            myDateLabel = null;
+                            myTimeLabel = null;
+                          });
+
+                          Navigator.pop(context);
+
+                          // ✅ 새 매장 기준으로 요청 카드 / 근무 일정을 즉시 다시 조회
+                          await _loadWorkChangeRequestCards(newWorkPlaceId);
+                          await _loadConfirmedSchedules();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0084FF),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: const Text(
+                          "변경",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
   }
 
   /// 홈 카드(교대 신청 / 대타 신청)에 표시할 workChangeRequestId를 가져옵니다.
@@ -373,6 +617,12 @@ class _EHomePageState extends State<EHomePage> {
   }
 
   Future<void> _loadConfirmedSchedules() async {
+    // ✅ 현재 선택된 매장이 없으면 조회하지 않음
+    if (workPlaceId == null) {
+      debugPrint("[EHomePage] workPlaceId가 없어서 근무 일정 조회 스킵");
+      return;
+    }
+
     try {
       final token = await ServerTokenManager.getValidAccessToken();
       if (token == null) return;
@@ -405,8 +655,11 @@ class _EHomePageState extends State<EHomePage> {
 
       if (!mounted) return;
 
+      // ✅ 응답에는 이 계정의 모든 매장 스케줄이 섞여 있을 수 있으므로,
+      // 현재 선택된 매장(workPlaceId) 기준으로만 걸러서 캘린더에 반영한다.
       setState(() {
         workedDates = result.schedules
+            .where((e) => e.workPlaceId == workPlaceId)
             .map(
               (e) => DateTime(
             e.workDate.year,
@@ -417,7 +670,9 @@ class _EHomePageState extends State<EHomePage> {
             .toSet();
       });
 
-      debugPrint("근무 날짜 : $workedDates");
+      debugPrint(
+        "근무 날짜 (workPlaceId: $workPlaceId) : $workedDates",
+      );
     } catch (e) {
       debugPrint("근무 일정 조회 실패 : $e");
     }
@@ -428,8 +683,13 @@ class _EHomePageState extends State<EHomePage> {
     super.initState();
 
     _checkTokens();
+
+    // ✅ _loadConfirmedSchedules()는 여기서 별도로 호출하지 않는다.
+    // workPlaceId가 확정된 뒤 _loadMyWorkPlace() 내부에서 호출되므로,
+    // 여기서 동시에 호출하면 workPlaceId가 아직 null인 상태로 스킵되는
+    // 경쟁 조건이 발생한다. (다른 페이지에서 돌아와 EHomePage가 새로
+    // 생성될 때마다 캘린더가 비어 보이던 원인이었음)
     _loadMyWorkPlace();
-    _loadConfirmedSchedules();
 
     // 홈 진입 시 알림함을 한 번 조회해서, 종 아이콘에 미확인 배지를 띄울 수 있게 한다.
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -580,6 +840,9 @@ class _EHomePageState extends State<EHomePage> {
                   return EHomeHeader(
                     workPlaceName: workPlaceName,
                     hasUnread: hasUnread,
+                    onStoreTap: () {
+                      _EshowStoreBottomSheet(context);
+                    },
                     onNotificationTap: () {
                       Navigator.push(
                         context,
@@ -596,6 +859,8 @@ class _EHomePageState extends State<EHomePage> {
               /// Notice
               if (workPlaceId != null && accessToken != null)
                 ENoticeBanner(
+                  // ✅ workPlaceId가 바뀌면 위젯을 새로 생성해 즉시 재조회되도록 보강
+                  key: ValueKey('notice-$workPlaceId'),
                   workPlaceId: workPlaceId!,
                   accessToken: accessToken!,
                   dio: _dio,
@@ -610,6 +875,8 @@ class _EHomePageState extends State<EHomePage> {
                   // EScheduleCard의 실제 디자인 높이에 맞춰 이 값을 조정
                   height: 140,
                   child: PageView.builder(
+                    // ✅ workPlaceId가 바뀌면 PageView 전체를 새로 생성
+                    key: ValueKey('schedule-pageview-$workPlaceId'),
                     controller: _scheduleCardPageController,
                     itemCount: visibleCardTypes.length,
                     onPageChanged: (index) {
@@ -622,6 +889,7 @@ class _EHomePageState extends State<EHomePage> {
                       return Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 2),
                         child: EScheduleCard(
+                          key: ValueKey('$type-$workPlaceId'),
                           type: type,
                           daysLeft: daysLeft,
                           workPlaceId: workPlaceId,
