@@ -188,6 +188,10 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
   /// selectedDate가 속한 주의 confirmedWeekScheduleId를 불러온다.
   /// 실패하더라도 근무표 화면 자체는 이미 떠 있으므로 조용히 무시하고,
   /// "추가" 버튼을 눌렀을 때 null 체크로 안내한다.
+  ///
+  /// NOTE: 확정 안내(confirmedWeekScheduleId, weekScheduleId)가 모두 null인 경우는
+  /// 백엔드 응답 버그가 아니라, "차주 스케줄이 아직 작성되지 않아 수정/삭제/추가가
+  /// 불가능한 상태"인 것으로 확인됨. 이 경우 버튼 클릭 시 상단 배너로 안내한다.
   Future<void> _loadConfirmedWeekScheduleId() async {
     try {
       final weekly = await ConfirmedSchedulesApi.getConfirmedWeeklySchedule(
@@ -195,13 +199,11 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
         weekStartDate: _mondayOfSelectedWeek(),
       );
 
-      debugPrint("weekly.confirmedWeekScheduleId = ${weekly.confirmedWeekScheduleId}");
-      debugPrint("weekly.weekScheduleId = ${weekly.weekScheduleId}");
-
       if (!mounted) return;
 
       setState(() {
-        confirmedWeekScheduleId = weekly.confirmedWeekScheduleId;
+        confirmedWeekScheduleId =
+            weekly.confirmedWeekScheduleId ?? weekly.weekScheduleId;
       });
     } catch (e) {
       debugPrint("confirmedWeekScheduleId 조회 실패 : $e");
@@ -211,6 +213,36 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
         confirmedWeekScheduleId = null;
       });
     }
+  }
+
+  /// 화면 상단에 배너 형태로 안내 메시지를 띄운다.
+  /// 3초 후 자동으로 닫힌다.
+  void _showNextWeekScheduleRequiredBanner() {
+    final messenger = ScaffoldMessenger.of(context);
+
+    messenger.clearMaterialBanners();
+    messenger.showMaterialBanner(
+      MaterialBanner(
+        backgroundColor: const Color(0xFFFFF4E5),
+        contentTextStyle: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF9A6700),
+        ),
+        leading: const Icon(Icons.info_outline, color: Color(0xFFB07500)),
+        content: const Text("차주 스케줄을 작성해야 수정, 삭제, 추가할 수 있어요"),
+        actions: [
+          TextButton(
+            onPressed: () => messenger.hideCurrentMaterialBanner(),
+            child: const Text("확인"),
+          ),
+        ],
+      ),
+    );
+
+    Future.delayed(const Duration(seconds: 3), () {
+      messenger.hideCurrentMaterialBanner();
+    });
   }
 
   @override
@@ -282,13 +314,6 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
 
                       const Spacer(),
 
-                      // IconButton(
-                      //   onPressed: () {
-                      //     // TODO : 필터
-                      //   },
-                      //   icon: const Icon(Icons.tune),
-                      // ),
-
                       PopupMenuButton<String>(
                         color: Colors.white,
                         elevation: 6,
@@ -300,11 +325,7 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                         onSelected: (value) async {
                           if (value == 'edit') {
                             if (confirmedWeekScheduleId == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("근무표 정보를 불러오는 중이에요. 잠시 후 다시 시도해주세요"),
-                                ),
-                              );
+                              _showNextWeekScheduleRequiredBanner();
                               return;
                             }
 
@@ -325,11 +346,7 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                             }
                           } else if (value == 'add') {
                             if (confirmedWeekScheduleId == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text("근무표 정보를 불러오는 중이에요. 잠시 후 다시 시도해주세요"),
-                                ),
-                              );
+                              _showNextWeekScheduleRequiredBanner();
                               return;
                             }
 

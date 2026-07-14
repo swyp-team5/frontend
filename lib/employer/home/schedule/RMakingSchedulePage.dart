@@ -76,6 +76,9 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
     return '$hour:$minute';
   }
 
+  /// TimeOfDay를 하루 중 분 단위 정수로 변환 (시간 비교용)
+  int _toMinutes(TimeOfDay time) => time.hour * 60 + time.minute;
+
   /// 운영 시간 선택 바텀시트 오픈
   void _openTimePicker({int initialIndex = 0}) async {
     final result = await TimeInputBottomSheet.show(
@@ -86,6 +89,17 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
     );
 
     if (result != null) {
+      // 오픈 시간이 마감 시간보다 늦거나 같으면 안내하고 반영하지 않는다.
+      // (서버 검증 5번: "가게 오픈 시간은 마감 시간보다 빨라야 합니다.")
+      if (_toMinutes(result.openTime) >= _toMinutes(result.closeTime)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("가게 오픈 시간은 마감 시간보다 빨라야 합니다."),
+          ),
+        );
+        return;
+      }
+
       setState(() {
         _openTime = result.openTime;
         _closeTime = result.closeTime;
@@ -94,8 +108,82 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
     }
   }
 
+  /// '등록하기' 버튼 클릭 전, 서버로 보내기 전에 미리 검증해서
+  /// 아래 조건 중 하나라도 어긋나면 등록을 막고 안내 메시지를 반환한다.
+  ///
+  /// - (5) 오픈 시간 < 마감 시간
+  /// - (6) 최소 근무 횟수 <= 최대 근무 횟수
+  /// - 요일 미선택 (안전장치)
+  /// - (11) 각 타임의 시작 시간 < 종료 시간
+  /// - (12) 각 타임이 매장 운영 시간 범위 안에 있는지
+  /// - (13) 같은 교대 안에서 타임끼리 겹치지 않는지
+  String? _validateBeforeRegister() {
+    // 5. 오픈 시간 < 마감 시간
+    if (_toMinutes(_openTime) >= _toMinutes(_closeTime)) {
+      return "가게 오픈 시간은 마감 시간보다 빨라야 합니다.";
+    }
+
+    // 6. 최소 근무 횟수 <= 최대 근무 횟수 (CounterBox의 minValue로도 막고 있지만 이중 안전장치)
+    if (_minWork > _maxWork) {
+      return "최소 근무 횟수는 최대 근무 횟수보다 클 수 없습니다.";
+    }
+
+    // 요일이 선택되지 않은 경우 (이 섹션 자체가 UI상 필수 흐름이므로 안전장치로 추가)
+    if (_selectedDays.isEmpty) {
+      return "요일을 선택해주세요.";
+    }
+
+    // 타임별 상세 설정 검증
+    for (final shift in _shiftInfos) {
+      final startM = _toMinutes(shift.startTime);
+      final endM = _toMinutes(shift.endTime);
+
+      // 11. 시작 시간 < 종료 시간
+      if (startM >= endM) {
+        return "근무 시작 시간은 종료 시간보다 빨라야 합니다.";
+      }
+
+      // 12. 근무 시간은 매장 운영 시간(오픈~마감) 범위 안에 있어야 함
+      if (startM < _toMinutes(_openTime) || endM > _toMinutes(_closeTime)) {
+        return "근무 시간은 가게 운영 시간 안에 있어야 합니다.";
+      }
+    }
+
+    // 13. 같은 교대(등록 단위) 내 타임끼리 서로 겹치지 않는지 확인
+    for (int i = 0; i < _shiftInfos.length; i++) {
+      for (int j = i + 1; j < _shiftInfos.length; j++) {
+        final a = _shiftInfos[i];
+        final b = _shiftInfos[j];
+
+        final aStart = _toMinutes(a.startTime);
+        final aEnd = _toMinutes(a.endTime);
+        final bStart = _toMinutes(b.startTime);
+        final bEnd = _toMinutes(b.endTime);
+
+        final overlaps = aStart < bEnd && bStart < aEnd;
+
+        if (overlaps) {
+          return "교대 시간이 겹칩니다. "
+              "(${_formatTime(a.startTime)}~${_formatTime(a.endTime)} / "
+              "${_formatTime(b.startTime)}~${_formatTime(b.endTime)})";
+        }
+      }
+    }
+
+    return null; // 문제 없음
+  }
+
   /// '등록하기' 버튼 클릭 시
   void _onRegisterPressed() {
+    final errorMessage = _validateBeforeRegister();
+
+    if (errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMessage)),
+      );
+      return; // 조건을 만족하지 못하면 등록하지 않음
+    }
+
     setState(() {
       _isRegistered = true;
 

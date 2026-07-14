@@ -234,29 +234,32 @@ class _RMonthAllSchedulePageState
                             ),
                           ),
                         ),
-                        child: Column(
-                          children: [
-                            Text(
-                              "${date.day}",
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                color: isSelected
-                                    ? const Color(0xFF1976FF)
-                                    : isCurrentMonth
-                                    ? Colors.black
-                                    : const Color(0xFFC8C8D2),),
-                            ),
-
-                            const SizedBox(height: 4,),
-
-                            if (isCurrentMonth)
-                              Expanded(
-                                child: _WorkerScheduleArea(
-                                  workers: workers,
-                                ),
+                        // ⚠️ overflow 방지: 셀 높이가 좁아도 넘치지 않도록 ClipRect로 감쌈
+                        child: ClipRect(
+                          child: Column(
+                            children: [
+                              Text(
+                                "${date.day}",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: isSelected
+                                      ? const Color(0xFF1976FF)
+                                      : isCurrentMonth
+                                      ? Colors.black
+                                      : const Color(0xFFC8C8D2),),
                               ),
-                          ],
+
+                              const SizedBox(height: 4,),
+
+                              if (isCurrentMonth)
+                                Expanded(
+                                  child: _WorkerScheduleArea(
+                                    workers: workers,
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                       ),
                     );
@@ -273,12 +276,27 @@ class _RMonthAllSchedulePageState
   }
 }
 
+/// 날짜 셀 안에 표시되는 근무자 칩 영역.
+///
+/// ⚠️ overflow 수정 포인트:
+/// 기존에는 근무자 수가 5명 이상이면 무조건 3개만 보여주도록 고정되어 있었는데,
+/// 셀 높이(cellHeight)가 화면 크기에 따라 작아지면 칩 3개 + "+N" 텍스트가
+/// 실제 남은 공간(Expanded로 전달된 tight height)보다 커져서
+/// "RenderFlex overflowed" 에러가 발생했다.
+///
+/// 그래서 LayoutBuilder로 실제 사용 가능한 높이를 측정한 뒤,
+/// 그 공간에 들어갈 수 있는 만큼만 칩을 동적으로 계산해서 그린다.
 class _WorkerScheduleArea extends StatelessWidget {
   final List<RScheduleShift> workers;
 
   const _WorkerScheduleArea({
     required this.workers,
   });
+
+  // _WorkerChip의 height(18) + Padding bottom(1)
+  static const double _chipSlotHeight = 18 + 1;
+  // "+N" 텍스트 한 줄이 차지하는 대략적인 높이
+  static const double _remainTextHeight = 14;
 
   @override
   Widget build(BuildContext context) {
@@ -295,37 +313,70 @@ class _WorkerScheduleArea extends StatelessWidget {
       }
     }
 
-    final visibleWorkers =
-    allWorkers.length >= 5
-        ? allWorkers.take(3).toList()
-        : allWorkers;
+    if (allWorkers.isEmpty) {
+      return const SizedBox();
+    }
 
-    final remainCount =
-    allWorkers.length >= 5
-        ? allWorkers.length - 3
-        : 0;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // constraints.maxHeight가 무한(infinity)일 가능성은 낮지만
+        // 방어적으로 처리 (Expanded 안에서는 항상 유한값이 내려옴)
+        final availableHeight = constraints.hasBoundedHeight
+            ? constraints.maxHeight
+            : allWorkers.length * _chipSlotHeight;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        for (final item in visibleWorkers)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 1),
-            child: _WorkerChip(
-              worker: item.$1,
-              colorIndex: item.$2, // role -> colorIndex
-            ),
+        // 사용 가능한 공간에 들어갈 수 있는 최대 칩 개수 계산
+        int maxChipsFit = (availableHeight / _chipSlotHeight).floor();
+        if (maxChipsFit < 0) maxChipsFit = 0;
+
+        int visibleCount;
+        int remainCount;
+
+        if (allWorkers.length <= maxChipsFit) {
+          // 전부 다 보여줄 수 있는 경우
+          visibleCount = allWorkers.length;
+          remainCount = 0;
+        } else {
+          // 다 못 보여주는 경우, "+N" 텍스트를 넣을 자리를 확보하기 위해
+          // 마지막 한 칸을 남겨둔다.
+          visibleCount = (maxChipsFit - 1).clamp(0, allWorkers.length);
+          remainCount = allWorkers.length - visibleCount;
+
+          // "+N" 텍스트조차 넣을 공간이 없을 만큼 셀이 작다면
+          // 최소 1개는 보여주도록 보정 (완전히 빈 셀 방지)
+          if (visibleCount == 0 && maxChipsFit > 0) {
+            visibleCount = 1;
+            remainCount = allWorkers.length - visibleCount;
+          }
+        }
+
+        final visibleWorkers = allWorkers.take(visibleCount).toList();
+
+        return ClipRect(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final item in visibleWorkers)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 1),
+                  child: _WorkerChip(
+                    worker: item.$1,
+                    colorIndex: item.$2, // role -> colorIndex
+                  ),
+                ),
+              if (remainCount > 0)
+                Text(
+                  "+$remainCount",
+                  style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF767676),
+                  ),
+                ),
+            ],
           ),
-        if (remainCount > 0)
-          Text(
-            "+$remainCount",
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: Color(0xFF767676),
-            ),
-          ),
-      ],
+        );
+      },
     );
   }
 }

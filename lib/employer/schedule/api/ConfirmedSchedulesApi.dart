@@ -69,6 +69,10 @@ class ConfirmedSchedulesApi {
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
 
+      // 🔍 임시 디버깅: 실제 서버 응답 원본을 확인
+      debugPrint("🟢 [getConfirmedWeeklySchedule] weekStartDate=${_fmt(weekStartDate)}");
+      debugPrint("🟢 [getConfirmedWeeklySchedule] raw response = ${res.data}");
+
       return ConfirmedWeeklyScheduleResponse.fromJson(res.data);
     } on DioException catch (e) {
       debugPrint("🔴 [ConfirmedSchedulesApi.getConfirmedWeeklySchedule] 실패: ${e.response?.data}");

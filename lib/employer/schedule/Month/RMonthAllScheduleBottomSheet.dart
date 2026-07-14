@@ -71,6 +71,10 @@ class _RMonthAllScheduleBottomSheetState
   /// 그대로 쓰면 서버에서 정합성 오류(500)가 날 수 있다.
   /// 그래서 수정하려는 shift의 실제 workDate가 속한 주의 confirmedWeekScheduleId를
   /// 별도로 다시 조회한다.
+  ///
+  /// NOTE: 서버 응답에서 confirmedWeekScheduleId가 비어있고 weekScheduleId만
+  /// 채워지는 경우가 있어, confirmedWeekScheduleId가 null이면 weekScheduleId로
+  /// 폴백한다. (백엔드 스펙 확인 후 필요 없다면 이 폴백은 제거해도 됩니다.)
   Future<int?> _resolveConfirmedWeekScheduleIdForShift(DateTime shiftDate) async {
     try {
       final weekly = await ConfirmedSchedulesApi.getConfirmedWeeklySchedule(
@@ -78,11 +82,50 @@ class _RMonthAllScheduleBottomSheetState
         weekStartDate: _mondayOf(shiftDate),
       );
 
-      return weekly.confirmedWeekScheduleId;
+      debugPrint(
+        "[_resolveConfirmedWeekScheduleIdForShift] "
+            "confirmedWeekScheduleId=${weekly.confirmedWeekScheduleId}, "
+            "weekScheduleId=${weekly.weekScheduleId}",
+      );
+
+      return weekly.confirmedWeekScheduleId ?? weekly.weekScheduleId;
     } catch (e) {
       debugPrint("[_resolveConfirmedWeekScheduleIdForShift] 조회 실패: $e");
       return null;
     }
+  }
+
+  /// 화면 상단에 배너 형태로 안내 메시지를 띄운다.
+  /// SnackBar 대신 MaterialBanner를 사용 (RMainSchedulePage와 동일한 스타일).
+  /// 3초 후 자동으로 닫힌다.
+  void _showBanner(String message) {
+    if (!mounted) return;
+
+    final messenger = ScaffoldMessenger.of(context);
+
+    messenger.clearMaterialBanners();
+    messenger.showMaterialBanner(
+      MaterialBanner(
+        backgroundColor: const Color(0xFFFFF4E5),
+        contentTextStyle: const TextStyle(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+          color: Color(0xFF9A6700),
+        ),
+        leading: const Icon(Icons.info_outline, color: Color(0xFFB07500)),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => messenger.hideCurrentMaterialBanner(),
+            child: const Text("확인"),
+          ),
+        ],
+      ),
+    );
+
+    Future.delayed(const Duration(seconds: 3), () {
+      messenger.hideCurrentMaterialBanner();
+    });
   }
 
 
@@ -260,12 +303,7 @@ class _RMonthAllScheduleBottomSheetState
                         await _resolveConfirmedWeekScheduleIdForShift(widget.date);
 
                         if (resolvedConfirmedWeekScheduleId == null) {
-                          if (!mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text("근무표 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요"),
-                            ),
-                          );
+                          _showBanner("근무표 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요");
                           return;
                         }
 
@@ -353,12 +391,7 @@ class _RMonthAllScheduleBottomSheetState
                     await _resolveConfirmedWeekScheduleIdForShift(widget.date);
 
                     if (resolvedConfirmedWeekScheduleId == null) {
-                      if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("근무표 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요"),
-                        ),
-                      );
+                      _showBanner("근무표 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요");
                       return;
                     }
 
