@@ -149,11 +149,15 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
       setState(() {
         _workerDays = response.days;
 
+        // 이미 로딩된 "내 확정 근무" 목록의 assignmentId와 겹치면 본인이므로 제외한다.
+        final myAssignmentIds = mySchedules.map((s) => s.assignmentId).toSet();
+
         final map = <int, WorkChangeWorker>{};
 
         for (final day in response.days) {
           for (final time in day.timeDetails) {
             for (final worker in time.workers) {
+              if (myAssignmentIds.contains(worker.assignmentId)) continue;
               map[worker.memberId] = worker;
             }
           }
@@ -170,6 +174,10 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
         _workerDays = [];
         _isLoadingWorkers = false;
       });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst("Exception: ", ""))),
+      );
     }
   }
 
@@ -184,15 +192,23 @@ class _EApplicationFormPageState extends State<EApplicationFormPage> {
   void initState() {
     super.initState();
 
-    final mondayNextWeek = getNextMonday();
-    _focusedMonth = DateTime(mondayNextWeek.year, mondayNextWeek.month);
+    final now = DateTime.now();
+    _focusedMonth = DateTime(now.year, now.month);
 
     _fetchConfirmedSchedules();
   }
 
+  /// 교대/대타 신청 가능 범위: 내일 ~ 다음 주 일요일
+  /// ("이번 주 남은 근무" + "다음 주 확정 근무"를 모두 대상으로 포함해야 해서
+  ///  다음 주만이 아니라 내일부터 다음 주 일요일까지로 범위를 넓힌다)
   List<DateTime> get nextWeek {
-    final monday = getNextMonday();
-    return List.generate(7, (i) => monday.add(Duration(days: i)));
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
+    final nextSunday = getNextMonday().add(const Duration(days: 6));
+
+    final totalDays = nextSunday.difference(tomorrow).inDays + 1;
+    return List.generate(totalDays, (i) => tomorrow.add(Duration(days: i)));
   }
 
   bool _sameDay(DateTime a, DateTime b) =>
