@@ -342,6 +342,114 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
     }
   }
 
+  /// "수정 완료" 버튼을 눌렀을 때 뜨는 확인 바텀시트.
+  /// 여기서 "수정하기"를 눌러야 실제 _submitEdit()이 호출된다.
+  Future<void> _showConfirmSubmitSheet() async {
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(24),
+        ),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 48,
+                  height: 5,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE0E0E0),
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                const Text(
+                  "스케줄을 수정하시겠습니까?",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                const Text(
+                  "스케줄을 수정하면 자동으로\n직원들에게 알림이 가요",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xFF9DA3AF),
+                    height: 1.4,
+                  ),
+                ),
+
+                const SizedBox(height: 24),
+
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(sheetContext, true);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1976FF),
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      "수정하기",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                GestureDetector(
+                  onTap: () {
+                    Navigator.pop(sheetContext, false);
+                  },
+                  child: const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      "취소",
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF767676),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      await _submitEdit();
+    }
+  }
+
   Future<void> _submitEdit() async {
     // 제출 직전, selectedDate 기준 confirmedWeekScheduleId를 최종적으로 다시 한 번 확인한다.
     // (날짜를 바꾼 적이 없어도, 페이지에 오래 머무는 동안 서버 상태가 바뀌었을 수 있으므로
@@ -451,7 +559,7 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
           child: SizedBox(
             height: 52,
             child: ElevatedButton(
-              onPressed: canSubmit ? _submitEdit : null,
+              onPressed: canSubmit ? _showConfirmSubmitSheet : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF1976FF),
                 disabledBackgroundColor:
