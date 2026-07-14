@@ -96,6 +96,7 @@ class _RAddSchedulePageState extends State<RAddSchedulePage> {
   /// "확정 스케줄의 week_schedule 하위 활성 day.date"이면 되고, 그 날짜에 실제
   /// 근무가 있었는지는 조건이 아니기 때문이다(아직 비어있는 날짜도 추가 대상).
   Set<String> _enabledDates = {};
+  bool _isLoadingEnabledDates = true;
 
   Future<void> _loadEnabledDates() async {
     final now = DateTime.now();
@@ -127,9 +128,19 @@ class _RAddSchedulePageState extends State<RAddSchedulePage> {
       }
 
       if (!mounted) return;
-      setState(() => _enabledDates = enabled);
+      setState(() {
+        _enabledDates = enabled;
+        _isLoadingEnabledDates = false;
+      });
     } catch (e) {
       debugPrint("[_loadEnabledDates] 조회 실패: $e");
+
+      if (!mounted) return;
+      setState(() => _isLoadingEnabledDates = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("선택 가능한 날짜를 불러오지 못했어요. 다시 시도해주세요.")),
+      );
     }
   }
 
@@ -466,6 +477,15 @@ class _RAddSchedulePageState extends State<RAddSchedulePage> {
                           : selectedDates.map((e) => "${e.month}/${e.day}").join(", "),
                       hintText: "근무 날짜 선택하기",
                       onTap: () async {
+                        if (_isLoadingEnabledDates) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text("선택 가능한 날짜를 불러오는 중이에요. 잠시 후 다시 시도해주세요."),
+                            ),
+                          );
+                          return;
+                        }
+
                         final result = await CalendarBottomSheet.show(
                           context,
                           initialDates: selectedDates,

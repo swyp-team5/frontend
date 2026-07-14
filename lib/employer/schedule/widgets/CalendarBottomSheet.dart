@@ -116,9 +116,11 @@ class _CalendarBottomSheetState extends State<CalendarBottomSheet> {
 
             const SizedBox(height: 8),
 
-            const Text(
-              "근무 날짜를 선택해주세요",
-              style: TextStyle(
+            Text(
+              widget.enabledDates.isEmpty
+                  ? "먼저 스케줄을 추가하세요"
+                  : "근무 날짜를 선택해주세요",
+              style: const TextStyle(
                 color: Color(0xff888888),
                 fontSize: 14,
               ),

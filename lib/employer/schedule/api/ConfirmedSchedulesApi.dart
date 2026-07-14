@@ -40,9 +40,23 @@ class ConfirmedSchedulesApi {
       return ConfirmedSchedulesResponse.fromJson(res.data);
     } on DioException catch (e) {
       debugPrint("🔴 [ConfirmedSchedulesApi.getConfirmedSchedules] 실패: ${e.response?.data}");
-      final message =
-      e.response?.data is Map ? e.response?.data["message"] : null;
-      throw Exception(message ?? "확정 근무표 조회 실패 (${e.response?.statusCode})");
+      throw Exception(_errorMessage(e.response?.statusCode));
+    }
+  }
+
+  // 서버가 내려주는 raw 메시지/코드 대신, 사용자가 이해하기 쉬운 문구로 바꿔서 보여준다.
+  static String _errorMessage(int? statusCode) {
+    switch (statusCode) {
+      case 400:
+        return "조회 기간이 올바르지 않아요.";
+      case 401:
+        return "로그인이 만료됐어요. 다시 로그인해주세요.";
+      case 403:
+        return "이 사업장의 스케줄을 조회할 권한이 없어요.";
+      case 404:
+        return "사업장 정보를 찾을 수 없어요.";
+      default:
+        return "확정 근무표를 불러오지 못했어요. 잠시 후 다시 시도해주세요.";
     }
   }
 
@@ -76,9 +90,7 @@ class ConfirmedSchedulesApi {
       return ConfirmedWeeklyScheduleResponse.fromJson(res.data);
     } on DioException catch (e) {
       debugPrint("🔴 [ConfirmedSchedulesApi.getConfirmedWeeklySchedule] 실패: ${e.response?.data}");
-      final message =
-      e.response?.data is Map ? e.response?.data["message"] : null;
-      throw Exception(message ?? "주간 확정 근무표 조회 실패 (${e.response?.statusCode})");
+      throw Exception(_errorMessage(e.response?.statusCode));
     }
   }
 }
