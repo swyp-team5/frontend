@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import '../../crews/model/WorkChangeRequestResponse.dart';
-import '../api/WorkChangeRequestListApi.dart';
-import '../model/AssignmentResolver.dart';
+import '../crews/model/WorkChangeRequestResponse.dart';
+import '../home/api/WorkChangeRequestListApi.dart';
+import '../home/model/AssignmentResolver.dart';
 
 /// 목록 한 줄에 필요한 데이터: 원본 요청 + 미리 조회해둔 상대 회원 이름
 class _SentRequestItem {

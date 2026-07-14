@@ -3,7 +3,7 @@ import '../../schedule/EMainSchedulePage.dart';
 import '../EHomePage.dart';
 import '../application/ExchangeRequest.dart';
 import '../application/SubstituteRequest.dart';
-import '../application/SentWorkChangeRequestsPage.dart';
+import '../../mypage/SentWorkChangeRequestsPage.dart';
 
 class EScheduleCard extends StatelessWidget {
   final HomeCardType type;

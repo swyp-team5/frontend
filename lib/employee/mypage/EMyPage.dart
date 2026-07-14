@@ -8,7 +8,8 @@ import '../../common/account/AccountSettingsPage.dart';
 import '../../employer/mypage/api/profile_api.dart';
 import '../crews/ECrewPage.dart';
 import '../home/EHomePage.dart';
-import '../home/application/SentWorkChangeRequestsPage.dart';
+import 'ReceivedWorkChangeRequestsPage.dart';
+import 'SentWorkChangeRequestsPage.dart';
 import '../schedule/EMainSchedulePage.dart';
 import 'EProfileEditPage.dart';
 
@@ -504,6 +505,23 @@ class _EMyPageState extends State<EMyPage> {
                   _buildMenuRow(
                     icon: Icons.call_received,
                     title: "받은 요청 내역",
+                    onTap: () {
+                      if (selectedWorkPlaceId == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text("매장을 먼저 선택해주세요")),
+                        );
+                        return;
+                      }
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ReceivedWorkChangeRequestsPage(
+                            workPlaceId: selectedWorkPlaceId!,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),
