@@ -34,8 +34,15 @@ class _RAutoScheduleBottomSheetState extends State<RAutoScheduleBottomSheet> {
     await showDialog<void>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("스케줄 생성 불가"),
-        content: Text(e.guidanceText),
+        backgroundColor: Colors.white,
+        title: const Text(
+          "스케줄 생성 불가",
+          textAlign: TextAlign.center,
+        ),
+        content: Text(
+          e.guidanceText,
+          textAlign: TextAlign.center,
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),

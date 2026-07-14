@@ -59,6 +59,8 @@ dev_dependencies:
 
   flutter_native_splash: ^2.4.1
 
+  flutter_launcher_icons: ^0.13.1
+
 
 flutter_native_splash:
   color: "#FFFFFF"
@@ -67,6 +69,13 @@ flutter_native_splash:
   android_12:
     color: "#FFFFFF"
     image: assets/images/logo/chackchack.png
+
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/logo/chackchack.png"
+  min_sdk_android: 21
 
 
 flutter:
