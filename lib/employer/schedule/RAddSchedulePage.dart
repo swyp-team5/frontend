@@ -100,7 +100,13 @@ class _RAddSchedulePageState extends State<RAddSchedulePage> {
   Future<void> _loadEnabledDates() async {
     final now = DateTime.now();
     final from = DateTime(now.year, now.month - 3, 1);
-    final to = now.add(const Duration(days: 14));
+
+    // "오늘 기준 +N일"이 아니라 "다음 주 일요일"을 정확히 계산한다.
+    // (오늘 요일에 따라 +N일 방식은 다음 주 일요일에 못 미치거나 다다음 주까지
+    //  넘어가버리는 오차가 생김)
+    final thisMonday = _mondayOf(now);
+    final nextMonday = thisMonday.add(const Duration(days: 7));
+    final to = nextMonday.add(const Duration(days: 6));
 
     try {
       final response = await ConfirmedSchedulesApi.getConfirmedSchedules(
