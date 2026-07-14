@@ -266,6 +266,15 @@ class _RHomePageState extends State<RHomePage> {
                             selectedStore["workPlaceId"],
                           );
 
+                          // ✅ 추가: 다른 화면(RNotificationPage 등)이 SharedPreferences로
+                          // workPlaceId를 직접 읽기 때문에 이 키도 함께 갱신해야
+                          // 다른 페이지를 들르지 않아도 즉시 반영됨
+                          final prefs = await SharedPreferences.getInstance();
+                          await prefs.setInt(
+                            "selectedWorkPlaceId",
+                            selectedStore["workPlaceId"],
+                          );
+
                           if (!mounted || !context.mounted) {
                             return;
                           }
@@ -565,7 +574,7 @@ class _RHomePageState extends State<RHomePage> {
         }
       });
 
-      // ✅ 추가: 최초 로드된 근무지도 SharedPreferences에 반영
+      // ✅ 최초 로드된 근무지도 SharedPreferences에 반영
       // (RNotificationPage 등 다른 화면에서 SharedPreferences로 workPlaceId를 읽기 때문)
       if (selectedWorkPlaceId != null) {
         final prefs = await SharedPreferences.getInstance();
@@ -767,6 +776,8 @@ class _RHomePageState extends State<RHomePage> {
               /// Notice
               if (selectedWorkPlaceId != null && accessToken != null)
                 RNoticeBanner(
+                  // ✅ workPlaceId가 바뀌면 위젯을 새로 생성해 즉시 재조회되도록 보강
+                  key: ValueKey('notice-$selectedWorkPlaceId'),
                   workPlaceId: selectedWorkPlaceId!,
                   accessToken: accessToken!,
                   dio: _dio,
@@ -792,6 +803,9 @@ class _RHomePageState extends State<RHomePage> {
                   // RScheduleCard의 실제 디자인 높이에 맞춰 이 값을 조정
                   height: 230,
                   child: PageView.builder(
+                    // ✅ workPlaceId가 바뀌면 PageView 전체를 새로 생성해
+                    // 내부 카드들의 데이터를 즉시 갱신
+                    key: ValueKey('schedule-pageview-$selectedWorkPlaceId'),
                     controller: _scheduleCardPageController,
                     itemCount: visibleCardTypes.length,
                     onPageChanged: (index) {
@@ -804,6 +818,7 @@ class _RHomePageState extends State<RHomePage> {
                       return Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 2),
                         child: RScheduleCard(
+                          key: ValueKey('$type-$selectedWorkPlaceId'),
                           type: type,
                           daysLeft: daysLeft,
                           workPlaceId: selectedWorkPlaceId,
@@ -873,6 +888,8 @@ class _RHomePageState extends State<RHomePage> {
               /// Today Work
               if (selectedWorkPlaceId != null)
                 RTodayWorkCard(
+                  // ✅ workPlaceId가 바뀌면 위젯을 새로 생성해 즉시 재조회되도록 보강
+                  key: ValueKey('today-work-$selectedWorkPlaceId'),
                   workPlaceId: selectedWorkPlaceId!,
                   onDetailTap: () {
                     // Navigator.push(

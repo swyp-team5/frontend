@@ -51,10 +51,10 @@ class _RScheduleCardState extends State<RScheduleCard> {
   String get _buttonText {
     switch (widget.type) {
       case HomeCardType.weeklySchedule:
-        return "스케줄 만들기";
+        return "스케줄 조건 만들기";
 
       case HomeCardType.scheduleCreationAvailable:
-        return "스케줄 생성하기";
+        return "자동 스케줄 생성하기";
 
       case HomeCardType.submissionStatus:
         return "제출 현황 보기";
