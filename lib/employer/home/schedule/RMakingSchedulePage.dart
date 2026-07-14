@@ -57,6 +57,11 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
   bool get _canRegister =>
       _shiftInfos.isNotEmpty && _shiftInfos.every((e) => e.isCompleted);
 
+  /// 이미 "등록하기"로 확정되어 _registeredSchedules에 포함된 요일들.
+  /// 이 요일들은 요일 선택 섹션에서 다시 선택하지 못하도록 비활성화한다.
+  Set<String> get _registeredDays =>
+      _registeredSchedules.expand((s) => s.days).toSet();
+
   /// 근무 교대 횟수에 맞춰 상세 설정 카드 개수 동기화
   void _syncShiftInfos() {
     int targetCount = _shiftCount + 1;
@@ -571,8 +576,13 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: _daysOfWeek.map((day) {
             final bool isSelected = _selectedDays.contains(day);
+            final bool isAlreadyRegistered = _registeredDays.contains(day);
+
             return GestureDetector(
-              onTap: () => setState(() {
+              // 이미 등록된(확정된) 요일은 탭해도 반응하지 않도록 비활성화
+              onTap: isAlreadyRegistered
+                  ? null
+                  : () => setState(() {
                 isSelected ? _selectedDays.remove(day) : _selectedDays.add(day);
                 _isRegistered = false;
               }),
@@ -580,7 +590,9 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: isSelected
+                  color: isAlreadyRegistered
+                      ? const Color(0xFFF2F2F5) // 비활성 배경 (선택 불가)
+                      : isSelected
                       ? const Color(0xFF0084FF)
                       : const Color(0xFFF2F2F5),
                   borderRadius: BorderRadius.circular(12),
@@ -589,7 +601,11 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
                   child: Text(
                     day,
                     style: TextStyle(
-                      color: isSelected ? Colors.white : const Color(0xFFAEB0B6),
+                      color: isAlreadyRegistered
+                          ? const Color(0xFFD0D3DA) // 비활성 텍스트 (더 옅은 회색)
+                          : isSelected
+                          ? Colors.white
+                          : const Color(0xFFAEB0B6),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
