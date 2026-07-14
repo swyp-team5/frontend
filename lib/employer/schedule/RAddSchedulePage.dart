@@ -6,6 +6,7 @@ import 'package:chack_chack/employer/schedule/widgets/WorkingTImeInputBottomShee
 import 'package:flutter/material.dart';
 
 import 'api/AssignmentApi.dart';
+import 'api/ConfirmedSchedulesApi.dart';
 import 'api/WorkersApi.dart';
 import 'models/AssignmentCreateRequest.dart';
 import 'models/WorkersResponse.dart';
@@ -17,12 +18,10 @@ import 'models/schedule_model.dart';
 
 class RAddSchedulePage extends StatefulWidget {
   final int workPlaceId;
-  final int confirmedWeekScheduleId;
 
   const RAddSchedulePage({
     super.key,
     required this.workPlaceId,
-    required this.confirmedWeekScheduleId,
   });
 
   @override
@@ -87,6 +86,47 @@ class _RAddSchedulePageState extends State<RAddSchedulePage> {
         "${date.day.toString().padLeft(2, '0')}";
   }
 
+  DateTime _mondayOf(DateTime date) {
+    return DateTime(date.year, date.month, date.day)
+        .subtract(Duration(days: date.weekday - 1));
+  }
+
+  /// 근무 날짜 선택 캘린더에서 활성화할 날짜 집합.
+  /// 근무가 하루라도 있는 주는 그 주 전체(월~일)를 활성화한다 — 18-5 정책상
+  /// "확정 스케줄의 week_schedule 하위 활성 day.date"이면 되고, 그 날짜에 실제
+  /// 근무가 있었는지는 조건이 아니기 때문이다(아직 비어있는 날짜도 추가 대상).
+  Set<String> _enabledDates = {};
+
+  Future<void> _loadEnabledDates() async {
+    final now = DateTime.now();
+    final from = DateTime(now.year, now.month - 3, 1);
+    final to = now.add(const Duration(days: 14));
+
+    try {
+      final response = await ConfirmedSchedulesApi.getConfirmedSchedules(
+        workPlaceId: widget.workPlaceId,
+        from: from,
+        to: to,
+      );
+
+      final mondays = response.days
+          .map((d) => _mondayOf(DateTime.parse(d.workDate)))
+          .toSet();
+
+      final enabled = <String>{};
+      for (final monday in mondays) {
+        for (int i = 0; i < 7; i++) {
+          enabled.add(_formatDate(monday.add(Duration(days: i))));
+        }
+      }
+
+      if (!mounted) return;
+      setState(() => _enabledDates = enabled);
+    } catch (e) {
+      debugPrint("[_loadEnabledDates] 조회 실패: $e");
+    }
+  }
+
   List<WorkerItem> workers = [];
 
   Future<void> _loadWorkers() async {
@@ -123,14 +163,37 @@ class _RAddSchedulePageState extends State<RAddSchedulePage> {
       final memberIds = selectedWorkers.map((w) => w.memberId).toList();
       final restTime = _parseBreakTimeToMinutes(breakTime);
 
+      // 18-5 정책상 confirmedWeekScheduleId 하나당 그 주(week_schedule) 소속
+      // 날짜만 등록할 수 있다. selectedDates가 여러 주에 걸칠 수 있으므로,
+      // 주(월요일 기준)마다 confirmedWeekScheduleId를 한 번씩만 조회해서 재사용한다.
+      final Map<DateTime, int?> weekIdCache = {};
+
       // AssignmentCreateRequest는 날짜 하나당 요청 하나이므로,
       // 선택된 날짜 수만큼 순차적으로 등록.
       // workPartNo는 서버에서 자동으로 계산해서 응답으로 내려주므로
       // 클라이언트에서 별도로 조회하지 않습니다.
       for (final date in selectedDates) {
+        final monday = _mondayOf(date);
+
+        if (!weekIdCache.containsKey(monday)) {
+          final weekly = await ConfirmedSchedulesApi.getConfirmedWeeklySchedule(
+            workPlaceId: widget.workPlaceId,
+            weekStartDate: monday,
+          );
+          weekIdCache[monday] = weekly.confirmedWeekScheduleId;
+        }
+
+        final confirmedWeekScheduleId = weekIdCache[monday];
+
+        if (confirmedWeekScheduleId == null) {
+          throw Exception(
+            "${_formatDate(date)}이(가) 속한 주는 확정된 스케줄이 없어요.",
+          );
+        }
+
         final response = await AssignmentApi.create(
           workPlaceId: widget.workPlaceId,
-          confirmedWeekScheduleId: widget.confirmedWeekScheduleId,
+          confirmedWeekScheduleId: confirmedWeekScheduleId,
           request: AssignmentCreateRequest(
             workDate: _formatDate(date),
             timeName: workNameController.text,
@@ -182,6 +245,7 @@ class _RAddSchedulePageState extends State<RAddSchedulePage> {
     super.initState();
 
     _loadWorkers();
+    _loadEnabledDates();
   }
 
   @override
@@ -399,6 +463,7 @@ class _RAddSchedulePageState extends State<RAddSchedulePage> {
                         final result = await CalendarBottomSheet.show(
                           context,
                           initialDates: selectedDates,
+                          enabledDates: _enabledDates,
                         );
 
                         if (result != null) {

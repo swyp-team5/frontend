@@ -4,14 +4,19 @@ import 'package:table_calendar/table_calendar.dart';
 class CalendarBottomSheet extends StatefulWidget {
   final List<DateTime>? initialDates;
 
+  /// 선택 가능한 날짜("yyyy-MM-dd") 집합. 이 집합에 포함된 날짜만 선택 가능하다.
+  final Set<String> enabledDates;
+
   const CalendarBottomSheet({
     super.key,
     this.initialDates,
+    required this.enabledDates,
   });
 
   static Future<List<DateTime>?> show(
       BuildContext context,{
         List<DateTime>? initialDates,
+        required Set<String> enabledDates,
       }) {
     return showModalBottomSheet<List<DateTime>>(
       context: context,
@@ -24,6 +29,7 @@ class CalendarBottomSheet extends StatefulWidget {
       ),
       builder: (_) => CalendarBottomSheet(
         initialDates: initialDates,
+        enabledDates: enabledDates,
       ),
     );
   }
@@ -52,6 +58,12 @@ class _CalendarBottomSheetState extends State<CalendarBottomSheet> {
         focusedDay = selectedDays.first;
       }
     }
+  }
+
+  String _dateKey(DateTime date) {
+    return "${date.year.toString().padLeft(4, '0')}-"
+        "${date.month.toString().padLeft(2, '0')}-"
+        "${date.day.toString().padLeft(2, '0')}";
   }
 
   @override
@@ -123,6 +135,11 @@ class _CalendarBottomSheetState extends State<CalendarBottomSheet> {
 
               selectedDayPredicate: (day) {
                 return selectedDays.any((d) => isSameDay(d, day));
+              },
+
+              // 확정 스케줄이 있는 주에 속한 날짜만 선택 가능하게 한다.
+              enabledDayPredicate: (day) {
+                return widget.enabledDates.contains(_dateKey(day));
               },
 
               onDaySelected: (selectedDay, focusedDay) {

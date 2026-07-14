@@ -356,8 +356,6 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                               MaterialPageRoute(
                                 builder: (_) => RAddSchedulePage(
                                   workPlaceId: widget.workPlaceId,
-                                  confirmedWeekScheduleId:
-                                  confirmedWeekScheduleId!,
                                 ),
                               ),
                             );

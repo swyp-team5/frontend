@@ -27,21 +27,9 @@ class _RScheduleEditPageState extends State<RScheduleEditPage> {
   late DateTime focusedDay;
   DateTime? selectedDay;
 
-  late final DateTime nextMonday;
-  late final DateTime nextSunday;
-
   @override
   void initState() {
     super.initState();
-
-    final now = DateTime.now();
-
-    final thisMonday =
-    DateTime(now.year, now.month, now.day)
-        .subtract(Duration(days: now.weekday - 1));
-
-    nextMonday = thisMonday.add(const Duration(days: 7));
-    nextSunday = nextMonday.add(const Duration(days: 6));
 
     focusedDay = widget.selectedDate;
     selectedDay = widget.selectedDate;
@@ -136,8 +124,6 @@ class _RScheduleEditPageState extends State<RScheduleEditPage> {
             TableCalendar(
               locale: 'ko_KR',
 
-              // firstDay: nextMonday,
-              // lastDay: nextSunday,
               firstDay: DateTime(2024),
               lastDay: DateTime(2035),
 
@@ -239,11 +225,11 @@ class _RScheduleEditPageState extends State<RScheduleEditPage> {
                 });
               },
 
+              // 확정 배정이 있는 날짜(widget.schedules의 key)만 선택 가능하게 한다.
+              // (widget.schedules는 이미 확정 스케줄 조회 API 결과로 만들어져 넘어오므로
+              //  이 화면에서 별도로 API를 다시 호출할 필요가 없다.)
               enabledDayPredicate: (day) {
-                final target = DateTime(day.year, day.month, day.day);
-
-                return !target.isBefore(nextMonday) &&
-                    !target.isAfter(nextSunday);
+                return widget.schedules.containsKey(dateKey(day));
               },
             ),
 

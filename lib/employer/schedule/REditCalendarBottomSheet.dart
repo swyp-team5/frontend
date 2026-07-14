@@ -4,14 +4,19 @@ import 'package:table_calendar/table_calendar.dart';
 class REditCalendarBottomSheet extends StatefulWidget {
   final DateTime? initialDate;
 
+  /// 확정 배정이 있는 날짜("yyyy-MM-dd") 집합. 이 집합에 포함된 날짜만 선택 가능하다.
+  final Set<String> enabledDates;
+
   const REditCalendarBottomSheet({
     super.key,
     this.initialDate,
+    required this.enabledDates,
   });
 
   static Future<DateTime?> show(
       BuildContext context, {
         DateTime? initialDate,
+        required Set<String> enabledDates,
       }) {
     return showModalBottomSheet<DateTime>(
       context: context,
@@ -24,6 +29,7 @@ class REditCalendarBottomSheet extends StatefulWidget {
       ),
       builder: (_) => REditCalendarBottomSheet(
         initialDate: initialDate,
+        enabledDates: enabledDates,
       ),
     );
   }
@@ -54,6 +60,12 @@ class _REditCalendarBottomSheetState extends State<REditCalendarBottomSheet> {
     }
 
     focusedDay = selectedDay;
+  }
+
+  String _dateKey(DateTime date) {
+    return "${date.year.toString().padLeft(4, '0')}-"
+        "${date.month.toString().padLeft(2, '0')}-"
+        "${date.day.toString().padLeft(2, '0')}";
   }
 
   @override
@@ -125,6 +137,11 @@ class _REditCalendarBottomSheetState extends State<REditCalendarBottomSheet> {
 
               selectedDayPredicate: (day) {
                 return isSameDay(day, selectedDay);
+              },
+
+              // 확정 배정이 있는 날짜만 선택 가능하게 한다.
+              enabledDayPredicate: (day) {
+                return widget.enabledDates.contains(_dateKey(day));
               },
 
               onDaySelected: (selected, focused) {
