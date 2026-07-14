@@ -7,6 +7,7 @@ import '../fcm/FcmSetupService.dart';
 import '../fcm/api/FcmTokenApi.dart';
 import '../fcm/api/NotificationSettingsApi.dart';
 import '../onboarding/OnboardingPage.dart';
+import 'TermsAndPrivacyPage.dart';
 import 'WithdrawalReasonPage.dart';
 import 'account_settings_api.dart';
 
@@ -331,7 +332,15 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
                           onChanged: _toggleFcmPush,
                         ),
                         const Divider(height: 1, color: Color(0xFFF2F2F2)),
-                        const _MenuRow(title: '약관 및 개인정보 처리 동의 내역'),
+                        _MenuRow(
+                          title: '약관 및 개인정보 처리 동의 내역',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const TermsAndPrivacyPage()),
+                            );
+                          },
+                        ),
                       ],
                     ),
                     const SizedBox(height: 32),
