@@ -162,42 +162,6 @@ class _SentWorkChangeRequestsPageState
               },
             ),
 
-            // /// 안내 배너
-            // Padding(
-            //   padding: const EdgeInsets.fromLTRB(20, 16, 20, 4),
-            //   child: Container(
-            //     width: double.infinity,
-            //     padding: const EdgeInsets.symmetric(
-            //       horizontal: 14,
-            //       vertical: 12,
-            //     ),
-            //     decoration: BoxDecoration(
-            //       color: const Color(0xFFF0F0F3),
-            //       borderRadius: BorderRadius.circular(10),
-            //     ),
-            //     child: Row(
-            //       children: [
-            //         const Icon(
-            //           Icons.info_outline,
-            //           size: 16,
-            //           color: Color(0xFF9A9A9A),
-            //         ),
-            //         const SizedBox(width: 6),
-            //         Expanded(
-            //           child: Text(
-            //             "보낸 요청 내역은 최대 3일까지 보관돼요",
-            //             style: const TextStyle(
-            //               fontSize: 12.5,
-            //               color: Color(0xFF8F8F8F),
-            //               fontWeight: FontWeight.w500,
-            //             ),
-            //           ),
-            //         ),
-            //       ],
-            //     ),
-            //   ),
-            // ),
-
             Expanded(
               child: FutureBuilder<List<_SentRequestItem>>(
                 future: _future,
@@ -348,10 +312,14 @@ class _SentRequestCard extends StatelessWidget {
         return request.requestType == "SUBSTITUTE"
             ? "승인 대기 중"
             : "응답 대기 중";
-      case "ACCEPTED":
-        return "수락 완료";
-      case "REJECTED":
-        return "거절 완료";
+      case "ACCEPTED_BY_TARGET":
+        return "근무자 수락 완료";
+      case "APPROVED":
+        return "사장님 수락 완료";
+      case "REJECTED_BY_TARGET":
+        return "근무자 수락 거절";
+      case "REJECTED_BY_OWNER":
+        return "사장님 수락 거절";
       case "CANCELED":
         return "취소됨";
       default:
@@ -363,9 +331,11 @@ class _SentRequestCard extends StatelessWidget {
     switch (request.status) {
       case "REQUESTED":
         return const Color(0xFF00B475);
-      case "ACCEPTED":
+      case "ACCEPTED_BY_TARGET":
+      case "APPROVED":
         return const Color(0xFF3D7DFF);
-      case "REJECTED":
+      case "REJECTED_BY_TARGET":
+      case "REJECTED_BY_OWNER":
         return const Color(0xFFFF5C5C);
       default:
         return const Color(0xFF8F8F8F);
@@ -376,9 +346,11 @@ class _SentRequestCard extends StatelessWidget {
     switch (request.status) {
       case "REQUESTED":
         return const Color(0xFFD8F5E9);
-      case "ACCEPTED":
+      case "ACCEPTED_BY_TARGET":
+      case "APPROVED":
         return const Color(0xFFDDE8FF);
-      case "REJECTED":
+      case "REJECTED_BY_TARGET":
+      case "REJECTED_BY_OWNER":
         return const Color(0xFFFFE1E1);
       default:
         return const Color(0xFFECECEC);
