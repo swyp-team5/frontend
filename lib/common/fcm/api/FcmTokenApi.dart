@@ -19,7 +19,7 @@ class FcmTokenApi {
     required String platform, // "ANDROID" | "IOS"
     required String appVersion,
   }) async {
-    final accessToken = await ServerTokenManager.getAccessToken();
+    final accessToken = await ServerTokenManager.getValidAccessToken();
 
     if (accessToken == null || accessToken.isEmpty) {
       throw Exception("인증이 필요합니다. 다시 로그인해주세요.");

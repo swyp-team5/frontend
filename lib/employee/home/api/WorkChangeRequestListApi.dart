@@ -108,10 +108,6 @@ class WorkChangeRequestListApi {
   }
 
   /// 받은 요청(RECEIVED)에 대해 수락/거절 응답을 보낸다.
-  ///
-  /// NOTE: 아래 엔드포인트("/respond", PATCH, {"accept": bool})는
-  /// 실제 백엔드 명세가 확인되지 않아 가정한 값입니다.
-  /// 실제 명세(경로, HTTP 메서드, 요청 바디 필드명/형식)에 맞춰 수정해주세요.
   Future<void> respondToRequest({
     required int workPlaceId,
     required int workChangeRequestId,
@@ -123,12 +119,11 @@ class WorkChangeRequestListApi {
       throw Exception("로그인 정보가 만료되었습니다. 다시 로그인해주세요.");
     }
 
+    final action = accept ? "accept" : "reject";
+
     try {
-      final response = await _dio.patch(
-        "/api/work-places/$workPlaceId/work-change-requests/$workChangeRequestId/accept",
-        data: {
-          "accept": accept,
-        },
+      final response = await _dio.post(
+        "/api/work-places/$workPlaceId/work-change-requests/$workChangeRequestId/$action",
         options: Options(
           headers: {
             "Authorization": "Bearer $token",
@@ -137,7 +132,7 @@ class WorkChangeRequestListApi {
       );
 
       debugPrint(
-        "[WorkChangeRequestListApi] PATCH ${response.requestOptions.uri} "
+        "[WorkChangeRequestListApi] POST ${response.requestOptions.uri} "
             "-> ${response.data}",
       );
     } on DioException catch (e) {
