@@ -125,7 +125,7 @@ class WorkChangeRequestListApi {
 
     try {
       final response = await _dio.patch(
-        "/api/work-places/$workPlaceId/work-change-requests/$workChangeRequestId/respond",
+        "/api/work-places/$workPlaceId/work-change-requests/$workChangeRequestId/accept",
         data: {
           "accept": accept,
         },
