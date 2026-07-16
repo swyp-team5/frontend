@@ -11,7 +11,7 @@ class RScheduleCard extends StatefulWidget {
   final int? workPlaceId;
   final int? weekScheduleId;
   final int? notSubmittedCount; // ✅ 추가: 서버에서 받아온 미제출 인원 수
-  final VoidCallback? onResetConditions; // ✅ 추가: 조건 초기화 성공 후 부모에서 갱신하도록 알림
+  final Future<void> Function()? onResetConditions; // ✅ 추가: 조건 초기화 성공 후 부모에서 갱신하도록 알림
 
   const RScheduleCard({
     super.key,
@@ -134,13 +134,23 @@ class _RScheduleCardState extends State<RScheduleCard> {
         weekScheduleId: widget.weekScheduleId!,
       );
 
+      debugPrint("========== resetConditions 성공 ==========");
+
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("스케줄 조건이 초기화되었어요.")),
+        const SnackBar(
+          content: Text("스케줄 조건이 초기화되었어요."),
+        ),
       );
 
-      widget.onResetConditions?.call();
+      if (widget.onResetConditions != null) {
+        debugPrint("========== 부모 callback 호출 ==========");
+        await widget.onResetConditions!.call();
+        debugPrint("========== 부모 callback 완료 ==========");
+      } else {
+        debugPrint("========== 부모 callback 없음 ==========");
+      }
     } catch (e) {
       debugPrint("스케줄 조건 초기화 실패: $e");
       if (!mounted) return;

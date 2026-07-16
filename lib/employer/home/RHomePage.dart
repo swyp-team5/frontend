@@ -61,6 +61,8 @@ class _RHomePageState extends State<RHomePage> {
 
   int? notSubmittedCount;
 
+  DateTime? dueDate;
+
   // 슬라이드 카드용 컨트롤러 & 현재 페이지 인덱스
   final PageController _scheduleCardPageController = PageController();
   int _currentSchedulePage = 0;
@@ -70,8 +72,20 @@ class _RHomePageState extends State<RHomePage> {
 
   /// 카드에서 사용할 남은 일수
   int get daysLeft {
+    if (dueDate == null) return 0;
+
     final now = DateTime.now();
-    return 8 - now.weekday;
+
+    final today = DateTime(now.year, now.month, now.day);
+    final end = DateTime(
+      dueDate!.year,
+      dueDate!.month,
+      dueDate!.day,
+    );
+
+    final diff = end.difference(today).inDays;
+
+    return diff < 0 ? 0 : diff;
   }
 
   void _RshowStoreBottomSheet(BuildContext context) {
@@ -590,14 +604,19 @@ class _RHomePageState extends State<RHomePage> {
     }
 
     try {
-      final latest = await ScheduleApiService.getLatestScheduleConditions(
+      final latest =
+      await ScheduleApiService.getLatestScheduleConditions(
         workPlaceId: selectedWorkPlaceId!,
       );
 
-      if (!mounted) return;
-
       setState(() {
         weekScheduleId = latest?.weekScheduleId;
+
+        if (latest?.dueDate != null) {
+          dueDate = DateTime.parse(latest!.dueDate);
+        } else {
+          dueDate = null;
+        }
       });
 
       debugPrint("weekScheduleId (API) = $weekScheduleId");
@@ -813,20 +832,37 @@ class _RHomePageState extends State<RHomePage> {
                           workPlaceId: selectedWorkPlaceId,
                           weekScheduleId: weekScheduleId,
                           notSubmittedCount: notSubmittedCount,
+
                           onClose: () {
                             setState(() {
                               closedCardTypes.add(type);
 
-                              // 마지막 카드를 닫은 경우 인덱스가 범위를 벗어나지 않도록 보정
                               final remaining = visibleCardTypes.length - 1;
+
                               if (_currentSchedulePage > remaining - 1 &&
                                   _currentSchedulePage > 0) {
                                 _currentSchedulePage--;
                               }
                             });
                           },
+
                           onMakeScheduleTap: () => _onMakeScheduleTap(type),
-                        ),
+
+                          onResetConditions: () async {
+                            debugPrint("========== 부모 callback 실행 ==========");
+
+                            // 다시 최신 데이터 조회
+                            await _loadWorkPlaces();
+                            await _loadWeekScheduleId();
+                            await _loadSubmitStatus();
+
+                            if (!mounted) return;
+
+                            setState(() {});
+
+                            debugPrint("========== 홈 새로고침 완료 ==========");
+                          },
+                        )
                       );
                     },
                   ),
