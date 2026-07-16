@@ -8,7 +8,6 @@ import '../../mypage/SentWorkChangeRequestsPage.dart';
 class EScheduleCard extends StatelessWidget {
   final HomeCardType type;
   final int daysLeft;
-  final VoidCallback? onClose;
   final VoidCallback? onDetailTap;
 
   /// substituteRequest / shiftRequest 타입 카드에서 상세 화면으로 이동할 때 필요
@@ -35,7 +34,6 @@ class EScheduleCard extends StatelessWidget {
     super.key,
     required this.type,
     required this.daysLeft,
-    this.onClose,
     this.onDetailTap,
     this.workPlaceId,
     this.workChangeRequestId,
@@ -290,28 +288,6 @@ class EScheduleCard extends StatelessWidget {
                 child: Image.asset(
                   imagePath,
                   fit: BoxFit.cover,
-                ),
-              ),
-            ),
-
-            /// 닫기 버튼
-            Positioned(
-              top: 16,
-              right: 16,
-              child: GestureDetector(
-                onTap: onClose,
-                child: Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(.25),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.close,
-                    size: 18,
-                    color: Colors.grey,
-                  ),
                 ),
               ),
             ),

@@ -781,11 +781,11 @@ class _EHomePageState extends State<EHomePage> {
   // 개발용: 6개 HomeCardType(=none 제외) 전부 렌더링
   //==========================================================
   static const List<HomeCardType> _allCardTypes = [
+    HomeCardType.shiftRequest,
+    HomeCardType.substituteRequest,
     HomeCardType.weeklySchedule,
     HomeCardType.scheduleCompleted,
     HomeCardType.scheduleChanged,
-    HomeCardType.shiftRequest,
-    HomeCardType.substituteRequest,
     HomeCardType.ownerWorkRequest,
   ];
 
@@ -830,18 +830,22 @@ class _EHomePageState extends State<EHomePage> {
   Widget build(BuildContext context) {
     /// 실제로 화면에 보여줄 카드 타입들 (닫힌 카드는 제외)
     final visibleCardTypes = _allCardTypes.where((type) {
-      if (hiddenCardTypes.contains(type)) return false;
+      switch (type) {
+        case HomeCardType.shiftRequest:
+          return shiftWorkChangeRequestId != null &&
+              applicantDateLabel != null &&
+              applicantDateLabel!.isNotEmpty &&
+              myDateLabel != null &&
+              myDateLabel!.isNotEmpty;
 
-      /// 교대/대타 신청 카드는 실제 요청(id)이 있을 때만 슬라이드에 포함
-      //    (값이 없으면 리스트에서 아예 제외해 빈 슬라이드가 보이지 않도록 함)
-      if (type == HomeCardType.shiftRequest) {
-        return shiftWorkChangeRequestId != null;
-      }
-      if (type == HomeCardType.substituteRequest) {
-        return substituteWorkChangeRequestId != null;
-      }
+        case HomeCardType.substituteRequest:
+          return substituteWorkChangeRequestId != null &&
+              substituteDateLabel != null &&
+              substituteDateLabel!.isNotEmpty;
 
-      return true;
+        default:
+          return true;
+      }
     }).toList();
 
     /// 카드가 닫혀서 개수가 줄었을 때 PageView 인덱스가 범위를 벗어나지 않도록 보정
@@ -944,12 +948,10 @@ class _EHomePageState extends State<EHomePage> {
                           daysLeft: daysLeft,
                           workPlaceId: workPlaceId,
                           workChangeRequestId: _workChangeRequestIdFor(type),
-                          substituteDateLabel:
-                          type == HomeCardType.substituteRequest
+                          substituteDateLabel: type == HomeCardType.substituteRequest
                               ? substituteDateLabel
                               : null,
-                          substituteTimeLabel:
-                          type == HomeCardType.substituteRequest
+                          substituteTimeLabel: type == HomeCardType.substituteRequest
                               ? substituteTimeLabel
                               : null,
                           applicantDateLabel: type == HomeCardType.shiftRequest
@@ -958,24 +960,10 @@ class _EHomePageState extends State<EHomePage> {
                           applicantTimeLabel: type == HomeCardType.shiftRequest
                               ? applicantTimeLabel
                               : null,
-                          myDateLabel: type == HomeCardType.shiftRequest
-                              ? myDateLabel
-                              : null,
-                          myTimeLabel: type == HomeCardType.shiftRequest
-                              ? myTimeLabel
-                              : null,
-                          onClose: () {
-                            setState(() {
-                              hiddenCardTypes.add(type);
-
-                              // 마지막 카드를 닫은 경우 인덱스가 범위를 벗어나지 않도록 보정
-                              final remaining = visibleCardTypes.length - 1;
-                              if (_currentSchedulePage > remaining - 1 &&
-                                  _currentSchedulePage > 0) {
-                                _currentSchedulePage--;
-                              }
-                            });
-                          },
+                          myDateLabel:
+                          type == HomeCardType.shiftRequest ? myDateLabel : null,
+                          myTimeLabel:
+                          type == HomeCardType.shiftRequest ? myTimeLabel : null,
                           onDetailTap: () => _handleDetailTap(type),
                         ),
                       );
