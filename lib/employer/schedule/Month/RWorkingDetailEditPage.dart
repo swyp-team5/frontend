@@ -84,7 +84,9 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
   int? _confirmedWeekScheduleIdForSelectedDate;
   bool _isResolvingWeekSchedule = false;
 
-  final List<String> workTypes = ["오픈", "미들", "마감",];
+  /// 근무 타임(timeName) 목록 - 하드코딩 대신 해당 주의 확정 근무표에서 동적으로 불러온다.
+  List<String> workTypes = [];
+  bool _isLoadingWorkTypes = true;
 
   final List<String> breakTimes = ["없음", "30분", "1시간", "1시간 30분",];
 
@@ -104,6 +106,69 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
     selectedDate = widget.date;
 
     _confirmedWeekScheduleIdForSelectedDate = widget.confirmedWeekScheduleId;
+
+    _loadWorkTypes();
+  }
+
+  /// 원래 슬롯(widget.date)이 속한 주(월~일)의 확정 근무표를 조회해서
+  /// 등록된 모든 timeName을 모아 드롭다운 선택지로 사용한다.
+  Future<void> _loadWorkTypes() async {
+    setState(() {
+      _isLoadingWorkTypes = true;
+    });
+
+    try {
+      final monday = _mondayOf(widget.date);
+      final sunday = monday.add(const Duration(days: 6));
+
+      debugPrint(
+        "[_loadWorkTypes] 조회 시작: workPlaceId=${widget.workPlaceId}, "
+            "from=${_formatDate(monday)}, to=${_formatDate(sunday)}",
+      );
+
+      final response = await ConfirmedSchedulesApi.getConfirmedSchedules(
+        workPlaceId: widget.workPlaceId,
+        from: monday,
+        to: sunday,
+      );
+
+      debugPrint("[_loadWorkTypes] 응답 days 개수: ${response.days.length}");
+
+      final names = <String>{};
+      for (final day in response.days) {
+        debugPrint(
+          "[_loadWorkTypes] day=${day.workDate}, "
+              "timeDetails=${day.timeDetails.map((t) => t.timeName).toList()}",
+        );
+        for (final detail in day.timeDetails) {
+          names.add(detail.timeName);
+        }
+      }
+
+      // 현재 선택된 값(수정 중인 항목의 timeName)이 목록에 없다면 포함시켜준다.
+      names.add(selectedWorkType);
+
+      debugPrint("[_loadWorkTypes] 최종 workTypes: ${names.toList()}");
+
+      if (!mounted) return;
+
+      setState(() {
+        workTypes = names.toList();
+        _isLoadingWorkTypes = false;
+      });
+    } catch (e) {
+      debugPrint("[_loadWorkTypes] 조회 실패: $e");
+
+      if (!mounted) return;
+
+      setState(() {
+        // 조회 실패 시 최소한 현재 값이라도 선택 가능하도록 폴백
+        workTypes = [selectedWorkType];
+        _isLoadingWorkTypes = false;
+      });
+
+      debugPrint("[_loadWorkTypes] 폴백 workTypes: $workTypes");
+    }
   }
 
   /// 근무 날짜 변경 바텀시트에서 선택 가능한 날짜.
@@ -643,18 +708,32 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
                   CrossAxisAlignment.start,
                   children: [
                     /// 근무 타임
-                    const Text("근무 타임",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    Row(
+                      children: [
+                        const Text("근무 타임",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (_isLoadingWorkTypes) ...[
+                          const SizedBox(width: 8),
+                          const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        ],
+                      ],
                     ),
 
                     const SizedBox(height: 12),
 
                     _DropdownBox(
                       value: selectedWorkType,
-                      onTap: () {
+                      onTap: _isLoadingWorkTypes || workTypes.isEmpty
+                          ? () {}
+                          : () {
                         _showSelectSheet(
                           title: "근무 타임 선택",
                           items: workTypes,
