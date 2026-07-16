@@ -55,6 +55,7 @@ class _WorkerBottomSheetState extends State<WorkerBottomSheet> {
 
       setState(() {
         workers = result.crews
+            .where((crew) => crew.crewRole == "WORKER") // owner 제외
             .map(
               (crew) => WorkerItem(
             memberId: crew.memberId,

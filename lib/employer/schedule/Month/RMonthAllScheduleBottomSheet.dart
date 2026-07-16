@@ -1,7 +1,7 @@
 import 'package:chack_chack/employer/schedule/Month/RWorkingDetailEditPage.dart';
 import 'package:flutter/material.dart';
 
-import '../api/ConfirmedSchedulesApi.dart';
+import '../../home/schedule/api/ScheduleApiService.dart';
 import '../models/WorkersResponse.dart';
 import '../widgets/RDeleteWorkingBottomSheet.dart';
 import 'RMonthAllSchedulePage.dart';
@@ -61,34 +61,27 @@ class _RMonthAllScheduleBottomSheetState
         "${date.day.toString().padLeft(2, '0')}";
   }
 
-  DateTime _mondayOf(DateTime date) {
-    return DateTime(date.year, date.month, date.day)
-        .subtract(Duration(days: date.weekday - 1));
-  }
-
   /// widget.confirmedWeekScheduleId는 캘린더에서 "현재 선택된 날짜"가 속한
-  /// 한 주에 대해서만 조회된 값이라, 월간 뷰에 보이는 다른 주의 shift를 수정할 때
-  /// 그대로 쓰면 서버에서 정합성 오류(500)가 날 수 있다.
-  /// 그래서 수정하려는 shift의 실제 workDate가 속한 주의 confirmedWeekScheduleId를
-  /// 별도로 다시 조회한다.
+  /// 시점에 조회된 값이라 화면 재진입 사이 활성 스케줄이 바뀌었을 수 있으므로,
+  /// 실제 수정/삭제 액션을 실행하기 직전에 최신 활성 weekScheduleId를 다시 조회한다.
   ///
-  /// NOTE: 서버 응답에서 confirmedWeekScheduleId가 비어있고 weekScheduleId만
-  /// 채워지는 경우가 있어, confirmedWeekScheduleId가 null이면 weekScheduleId로
-  /// 폴백한다. (백엔드 스펙 확인 후 필요 없다면 이 폴백은 제거해도 됩니다.)
+  /// NOTE: 예전에는 /confirmed-schedules/weekly API(weekStartDate 기준 개별 조회)를
+  /// 사용했으나, 이 API가 실제 근무 데이터가 있는 주에 대해서도 weekScheduleId를
+  /// null로 내려주는 백엔드 버그가 있어 schedule-conditions/latest로 대체함.
+  /// (사업장당 활성/차주 스케줄은 하나뿐이므로 shiftDate로 구분할 필요는 없지만,
+  ///  호출부 시그니처를 유지하기 위해 파라미터는 남겨둔다.)
   Future<int?> _resolveConfirmedWeekScheduleIdForShift(DateTime shiftDate) async {
     try {
-      final weekly = await ConfirmedSchedulesApi.getConfirmedWeeklySchedule(
+      final latest = await ScheduleApiService.getLatestScheduleConditions(
         workPlaceId: widget.workPlaceId,
-        weekStartDate: _mondayOf(shiftDate),
       );
 
       debugPrint(
         "[_resolveConfirmedWeekScheduleIdForShift] "
-            "confirmedWeekScheduleId=${weekly.confirmedWeekScheduleId}, "
-            "weekScheduleId=${weekly.weekScheduleId}",
+            "weekScheduleId=${latest?.weekScheduleId}",
       );
 
-      return weekly.confirmedWeekScheduleId ?? weekly.weekScheduleId;
+      return latest?.weekScheduleId;
     } catch (e) {
       debugPrint("[_resolveConfirmedWeekScheduleIdForShift] 조회 실패: $e");
       return null;
@@ -297,8 +290,8 @@ class _RMonthAllScheduleBottomSheetState
                         color: Color(0xFF1C1C1E),
                       ),
                       onPressed: () async {
-                        // widget.confirmedWeekScheduleId는 다른 주에서 조회된 값일 수 있으므로,
-                        // 이 shift(widget.date)가 실제로 속한 주의 값을 다시 조회한다.
+                        // widget.confirmedWeekScheduleId는 이전에 조회된 값일 수 있으므로,
+                        // 액션 직전에 최신 활성 weekScheduleId를 다시 조회한다.
                         final resolvedConfirmedWeekScheduleId =
                         await _resolveConfirmedWeekScheduleIdForShift(widget.date);
 
