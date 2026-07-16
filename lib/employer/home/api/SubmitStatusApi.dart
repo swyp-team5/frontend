@@ -83,6 +83,8 @@ class SubmitStatusApi {
     }
 
     switch (statusCode) {
+      case 400:
+        return "스케줄이 생성되었거나 제출 마감 기한이 지났습니다.";
       case 401:
         return "인증 정보가 올바르지 않습니다. 다시 로그인해주세요.";
       case 403:
