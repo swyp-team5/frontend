@@ -104,31 +104,39 @@ class _RSelectAutoSchedulePageState extends State<RSelectAutoSchedulePage> {
       }
 
       // 6) 시안(candidate)별로 rows 구성
+      //    ⚠️ candidate.days[].timeDetails[].timeDetailId는 "이번 주 실제 생성된"
+      //       time_detail 행의 ID라서 요일마다 값이 다르다. 반면 dayTemplates
+      //       (스케줄 조건 템플릿)의 timeDetailId는 같은 요일 그룹이면 전부 동일한
+      //       값을 공유한다 — 서로 다른 ID 체계라 timeDetailId로는 매칭이 안 된다.
+      //       대신 "같은 요일 안에서 몇 번째 타임인지"(순서)로 매칭한다. candidate.days는
+      //       월~일 순서로, 각 날의 timeDetails는 dayTemplates와 같은 순서(조건
+      //       템플릿을 그대로 기반으로 생성)라는 전제로 동작한다.
       final builtScenarios = widget.preview.candidates.map((candidate) {
-        // timeDetailId -> workerMemberIds (요일 순서에 의존하지 않음)
-        final workerIdsByDetailId = <int, List<int>>{};
-        for (final day in candidate.days) {
-          for (final td in day.timeDetails) {
-            workerIdsByDetailId[td.timeDetailId] = td.workerMemberIds;
-          }
-        }
-
         final rows = rowTitles.map((rowTitle) {
           final counts = List.generate(7, (dayIndex) {
-            OwnerTimeDetail? matched;
-            for (final td in dayTemplates[dayIndex]) {
-              if (td.timeName == rowTitle) {
-                matched = td;
-                break;
-              }
-            }
+            // 이 요일에서 rowTitle(타임 이름)이 조건 템플릿의 몇 번째 항목인지 찾는다.
+            final templateDetails = dayTemplates[dayIndex];
+            final position =
+                templateDetails.indexWhere((td) => td.timeName == rowTitle);
 
             // 이 날짜엔 해당 타임 자체가 없음 (휴무 슬롯)
-            if (matched == null) {
+            if (position == -1) {
               return const ShiftCount(required: 0, isOff: true);
             }
 
-            final memberIds = workerIdsByDetailId[matched.timeDetailId] ?? [];
+            final matched = templateDetails[position];
+
+            // candidate의 같은 요일 + 같은 순서(position)의 timeDetail에서
+            // 실제 배정된 근무자를 찾는다 (timeDetailId 매칭 아님).
+            final candidateDay = dayIndex < candidate.days.length
+                ? candidate.days[dayIndex]
+                : null;
+
+            final memberIds = (candidateDay != null &&
+                    position < candidateDay.timeDetails.length)
+                ? candidateDay.timeDetails[position].workerMemberIds
+                : <int>[];
+
             final workerNames = memberIds
                 .map((id) => nameByMemberId[id] ?? "이름없음(#$id)")
                 .toList();
