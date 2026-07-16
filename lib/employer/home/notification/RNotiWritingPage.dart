@@ -36,7 +36,17 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
   late final Dio dio;
   late final NoticeUploadService uploadService;
 
+  // [수정] 등록 요청이 진행 중인지 추적하는 플래그.
+  // 이게 true인 동안에는 버튼을 눌러도 _registerNotice()가 다시 실행되지 않는다.
+  bool _isSubmitting = false;
+
   Future<void> _registerNotice() async {
+    // [수정] 이미 등록 요청이 진행 중이면 즉시 리턴 — 중복 실행 방지의 핵심 가드.
+    // 네트워크 렉으로 버튼이 n번 눌려도 첫 호출만 실제로 진행된다.
+    if (_isSubmitting) return;
+
+    setState(() => _isSubmitting = true);
+
     try {
       final accessToken = await ServerTokenManager.getAccessToken();
 
@@ -132,6 +142,13 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString())),
       );
+    } finally {
+      // [수정] 성공/실패/예외 등 어떤 경로로 끝나도 반드시 플래그를 되돌린다.
+      // 성공 시에는 화면이 pop되므로 큰 의미는 없지만,
+      // 실패 시(같은 화면에 머무르는 경우)에는 이게 없으면 버튼이 영구히 잠긴다.
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 
@@ -430,83 +447,121 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      // [수정] 등록 요청이 진행 중일 때는 바텀시트를 손가락으로 내려서
+      // 닫아버릴 수 없도록 막는다 (요청이 붕 뜬 채로 남는 것 방지).
+      isDismissible: !_isSubmitting,
+      enableDrag: !_isSubmitting,
       builder: (context) {
-        return Container(
-          padding: const EdgeInsets.fromLTRB(
-            24,
-            16,
-            24,
-            30,
-          ),
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(
-              top: Radius.circular(28),
-            ),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-
-              Container(
-                width: 50,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(10),
+        // [수정] StatefulBuilder로 감싸서, 바텀시트 안에서도
+        // _isSubmitting 값 변화(버튼 비활성화/로딩 표시)를 즉시 반영한다.
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Container(
+              padding: const EdgeInsets.fromLTRB(
+                24,
+                16,
+                24,
+                30,
+              ),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(28),
                 ),
               ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
 
-              const SizedBox(height: 28),
-
-              const Text(
-                '공지글을 등록하시겠습니까?',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-              const SizedBox(height: 28),
-
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _registerNotice,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF0084FF),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                  Container(
+                    width: 50,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(10),
                     ),
                   ),
-                  child: const Text(
-                    '등록하기',
+
+                  const SizedBox(height: 28),
+
+                  const Text(
+                    '공지글을 등록하시겠습니까?',
                     style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-              ),
 
-              const SizedBox(height: 18),
+                  const SizedBox(height: 28),
 
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: const Text(
-                  '취소',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.black,
+                  SizedBox(
+                    width: double.infinity,
+                    height: 56,
+                    child: ElevatedButton(
+                      // [수정] 이미 제출 중이면 onPressed를 null로 만들어
+                      // 버튼 자체를 비활성화한다. 이게 중복 클릭을 막는
+                      // 두 번째 안전장치(첫 번째는 _registerNotice 내부 가드).
+                      onPressed: _isSubmitting
+                          ? null
+                          : () async {
+                        // 바텀시트 쪽 로딩 표시를 위해 모달 내부 상태도 갱신
+                        setModalState(() {});
+                        await _registerNotice();
+                        // 실패해서 바텀시트가 아직 떠 있는 상태로 남아있다면
+                        // 로딩 표시를 원래대로 되돌린다.
+                        if (context.mounted) {
+                          setModalState(() {});
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0084FF),
+                        disabledBackgroundColor: const Color(0xFFA9D0FB),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: _isSubmitting
+                          ? const SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2.5,
+                        ),
+                      )
+                          : const Text(
+                        '등록하기',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+
+                  const SizedBox(height: 18),
+
+                  TextButton(
+                    // [수정] 제출 중에는 취소도 못 누르게 막아서
+                    // 요청이 진행 중인데 바텀시트만 닫히는 상황을 방지
+                    onPressed: _isSubmitting
+                        ? null
+                        : () {
+                      Navigator.pop(context);
+                    },
+                    child: Text(
+                      '취소',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: _isSubmitting ? Colors.grey : Colors.black,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
