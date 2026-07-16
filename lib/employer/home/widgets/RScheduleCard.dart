@@ -97,8 +97,16 @@ class _RScheduleCardState extends State<RScheduleCard> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text("스케줄 조건 초기화"),
-        content: const Text("설정된 스케줄 조건을 초기화할까요?\n이 작업은 되돌릴 수 없어요."),
+        backgroundColor: Colors.white, // 다이얼로그 배경색 흰색
+        title: const Text(
+          "스케줄 조건 초기화",
+          textAlign: TextAlign.center, // 제목 가운데 정렬
+        ),
+        content: const Text(
+          "설정된 스케줄 조건을 초기화할까요?\n이 작업은 되돌릴 수 없어요.",
+          textAlign: TextAlign.center, // 본문 가운데 정렬
+        ),
+        actionsAlignment: MainAxisAlignment.center, // 버튼들도 가운데 정렬(선택)
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),

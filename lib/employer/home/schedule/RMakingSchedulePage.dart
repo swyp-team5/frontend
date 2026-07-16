@@ -189,6 +189,10 @@ class _RMakingSchedulePageState extends State<RMakingSchedulePage> {
       return; // 조건을 만족하지 못하면 등록하지 않음
     }
 
+    for (final s in _shiftInfos) {
+      debugPrint("🔍 등록 직전 breakTime 확인: name=${s.name}, breakTime=${s.breakTime}");
+    }
+
     setState(() {
       _isRegistered = true;
 

@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:chack_chack/employer/home/schedule/widgets/RCompleteMakingSchedule.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -221,6 +223,27 @@ class _RDayOffLimitPageState extends State<RDayOffLimitPage> {
 
   // --- 요청 바디 빌드 ---
 
+  /// "없음", "30분", "1시간", "1시간 30분" 형태의 문자열을
+  /// 분(minute) 단위 정수로 정확히 변환한다.
+  int _parseBreakTimeToMinutes(String breakTime) {
+    if (breakTime == "없음" || breakTime.trim().isEmpty) return 0;
+
+    int hours = 0;
+    int minutes = 0;
+
+    final hourMatch = RegExp(r'(\d+)\s*시간').firstMatch(breakTime);
+    if (hourMatch != null) {
+      hours = int.parse(hourMatch.group(1)!);
+    }
+
+    final minuteMatch = RegExp(r'(\d+)\s*분').firstMatch(breakTime);
+    if (minuteMatch != null) {
+      minutes = int.parse(minuteMatch.group(1)!);
+    }
+
+    return hours * 60 + minutes;
+  }
+
   List<DayCondition> _buildDayConditions() {
     final List<DayCondition> result = [];
 
@@ -274,10 +297,7 @@ class _RDayOffLimitPageState extends State<RDayOffLimitPage> {
           workerCount: shift.requiredWorkers,
           startTime: _fmtTime(shift.startTime),
           closeTime: _fmtTime(shift.endTime),
-          restTime: int.tryParse(
-            shift.breakTime.replaceAll(RegExp(r'[^0-9]'), ''),
-          ) ??
-              0,
+          restTime: _parseBreakTimeToMinutes(shift.breakTime),   // ← 여기만 교체됨
         );
       }).toList();
 
@@ -428,6 +448,8 @@ class _RDayOffLimitPageState extends State<RDayOffLimitPage> {
         dueDate: _fmtDate(_dueDate), // 금주 일요일
         days: _buildDayConditions(),
       );
+
+      debugPrint("📤 실제 전송 body: ${jsonEncode(request.toJson())}");
 
       final response = await ScheduleApiService.postScheduleConditions(
         workPlaceId: widget.workPlaceId,

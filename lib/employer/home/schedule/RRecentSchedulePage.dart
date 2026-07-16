@@ -52,6 +52,14 @@ class _RRecentSchedulePageState extends State<RRecentSchedulePage> {
         recentSchedule = result;
         isLoading = false;
       });
+      if (result != null) {
+        for (final g in result.groups) {
+          for (final td in g.timeDetails) {
+            debugPrint("👀 timeName=${td.timeName}, restMinutes=${td.restMinutes}");
+          }
+        }
+      }
+
     } catch (e) {
       debugPrint("최근 스케줄 조회 실패: $e");
       setState(() {

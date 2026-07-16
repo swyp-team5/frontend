@@ -25,7 +25,7 @@ class LatestTimeDetail {
       workerCount: json['workerCount'] ?? 0,
       startTime: json['startTime'] ?? '00:00:00',
       closeTime: json['closeTime'] ?? '00:00:00',
-      restMinutes: json['restMinutes'] ?? 0,
+      restMinutes: json['restTime'] ?? 0,
     );
   }
 }

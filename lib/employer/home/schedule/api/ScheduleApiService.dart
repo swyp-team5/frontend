@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../../../common/auth/server_token_manager.dart';
 import '../models/ScheduleCondition.dart';
@@ -71,6 +72,8 @@ class ScheduleApiService {
           },
         ),
       );
+
+      debugPrint("📥 서버 원본 응답: ${res.data}");
 
       final result = LatestScheduleResponse.fromJson(res.data);
 
