@@ -37,6 +37,8 @@ class ConfirmedSchedulesApi {
         options: Options(headers: {"Authorization": "Bearer $token"}),
       );
 
+      debugPrint("🟢 [getConfirmedSchedules] raw response = ${res.data}");
+
       return ConfirmedSchedulesResponse.fromJson(res.data);
     } on DioException catch (e) {
       debugPrint("🔴 [ConfirmedSchedulesApi.getConfirmedSchedules] 실패: ${e.response?.data}");

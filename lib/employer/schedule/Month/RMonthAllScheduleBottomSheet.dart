@@ -11,7 +11,6 @@ class RMonthAllScheduleBottomSheet extends StatefulWidget {
   final List<RScheduleShift> workers;
   final Map<String, List<RScheduleShift>> schedules;
   final int workPlaceId;
-  final int? confirmedWeekScheduleId;
 
 
   const RMonthAllScheduleBottomSheet({
@@ -20,7 +19,6 @@ class RMonthAllScheduleBottomSheet extends StatefulWidget {
     required this.workers,
     required this.schedules,
     required this.workPlaceId,
-    required this.confirmedWeekScheduleId,
   });
 
   @override
@@ -290,18 +288,8 @@ class _RMonthAllScheduleBottomSheetState
                         color: Color(0xFF1C1C1E),
                       ),
                       onPressed: () async {
-                        // widget.confirmedWeekScheduleId는 이전에 조회된 값일 수 있으므로,
-                        // 액션 직전에 최신 활성 weekScheduleId를 다시 조회한다.
-                        final resolvedConfirmedWeekScheduleId =
-                        await _resolveConfirmedWeekScheduleIdForShift(widget.date);
-
-                        if (resolvedConfirmedWeekScheduleId == null) {
-                          _showBanner("근무표 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요");
-                          return;
-                        }
-
-                        if (!mounted) return;
-
+                        // confirmedWeekScheduleId는 더 이상 여기서 미리 조회해서 넘기지 않습니다.
+                        // RWorkingDetailEditPage 진입 시 그 페이지가 자체적으로 조회합니다.
                         final result = await Navigator.push<WorkingEditResult>(
                           context,
                           MaterialPageRoute(
@@ -312,7 +300,6 @@ class _RMonthAllScheduleBottomSheetState
                               breakTime: shift.breakTime,
                               date: widget.date,
                               workPlaceId: widget.workPlaceId,
-                              confirmedWeekScheduleId: resolvedConfirmedWeekScheduleId,
                               timeDetailId: shift.timeDetailId,
                               workPartNo: shift.workPartNo,
                               workers: shift.workers

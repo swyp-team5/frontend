@@ -37,11 +37,9 @@ class RWorkingDetailEditPage extends StatefulWidget {
   final DateTime date;
   final int workPlaceId;
 
-  /// PUT /confirmed-week-schedules/{confirmedWeekScheduleId}/time-details/{timeDetailId}/assignments 에 필요한 값
-  /// ⚠️ 이 값은 widget.date(진입 시점 날짜) 기준으로 넘어온 값입니다.
-  /// 페이지 안에서 날짜를 다른 주로 바꾸면 더 이상 유효하지 않을 수 있어서,
-  /// 제출 직전에 selectedDate 기준으로 다시 조회합니다.
-  final int confirmedWeekScheduleId;
+  // ⚠️ confirmedWeekScheduleId는 더 이상 호출부(RMainSchedulePage 등)에서
+  // 전달받지 않습니다. 이 페이지에 진입하는 시점(widget.date 기준)에
+  // /confirmed-schedules/weekly API를 직접 호출해서 스스로 조회합니다.
   final int timeDetailId;
   final int workPartNo;
 
@@ -54,7 +52,6 @@ class RWorkingDetailEditPage extends StatefulWidget {
     required this.breakTime,
     required this.date,
     required this.workPlaceId,
-    required this.confirmedWeekScheduleId,
     required this.timeDetailId,
     required this.workPartNo,
   });
@@ -79,10 +76,13 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
   bool _isSubmitting = false;
 
   /// selectedDate가 속한 주의 진짜 confirmedWeekScheduleId.
-  /// 처음엔 widget.confirmedWeekScheduleId(=widget.date 기준 값)로 초기화하고,
+  /// 이 페이지 진입 시(initState) widget.date 기준으로 한 번 조회하고,
   /// selectedDate가 바뀔 때마다 다시 조회해서 갱신한다.
   int? _confirmedWeekScheduleIdForSelectedDate;
-  bool _isResolvingWeekSchedule = false;
+
+  /// 초기 조회 + 날짜 변경 시 재조회를 모두 이 플래그로 표시한다.
+  /// true인 동안 "수정 완료" 버튼은 비활성화된다.
+  bool _isResolvingWeekSchedule = true;
 
   /// 근무 타임(timeName) 목록 - 하드코딩 대신 해당 주의 확정 근무표에서 동적으로 불러온다.
   List<String> workTypes = [];
@@ -105,9 +105,30 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
 
     selectedDate = widget.date;
 
-    _confirmedWeekScheduleIdForSelectedDate = widget.confirmedWeekScheduleId;
-
     _loadWorkTypes();
+    _resolveInitialWeekScheduleId();
+  }
+
+  /// 페이지 진입 시점(widget.date 기준)의 confirmedWeekScheduleId를
+  /// 이 페이지가 직접 조회한다. 호출부(RMainSchedulePage 등)는 이 값을
+  /// 몰라도 되고, 넘겨주지 않아도 된다.
+  Future<void> _resolveInitialWeekScheduleId() async {
+    final resolved = await _resolveConfirmedWeekScheduleId(widget.date);
+
+    if (!mounted) return;
+
+    setState(() {
+      _confirmedWeekScheduleIdForSelectedDate = resolved;
+      _isResolvingWeekSchedule = false;
+    });
+
+    if (resolved == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("이 날짜의 근무표 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요"),
+        ),
+      );
+    }
   }
 
   /// 원래 슬롯(widget.date)이 속한 주(월~일)의 확정 근무표를 조회해서
@@ -219,8 +240,12 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
         .subtract(Duration(days: date.weekday - 1));
   }
 
-  /// selectedDate가 속한 주의 confirmedWeekScheduleId를 다시 조회한다.
-  /// (weekScheduleId도 함께 확인해서 null이면 로그를 남긴다.)
+  /// selectedDate가 속한 주의 confirmedWeekScheduleId를 조회한다.
+  ///
+  /// ⚠️ /confirmed-schedules/weekly API는 실제 근무 데이터가 있는 주에 대해서도
+  /// weekScheduleId 필드만 null로 내려주는 백엔드 버그가 있다(confirmedWeekScheduleId는
+  /// 정상 응답됨). 그래서 weekScheduleId의 null 여부는 무시하고
+  /// confirmedWeekScheduleId만으로 판단한다.
   Future<int?> _resolveConfirmedWeekScheduleId(DateTime date) async {
     try {
       final weekly = await ConfirmedSchedulesApi.getConfirmedWeeklySchedule(
@@ -234,12 +259,10 @@ class _RWorkingDetailEditPageState extends State<RWorkingDetailEditPage> {
             "weekScheduleId=${weekly.weekScheduleId}",
       );
 
-      if (weekly.confirmedWeekScheduleId == null ||
-          weekly.weekScheduleId == null) {
+      if (weekly.confirmedWeekScheduleId == null) {
         debugPrint(
           "[_resolveConfirmedWeekScheduleId] ⚠️ 이 날짜가 속한 주는 아직 "
-              "확정된 근무표가 없습니다 (confirmedWeekScheduleId 또는 "
-              "weekScheduleId가 null).",
+              "확정된 근무표가 없습니다 (confirmedWeekScheduleId가 null).",
         );
         return null;
       }

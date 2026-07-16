@@ -62,7 +62,6 @@ class RMonthAllSchedulePage extends StatefulWidget {
   final ValueChanged<DateTime> onDateChanged;
   final Map<String, List<RScheduleShift>> schedules;  // API 응답
   final int workPlaceId;
-  final int? confirmedWeekScheduleId;
 
   const RMonthAllSchedulePage({
     super.key,
@@ -70,7 +69,6 @@ class RMonthAllSchedulePage extends StatefulWidget {
     required this.onDateChanged,
     required this.schedules,
     required this.workPlaceId,
-    required this.confirmedWeekScheduleId,
   });
 
   @override
@@ -204,7 +202,6 @@ class _RMonthAllSchedulePageState
                             workers: workers,
                             schedules: widget.schedules,
                             workPlaceId: widget.workPlaceId,
-                            confirmedWeekScheduleId: widget.confirmedWeekScheduleId,
                           ),
                         );
 

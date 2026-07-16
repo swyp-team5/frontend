@@ -7,14 +7,12 @@ import 'models/WorkersResponse.dart';
 
 class RScheduleEditPage extends StatefulWidget {
   final int workPlaceId;
-  final int confirmedWeekScheduleId;
   final DateTime selectedDate;
   final Map<String, List<RScheduleShift>> schedules;
 
   const RScheduleEditPage({
     super.key,
     required this.workPlaceId,
-    required this.confirmedWeekScheduleId,
     required this.selectedDate,
     required this.schedules,
   });
@@ -318,13 +316,14 @@ class _RScheduleEditPageState extends State<RScheduleEditPage> {
 
                               IconButton(
                                 onPressed: () async {
+                                  // confirmedWeekScheduleId는 더 이상 여기서 넘기지 않습니다.
+                                  // RWorkingDetailEditPage 진입 시(widget.date 기준) 그 페이지가
+                                  // /confirmed-schedules/weekly API로 직접 조회합니다.
                                   final result = await Navigator.push<WorkingEditResult>(
                                     context,
                                     MaterialPageRoute(
                                         builder: (_) => RWorkingDetailEditPage(
                                           workPlaceId: widget.workPlaceId,
-                                          confirmedWeekScheduleId:
-                                          widget.confirmedWeekScheduleId,
                                           timeDetailId: shift.timeDetailId,
                                           workPartNo: shift.workPartNo,
                                           role: shift.timeName,

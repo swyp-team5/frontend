@@ -11,7 +11,6 @@ import 'Week/RWeekSchedulePage.dart';
 import 'RYearMonthBottomSheet.dart';
 import 'models/schedule_model.dart';
 import 'models/ConfirmedSchedulesResponse.dart';
-import 'models/ConfirmedWeeklyScheduleResponse.dart';
 import 'api/ConfirmedSchedulesApi.dart'; // 실제 경로에 맞게 수정
 
 class RMainSchedulePage extends StatefulWidget {
@@ -41,9 +40,6 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
   /// 서버에서 받아온 확정 근무표
   Map<String, List<RScheduleShift>> allSchedules = {};
   Set<String> holidays = {}; // 이 API에는 휴무일 정보가 없어 우선 빈 값으로 둠
-
-  /// 근무 추가(RAddSchedulePage)에 필요한 값. /confirmed-schedules/weekly API로 별도 조회.
-  int? confirmedWeekScheduleId;
 
   bool isLoading = false;
   String? errorMessage;
@@ -98,7 +94,9 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
     }
   }
 
-  /// selectedDate가 속한 주의 월요일(주간/월간 모드 상관없이 "근무 추가"에 쓸 confirmedWeekScheduleId 조회용)
+  /// selectedDate가 속한 주의 월요일
+  /// (edit/add 페이지로 넘어갈 때 "어떤 주"인지 알려주는 용도로만 사용,
+  /// confirmedWeekScheduleId 조회는 각 페이지에서 자체적으로 처리함)
   DateTime _mondayOfSelectedWeek() {
     return DateTime(
       selectedDate.year,
@@ -171,10 +169,6 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
         _loadedTo = range.$2;
         isLoading = false;
       });
-
-      // "근무 추가"에 필요한 confirmedWeekScheduleId는 별도 weekly API에서만 내려오므로
-      // 화면 표시를 막지 않도록 독립적으로 불러온다.
-      _loadConfirmedWeekScheduleId();
     } catch (e) {
       if (!mounted) return;
 
@@ -183,66 +177,6 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
         errorMessage = e.toString();
       });
     }
-  }
-
-  /// selectedDate가 속한 주의 confirmedWeekScheduleId를 불러온다.
-  /// 실패하더라도 근무표 화면 자체는 이미 떠 있으므로 조용히 무시하고,
-  /// "추가" 버튼을 눌렀을 때 null 체크로 안내한다.
-  ///
-  /// NOTE: 확정 안내(confirmedWeekScheduleId, weekScheduleId)가 모두 null인 경우는
-  /// 백엔드 응답 버그가 아니라, "차주 스케줄이 아직 작성되지 않아 수정/삭제/추가가
-  /// 불가능한 상태"인 것으로 확인됨. 이 경우 버튼 클릭 시 상단 배너로 안내한다.
-  Future<void> _loadConfirmedWeekScheduleId() async {
-    try {
-      final weekly = await ConfirmedSchedulesApi.getConfirmedWeeklySchedule(
-        workPlaceId: widget.workPlaceId,
-        weekStartDate: _mondayOfSelectedWeek(),
-      );
-
-      if (!mounted) return;
-
-      setState(() {
-        confirmedWeekScheduleId =
-            weekly.confirmedWeekScheduleId ?? weekly.weekScheduleId;
-      });
-    } catch (e) {
-      debugPrint("confirmedWeekScheduleId 조회 실패 : $e");
-      if (!mounted) return;
-
-      setState(() {
-        confirmedWeekScheduleId = null;
-      });
-    }
-  }
-
-  /// 화면 상단에 배너 형태로 안내 메시지를 띄운다.
-  /// 3초 후 자동으로 닫힌다.
-  void _showNextWeekScheduleRequiredBanner() {
-    final messenger = ScaffoldMessenger.of(context);
-
-    messenger.clearMaterialBanners();
-    messenger.showMaterialBanner(
-      MaterialBanner(
-        backgroundColor: const Color(0xFFFFF4E5),
-        contentTextStyle: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: Color(0xFF9A6700),
-        ),
-        leading: const Icon(Icons.info_outline, color: Color(0xFFB07500)),
-        content: const Text("차주 스케줄을 작성해야 수정, 삭제, 추가할 수 있어요"),
-        actions: [
-          TextButton(
-            onPressed: () => messenger.hideCurrentMaterialBanner(),
-            child: const Text("확인"),
-          ),
-        ],
-      ),
-    );
-
-    Future.delayed(const Duration(seconds: 3), () {
-      messenger.hideCurrentMaterialBanner();
-    });
   }
 
   @override
@@ -324,11 +258,9 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                         icon: const Icon(Icons.edit_outlined),
                         onSelected: (value) async {
                           if (value == 'edit') {
-                            if (confirmedWeekScheduleId == null) {
-                              _showNextWeekScheduleRequiredBanner();
-                              return;
-                            }
-
+                            // confirmedWeekScheduleId는 더 이상 여기서 미리 조회하지 않습니다.
+                            // RScheduleEditPage(혹은 그 하위 페이지)에서 필요할 때
+                            // 자체적으로 조회하도록 위임합니다.
                             await Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -336,7 +268,6 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                                   workPlaceId: widget.workPlaceId,
                                   selectedDate: selectedDate,
                                   schedules: allSchedules,
-                                  confirmedWeekScheduleId: confirmedWeekScheduleId!,
                                 ),
                               ),
                             );
@@ -345,11 +276,6 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                               setState(() {});
                             }
                           } else if (value == 'add') {
-                            if (confirmedWeekScheduleId == null) {
-                              _showNextWeekScheduleRequiredBanner();
-                              return;
-                            }
-
                             final ScheduleModel? schedule =
                             await Navigator.push<ScheduleModel>(
                               context,
@@ -467,7 +393,6 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                           workPlaceId: widget.workPlaceId,
                           selectedDate: selectedDate,
                           schedules: allSchedules,
-                          confirmedWeekScheduleId: confirmedWeekScheduleId,
                           onDateChanged: (date) {
                             setState(() {
                               selectedDate = date;
