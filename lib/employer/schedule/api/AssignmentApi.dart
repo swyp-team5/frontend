@@ -9,30 +9,15 @@ import '../models/DeleteAssignmentResponse.dart';
 import '../models/AssignmentUpdateRequest.dart';
 
 class AssignmentApi {
-  static const _baseUrl = "https://chackchack.shop";
-
   static Future<AssignmentCreateResponse> create({
     required int workPlaceId,
     required int confirmedWeekScheduleId,
     required AssignmentCreateRequest request,
   }) async {
-    final token = await ServerTokenManager.getAccessToken();
-
-    if (token == null || token.isEmpty) {
-      throw Exception("로그인이 필요합니다.");
-    }
-
-    final dio = Dio();
-
     try {
-      final response = await dio.post(
-        "$_baseUrl/api/work-places/$workPlaceId/confirmed-week-schedules/$confirmedWeekScheduleId/assignments",
+      final response = await ServerTokenManager.authorizedDio.post(
+        "/api/work-places/$workPlaceId/confirmed-week-schedules/$confirmedWeekScheduleId/assignments",
         data: request.toJson(),
-        options: Options(
-          headers: {
-            "Authorization": "Bearer $token",
-          },
-        ),
       );
 
       return AssignmentCreateResponse.fromJson(response.data);
@@ -67,23 +52,10 @@ class AssignmentApi {
     required int timeDetailId,
     required AssignmentUpdateRequest request,
   }) async {
-    final token = await ServerTokenManager.getAccessToken();
-
-    if (token == null || token.isEmpty) {
-      throw Exception("로그인이 필요합니다.");
-    }
-
-    final dio = Dio();
-
     try {
-      final response = await dio.put(
-        "$_baseUrl/api/work-places/$workPlaceId/confirmed-week-schedules/$confirmedWeekScheduleId/time-details/$timeDetailId/assignments",
+      final response = await ServerTokenManager.authorizedDio.put(
+        "/api/work-places/$workPlaceId/confirmed-week-schedules/$confirmedWeekScheduleId/time-details/$timeDetailId/assignments",
         data: request.toJson(),
-        options: Options(
-          headers: {
-            "Authorization": "Bearer $token",
-          },
-        ),
       );
 
       return AssignmentUpdateResponse.fromJson(response.data);
@@ -120,22 +92,9 @@ class AssignmentApi {
     required int confirmedWeekScheduleId,
     required int timeDetailId,
   }) async {
-    final token = await ServerTokenManager.getAccessToken();
-
-    if (token == null || token.isEmpty) {
-      throw Exception("로그인이 필요합니다.");
-    }
-
-    final dio = Dio();
-
     try {
-      final response = await dio.delete(
-        "$_baseUrl/api/work-places/$workPlaceId/confirmed-week-schedules/$confirmedWeekScheduleId/time-details/$timeDetailId/assignments",
-        options: Options(
-          headers: {
-            "Authorization": "Bearer $token",
-          },
-        ),
+      final response = await ServerTokenManager.authorizedDio.delete(
+        "/api/work-places/$workPlaceId/confirmed-week-schedules/$confirmedWeekScheduleId/time-details/$timeDetailId/assignments",
       );
 
       return DeleteAssignmentResponse.fromJson(response.data);

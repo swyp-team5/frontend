@@ -5,8 +5,6 @@ import '../models/ConfirmedSchedulesResponse.dart';
 import '../models/ConfirmedWeeklyScheduleResponse.dart';
 
 class ConfirmedSchedulesApi {
-  static const _baseUrl = "https://chackchack.shop";
-
   static String _fmt(DateTime d) =>
       "${d.year.toString().padLeft(4, '0')}-"
           "${d.month.toString().padLeft(2, '0')}-"
@@ -19,22 +17,13 @@ class ConfirmedSchedulesApi {
     required DateTime from,
     required DateTime to,
   }) async {
-    final token = await ServerTokenManager.getAccessToken();
-
-    if (token == null || token.isEmpty) {
-      throw Exception("인증이 필요합니다. 다시 로그인해주세요.");
-    }
-
-    final dio = Dio();
-
     try {
-      final res = await dio.get(
-        "$_baseUrl/api/work-places/$workPlaceId/confirmed-schedules",
+      final res = await ServerTokenManager.authorizedDio.get(
+        "/api/work-places/$workPlaceId/confirmed-schedules",
         queryParameters: {
           "from": _fmt(from),
           "to": _fmt(to),
         },
-        options: Options(headers: {"Authorization": "Bearer $token"}),
       );
 
       debugPrint("🟢 [getConfirmedSchedules] raw response = ${res.data}");
@@ -68,21 +57,12 @@ class ConfirmedSchedulesApi {
     required int workPlaceId,
     required DateTime weekStartDate,
   }) async {
-    final token = await ServerTokenManager.getAccessToken();
-
-    if (token == null || token.isEmpty) {
-      throw Exception("인증이 필요합니다. 다시 로그인해주세요.");
-    }
-
-    final dio = Dio();
-
     try {
-      final res = await dio.get(
-        "$_baseUrl/api/work-places/$workPlaceId/confirmed-schedules/weekly",
+      final res = await ServerTokenManager.authorizedDio.get(
+        "/api/work-places/$workPlaceId/confirmed-schedules/weekly",
         queryParameters: {
           "weekStartDate": _fmt(weekStartDate),
         },
-        options: Options(headers: {"Authorization": "Bearer $token"}),
       );
 
       // 🔍 임시 디버깅: 실제 서버 응답 원본을 확인

@@ -88,37 +88,25 @@ class NoScheduleCandidateException implements Exception {
 }
 
 class ScheduleGenerationRunApi {
-  static const _baseUrl = "https://chackchack.shop";
-
   /// POST /api/work-places/{workPlaceId}/week-schedules/{weekScheduleId}/schedule-generation-runs
   /// 사장(OWNER)만 호출 가능
   static Future<ScheduleGenerationRunResponse> generate({
     required int workPlaceId,
     required int weekScheduleId,
   }) async {
-    final token = await ServerTokenManager.getAccessToken();
+    final token = await ServerTokenManager.getValidAccessToken();
 
     if (token == null || token.isEmpty) {
       throw Exception("인증이 필요합니다. 다시 로그인해주세요.");
     }
 
     final url =
-        "$_baseUrl/api/work-places/$workPlaceId/week-schedules/$weekScheduleId/schedule-generation-runs";
+        "/api/work-places/$workPlaceId/week-schedules/$weekScheduleId/schedule-generation-runs";
 
     debugPrint("📤 [schedule-generation-runs] 요청 URL: $url");
 
-    final dio = Dio();
-
     try {
-      final res = await dio.post(
-        url,
-        options: Options(
-          headers: {
-            "Authorization": "Bearer $token",
-            "Content-Type": "application/json",
-          },
-        ),
-      );
+      final res = await ServerTokenManager.authorizedDio.post(url);
 
       debugPrint("✅ [schedule-generation-runs] 성공 — statusCode: ${res.statusCode}");
       debugPrint("✅ [schedule-generation-runs] 응답 body: ${res.data}");
@@ -165,29 +153,19 @@ class ScheduleGenerationRunApi {
     required int workPlaceId,
     required int weekScheduleId,
   }) async {
-    final token = await ServerTokenManager.getAccessToken();
+    final token = await ServerTokenManager.getValidAccessToken();
 
     if (token == null || token.isEmpty) {
       throw Exception("인증이 필요합니다. 다시 로그인해주세요.");
     }
 
     final url =
-        "$_baseUrl/api/work-places/$workPlaceId/week-schedules/$weekScheduleId/schedule-generation-runs/regenerate";
+        "/api/work-places/$workPlaceId/week-schedules/$weekScheduleId/schedule-generation-runs/regenerate";
 
     debugPrint("📤 [schedule-generation-runs/regenerate] 요청 URL: $url");
 
-    final dio = Dio();
-
     try {
-      final res = await dio.post(
-        url,
-        options: Options(
-          headers: {
-            "Authorization": "Bearer $token",
-            "Content-Type": "application/json",
-          },
-        ),
-      );
+      final res = await ServerTokenManager.authorizedDio.post(url);
 
       debugPrint(
           "✅ [schedule-generation-runs/regenerate] 성공 — statusCode: ${res.statusCode}");

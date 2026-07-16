@@ -4,34 +4,25 @@ import '../../../../common/auth/server_token_manager.dart';
 import '../model/SubmitStatus.dart';
 
 class SubmitStatusApi {
-  static const _baseUrl = "https://chackchack.shop";
-
   /// GET /api/work-places/{workPlaceId}/week-schedules/{weekScheduleId}/worker-select/status
   /// 권한: OWNER
   static Future<SubmitStatusResponse> getStatus({
     required int workPlaceId,
     required int weekScheduleId,
   }) async {
-    final token = await ServerTokenManager.getAccessToken();
+    final token = await ServerTokenManager.getValidAccessToken();
 
     if (token == null || token.isEmpty) {
       throw Exception("인증이 필요합니다. 다시 로그인해주세요.");
     }
 
     final url =
-        "$_baseUrl/api/work-places/$workPlaceId/week-schedules/$weekScheduleId/worker-select/status";
+        "/api/work-places/$workPlaceId/week-schedules/$weekScheduleId/worker-select/status";
 
     debugPrint("📤 [worker-select/status] 요청 URL: $url");
 
-    final dio = Dio();
-
     try {
-      final res = await dio.get(
-        url,
-        options: Options(
-          headers: {"Authorization": "Bearer $token"},
-        ),
-      );
+      final res = await ServerTokenManager.authorizedDio.get(url);
 
       debugPrint("✅ [worker-select/status] 성공 — statusCode: ${res.statusCode}");
       debugPrint("✅ [worker-select/status] 응답 body: ${res.data}");
@@ -51,8 +42,6 @@ class SubmitStatusApi {
     }
   }
 
-  // 근무 불가 제출 반려 — 반려되면 서버에서 해당 근무자의 제출 데이터가
-  // 물리 삭제되므로, 성공하면 프론트도 그 근무자를 "미제출"로 취급하면 된다.
   /// POST /api/work-places/{workPlaceId}/week-schedules/{weekScheduleId}/worker-select/{memberId}/reject
   /// 권한: OWNER
   static Future<void> rejectSubmission({
@@ -60,26 +49,19 @@ class SubmitStatusApi {
     required int weekScheduleId,
     required int memberId,
   }) async {
-    final token = await ServerTokenManager.getAccessToken();
+    final token = await ServerTokenManager.getValidAccessToken();
 
     if (token == null || token.isEmpty) {
       throw Exception("인증이 필요합니다. 다시 로그인해주세요.");
     }
 
     final url =
-        "$_baseUrl/api/work-places/$workPlaceId/week-schedules/$weekScheduleId/worker-select/$memberId/reject";
+        "/api/work-places/$workPlaceId/week-schedules/$weekScheduleId/worker-select/$memberId/reject";
 
     debugPrint("📤 [worker-select/reject] 요청 URL: $url");
 
-    final dio = Dio();
-
     try {
-      final res = await dio.post(
-        url,
-        options: Options(
-          headers: {"Authorization": "Bearer $token"},
-        ),
-      );
+      final res = await ServerTokenManager.authorizedDio.post(url);
 
       debugPrint("✅ [worker-select/reject] 성공 — statusCode: ${res.statusCode}");
       debugPrint("✅ [worker-select/reject] 응답 body: ${res.data}");
@@ -91,10 +73,6 @@ class SubmitStatusApi {
     }
   }
 
-  // 17-3 명세서의 "주요 에러" 표를 기준으로 상태코드별 메시지를 구분한다.
-  // - 404가 4가지 케이스(사업장/스케줄/근무자/제출 정보)로 나뉘는데, 상태코드만으로는
-  //   구분이 안 되므로 서버가 내려주는 message를 우선 사용한다.
-  // - 서버 응답에 message가 없거나 파싱 실패 시에만 상태코드 기준 기본 문구로 대체한다.
   static String _rejectErrorMessage(DioException e) {
     final statusCode = e.response?.statusCode;
     final data = e.response?.data;

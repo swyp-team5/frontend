@@ -27,13 +27,7 @@ class EMyPage extends StatefulWidget {
 
 class _EMyPageState extends State<EMyPage> {
 
-  final ProfileApi profileApi = ProfileApi(
-    Dio(
-      BaseOptions(
-        baseUrl: "https://chackchack.shop",
-      ),
-    ),
-  );
+  final ProfileApi profileApi = ProfileApi(ServerTokenManager.authorizedDio);
 
   String profileName = "";
 
@@ -293,16 +287,8 @@ class _EMyPageState extends State<EMyPage> {
 
   Future<void> _loadStores() async {
     try {
-      final token = await ServerTokenManager.getAccessToken();
-      if (token == null) return;
-
-      final dio = Dio(BaseOptions(baseUrl: "https://chackchack.shop"));
-
-      final response = await dio.get(
+      final response = await ServerTokenManager.authorizedDio.get(
         "/api/work-places/me",
-        options: Options(
-          headers: {"Authorization": "Bearer $token"},
-        ),
       );
 
       final data = response.data as Map<String, dynamic>;
@@ -337,16 +323,12 @@ class _EMyPageState extends State<EMyPage> {
 
   Future<void> _loadProfileName() async {
     try {
-      final token = await ServerTokenManager.getAccessToken();
-
+      final token = await ServerTokenManager.getValidAccessToken();
       if (token == null || token.isEmpty) {
         debugPrint("토큰 없음");
         return;
       }
-
-      final profile = await profileApi.getMyProfile(
-        token: token,
-      );
+      final profile = await profileApi.getMyProfile(token: token);
 
       if (!mounted) return;
 

@@ -3,8 +3,6 @@ import '../../../../common/auth/server_token_manager.dart';
 import '../models/DayTimeDetails.dart';
 
 class DayTimeDetailsApi {
-  static const _baseUrl = "https://chackchack.shop";
-
   /// 특정 주(week) + 특정 날짜(date)의 근무 시간대 조회
   /// GET /api/work-places/{workPlaceId}/week-schedules/{weekScheduleId}/days/{date}/time-details
   static Future<DayTimeDetailsResponse> getDayTimeDetails({
@@ -12,7 +10,7 @@ class DayTimeDetailsApi {
     required int weekScheduleId,
     required DateTime date,
   }) async {
-    final token = await ServerTokenManager.getAccessToken();
+    final token = await ServerTokenManager.getValidAccessToken();
 
     if (token == null || token.isEmpty) {
       throw Exception("인증이 필요합니다. 다시 로그인해주세요.");
@@ -21,14 +19,9 @@ class DayTimeDetailsApi {
     final dateStr =
         "${date.year.toString().padLeft(4, '0')}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
 
-    final dio = Dio();
-
     try {
-      final res = await dio.get(
-        "$_baseUrl/api/work-places/$workPlaceId/week-schedules/$weekScheduleId/days/$dateStr/time-details",
-        options: Options(
-          headers: {"Authorization": "Bearer $token"},
-        ),
+      final res = await ServerTokenManager.authorizedDio.get(
+        "/api/work-places/$workPlaceId/week-schedules/$weekScheduleId/days/$dateStr/time-details",
       );
 
       return DayTimeDetailsResponse.fromJson(res.data);

@@ -4,9 +4,6 @@ import '../../auth/server_token_manager.dart';
 import '../model/FcmTokenResponse.dart';
 
 class FcmTokenApi {
-  static final Dio _dio = Dio(
-    BaseOptions(baseUrl: "https://chackchack.shop"),
-  );
 
   /// FCM 토큰 등록 또는 갱신
   /// POST /api/fcm-tokens
@@ -19,18 +16,18 @@ class FcmTokenApi {
     required String platform, // "ANDROID" | "IOS"
     required String appVersion,
   }) async {
-    final accessToken = await ServerTokenManager.getAccessToken();
+    final accessToken = await ServerTokenManager.getValidAccessToken();
 
     if (accessToken == null || accessToken.isEmpty) {
       throw Exception("인증이 필요합니다. 다시 로그인해주세요.");
     }
 
-    debugPrint("📤 [FcmTokenApi] 요청 URL: ${_dio.options.baseUrl}/api/fcm-tokens");
+    debugPrint("📤 [FcmTokenApi] 요청 URL: /api/fcm-tokens");
     debugPrint(
         "📤 [FcmTokenApi] 파라미터: deviceId=$deviceId, platform=$platform, appVersion=$appVersion");
 
     try {
-      final res = await _dio.post(
+      final res = await ServerTokenManager.authorizedDio.post(
         "/api/fcm-tokens",
         data: {
           "deviceId": deviceId,
@@ -38,9 +35,6 @@ class FcmTokenApi {
           "platform": platform,
           "appVersion": appVersion,
         },
-        options: Options(
-          headers: {"Authorization": "Bearer $accessToken"},
-        ),
       );
 
       debugPrint("✅ [FcmTokenApi] 성공 — statusCode: ${res.statusCode}");
@@ -70,21 +64,17 @@ class FcmTokenApi {
   static Future<void> deactivate({
     required String deviceId,
   }) async {
-    final accessToken = await ServerTokenManager.getAccessToken();
+    final accessToken = await ServerTokenManager.getValidAccessToken();
 
     if (accessToken == null || accessToken.isEmpty) {
       throw Exception("인증이 필요합니다. 다시 로그인해주세요.");
     }
 
-    debugPrint(
-        "📤 [FcmTokenApi] 요청 URL: ${_dio.options.baseUrl}/api/fcm-tokens/devices/$deviceId");
+    debugPrint("📤 [FcmTokenApi] 요청 URL: /api/fcm-tokens/devices/$deviceId");
 
     try {
-      final res = await _dio.delete(
+      final res = await ServerTokenManager.authorizedDio.delete(
         "/api/fcm-tokens/devices/$deviceId",
-        options: Options(
-          headers: {"Authorization": "Bearer $accessToken"},
-        ),
       );
 
       debugPrint("✅ [FcmTokenApi] 비활성화 성공 — statusCode: ${res.statusCode}");

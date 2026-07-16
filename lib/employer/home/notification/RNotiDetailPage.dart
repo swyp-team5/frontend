@@ -6,7 +6,7 @@ import '../../../common/auth/server_token_manager.dart';
 import '../../mypage/api/profile_api.dart';
 import 'RNotiEditPage.dart';
 import 'RNotificationModel.dart';
-import 'RNotificationProvider.dart';
+import 'RNotificationNotifier.dart';
 import 'api/notice_api.dart';
 import 'widgets/NoticeReactionBar.dart';
 
@@ -28,7 +28,7 @@ class RNotiDetailPage extends ConsumerStatefulWidget {
 }
 
 class _RNotiDetailPageState extends ConsumerState<RNotiDetailPage> {
-  late final Dio dio;
+
   late final NoticeApi noticeApi;
   late final ProfileApi profileApi;
 
@@ -43,10 +43,8 @@ class _RNotiDetailPageState extends ConsumerState<RNotiDetailPage> {
   void initState() {
     super.initState();
 
-    dio = Dio();
-    dio.options.baseUrl = "https://chackchack.shop";
-    noticeApi = NoticeApi(dio);
-    profileApi = ProfileApi(Dio(BaseOptions(baseUrl: "https://chackchack.shop")));
+    noticeApi = NoticeApi(ServerTokenManager.authorizedDio);
+    profileApi = ProfileApi(ServerTokenManager.authorizedDio);
 
     // 목록에서 받은 데이터로 우선 보여주고, 최신 상세를 다시 조회
     notice = widget.initialNotice;
@@ -82,7 +80,7 @@ class _RNotiDetailPageState extends ConsumerState<RNotiDetailPage> {
 
   Future<void> _fetchDetail() async {
     try {
-      final accessToken = await ServerTokenManager.getAccessToken();
+      final accessToken = await ServerTokenManager.getValidAccessToken();
 
       if (accessToken == null || accessToken.isEmpty) {
         throw Exception("로그인이 필요합니다.");
@@ -247,7 +245,7 @@ class _RNotiDetailPageState extends ConsumerState<RNotiDetailPage> {
 
       if (confirm == true) {
         try {
-          final accessToken = await ServerTokenManager.getAccessToken();
+          final accessToken = await ServerTokenManager.getValidAccessToken();
 
           if (accessToken == null || accessToken.isEmpty) {
             throw Exception("로그인이 필요합니다.");

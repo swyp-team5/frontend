@@ -47,9 +47,8 @@ class ENotificationState {
 class ENotificationNotifier extends StateNotifier<ENotificationState> {
   ENotificationNotifier() : super(const ENotificationState());
 
-  final Dio _dio = Dio()..options.baseUrl = "https://chackchack.shop";
-  late final NoticeListApi _noticeListApi = NoticeListApi(_dio);
-  late final NoticeReactionApi _noticeReactionApi = NoticeReactionApi(_dio);
+  late final NoticeListApi _noticeListApi = NoticeListApi(ServerTokenManager.authorizedDio);
+  late final NoticeReactionApi _noticeReactionApi = NoticeReactionApi(ServerTokenManager.authorizedDio);
 
   static const int _pageSize = 20;
 
@@ -62,7 +61,7 @@ class ENotificationNotifier extends StateNotifier<ENotificationState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final accessToken = await ServerTokenManager.getAccessToken();
+      final accessToken = await ServerTokenManager.getValidAccessToken();
 
       if (accessToken == null || accessToken.isEmpty) {
         throw Exception("로그인이 필요합니다.");
@@ -76,7 +75,6 @@ class ENotificationNotifier extends StateNotifier<ENotificationState> {
 
       final json = await _noticeListApi.getNotices(
         workPlaceId: workPlaceId,
-        accessToken: accessToken,
         page: 0,
         size: _pageSize,
       );
@@ -108,7 +106,7 @@ class ENotificationNotifier extends StateNotifier<ENotificationState> {
     state = state.copyWith(isLoadingMore: true);
 
     try {
-      final accessToken = await ServerTokenManager.getAccessToken();
+      final accessToken = await ServerTokenManager.getValidAccessToken();
 
       if (accessToken == null || accessToken.isEmpty) {
         throw Exception("로그인이 필요합니다.");
@@ -124,7 +122,6 @@ class ENotificationNotifier extends StateNotifier<ENotificationState> {
 
       final json = await _noticeListApi.getNotices(
         workPlaceId: workPlaceId,
-        accessToken: accessToken,
         page: nextPage,
         size: _pageSize,
       );
@@ -150,7 +147,7 @@ class ENotificationNotifier extends StateNotifier<ENotificationState> {
     required int noticeId,
     required String reactionType,
   }) async {
-    final accessToken = await ServerTokenManager.getAccessToken();
+    final accessToken = await ServerTokenManager.getValidAccessToken();
 
     if (accessToken == null || accessToken.isEmpty) {
       throw Exception("로그인이 필요합니다.");

@@ -8,9 +8,6 @@ import '../model/AlarmResponse.dart';
 // - 본인 알림만 대상이며, 9.4(단건 읽음) / 9.5(전체 읽음) / 9.6(테스트 푸시)는
 //   이후 단계에서 이 클래스에 메서드로 이어서 추가한다.
 class AlarmApi {
-  static final Dio _dio = Dio(
-    BaseOptions(baseUrl: "https://chackchack.shop"),
-  );
 
   // 알림함 커서 기반 목록 조회
   // - cursorId를 넘기면 그보다 작은 알림부터 조회한다 (notification_id DESC 정렬).
@@ -20,7 +17,7 @@ class AlarmApi {
     int? cursorId,
     int size = 20,
   }) async {
-    final accessToken = await ServerTokenManager.getAccessToken();
+    final accessToken = await ServerTokenManager.getValidAccessToken();
 
     if (accessToken == null || accessToken.isEmpty) {
       throw Exception("인증이 필요합니다. 다시 로그인해주세요.");
@@ -29,15 +26,12 @@ class AlarmApi {
     debugPrint("📤 [AlarmApi] 목록 조회 — cursorId=$cursorId, size=$size");
 
     try {
-      final res = await _dio.get(
+      final res = await ServerTokenManager.authorizedDio.get(
         "/api/notifications",
         queryParameters: {
           if (cursorId != null) "cursorId": cursorId,
           "size": size,
         },
-        options: Options(
-          headers: {"Authorization": "Bearer $accessToken"},
-        ),
       );
 
       debugPrint("✅ [AlarmApi] 목록 조회 성공 — 응답 body: ${res.data}");
@@ -60,7 +54,7 @@ class AlarmApi {
   static Future<AlarmItem> readOne({
     required int notificationId,
   }) async {
-    final accessToken = await ServerTokenManager.getAccessToken();
+    final accessToken = await ServerTokenManager.getValidAccessToken();
 
     if (accessToken == null || accessToken.isEmpty) {
       throw Exception("인증이 필요합니다. 다시 로그인해주세요.");
@@ -69,11 +63,8 @@ class AlarmApi {
     debugPrint("📤 [AlarmApi] 단건 읽음 처리 — notificationId=$notificationId");
 
     try {
-      final res = await _dio.patch(
+      final res = await ServerTokenManager.authorizedDio.patch(
         "/api/notifications/$notificationId/read",
-        options: Options(
-          headers: {"Authorization": "Bearer $accessToken"},
-        ),
       );
 
       debugPrint("✅ [AlarmApi] 단건 읽음 처리 성공 — 응답 body: ${res.data}");
@@ -95,7 +86,7 @@ class AlarmApi {
   // - 응답 바디가 없으므로(204 No Content) 별도 파싱 없이 성공 여부만 처리한다.
   /// PATCH /api/notifications/read-all
   static Future<void> readAll() async {
-    final accessToken = await ServerTokenManager.getAccessToken();
+    final accessToken = await ServerTokenManager.getValidAccessToken();
 
     if (accessToken == null || accessToken.isEmpty) {
       throw Exception("인증이 필요합니다. 다시 로그인해주세요.");
@@ -104,11 +95,8 @@ class AlarmApi {
     debugPrint("📤 [AlarmApi] 전체 읽음 처리 요청");
 
     try {
-      final res = await _dio.patch(
+      final res = await ServerTokenManager.authorizedDio.patch(
         "/api/notifications/read-all",
-        options: Options(
-          headers: {"Authorization": "Bearer $accessToken"},
-        ),
       );
 
       debugPrint("✅ [AlarmApi] 전체 읽음 처리 성공 — statusCode: ${res.statusCode}");

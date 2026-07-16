@@ -40,8 +40,7 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
 
   Future<void> updateProfileImage(File file) async {
     try {
-      final token =
-      await ServerTokenManager.getAccessToken();
+      final token = await ServerTokenManager.getValidAccessToken();
 
       if (token == null) {
         throw Exception("로그인이 필요합니다.");
@@ -96,7 +95,7 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
 
   Future<void> deleteProfileImage() async {
     try {
-      final token = await ServerTokenManager.getAccessToken();
+      final token = await ServerTokenManager.getValidAccessToken();
 
       if (token == null) {
         throw Exception("로그인이 필요합니다.");
@@ -344,9 +343,7 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
   void initState() {
     super.initState();
 
-    dio = Dio();
-    dio.options.baseUrl = "https://chackchack.shop";
-
+    dio = ServerTokenManager.authorizedDio;
     profileApi = ProfileApi(dio);
 
     _loadProfile();
@@ -362,7 +359,7 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
 
   Future<void> _loadProfile() async {
     try {
-      final token = await ServerTokenManager.getAccessToken();
+      final token = await ServerTokenManager.getValidAccessToken();
 
       if (token == null) return;
 
@@ -390,7 +387,7 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
 
   Future<void> _saveProfile() async {
     try {
-      final token = await ServerTokenManager.getAccessToken();
+      final token = await ServerTokenManager.getValidAccessToken();
 
       if (token == null) {
         throw Exception("로그인이 필요합니다.");

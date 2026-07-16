@@ -23,9 +23,7 @@ class RMyPage extends StatefulWidget {
 }
 
 class _RMyPageState extends State<RMyPage> {
-  final ProfileApi profileApi = ProfileApi(
-    Dio(BaseOptions(baseUrl: "https://chackchack.shop")),
-  );
+  final ProfileApi profileApi = ProfileApi(ServerTokenManager.authorizedDio);
 
   String profileName = "";
 
@@ -49,11 +47,8 @@ class _RMyPageState extends State<RMyPage> {
         return;
       }
 
-      final dio = Dio();
-
-      final response = await dio.get(
-        "https://chackchack.shop/api/work-places/me",
-        options: Options(headers: {"Authorization": "Bearer $token"}),
+      final response = await ServerTokenManager.authorizedDio.get(
+        "/api/work-places/me",
       );
 
       final List list = response.data["workPlaces"];
@@ -63,7 +58,7 @@ class _RMyPageState extends State<RMyPage> {
       Map<String, dynamic>? selectedStore;
       if (loadedStores.isNotEmpty) {
         selectedStore = loadedStores.firstWhere(
-          (store) => store["workPlaceId"] == storedWorkPlaceId,
+              (store) => store["workPlaceId"] == storedWorkPlaceId,
           orElse: () => loadedStores.first,
         );
         await SelectedWorkPlaceStorage.save(selectedStore["workPlaceId"]);
@@ -289,7 +284,7 @@ class _RMyPageState extends State<RMyPage> {
 
   Future<void> _loadProfileName() async {
     try {
-      final token = await ServerTokenManager.getAccessToken();
+      final token = await ServerTokenManager.getValidAccessToken();
 
       if (token == null || token.isEmpty) {
         debugPrint("토큰 없음");

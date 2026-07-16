@@ -9,7 +9,6 @@ class NoticeListApi {
   /// GET /api/work-places/{workPlaceId}/notices?page={page}&size={size}
   Future<Map<String, dynamic>> getNotices({
     required int workPlaceId,
-    required String accessToken,
     int page = 0,
     int size = 20,
   }) async {
@@ -20,11 +19,6 @@ class NoticeListApi {
           "page": page,
           "size": size,
         },
-        options: Options(
-          headers: {
-            "Authorization": "Bearer $accessToken",
-          },
-        ),
       );
 
       return Map<String, dynamic>.from(response.data);

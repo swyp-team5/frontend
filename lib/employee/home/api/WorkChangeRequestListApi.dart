@@ -36,12 +36,6 @@ class WorkChangeRequestPage {
 }
 
 class WorkChangeRequestListApi {
-  static const String _baseUrl = "https://chackchack.shop";
-
-  final Dio _dio = Dio(
-    BaseOptions(baseUrl: _baseUrl),
-  );
-
   /// scope: "SENT"(내가 보낸 요청) | "RECEIVED"(내가 받은 요청) 등
   Future<WorkChangeRequestPage> fetchRequests({
     required int workPlaceId,
@@ -49,25 +43,14 @@ class WorkChangeRequestListApi {
     int page = 0,
     int size = 20,
   }) async {
-    final token = await ServerTokenManager.getValidAccessToken();
-
-    if (token == null) {
-      throw Exception("로그인 정보가 만료되었습니다. 다시 로그인해주세요.");
-    }
-
     try {
-      final response = await _dio.get(
+      final response = await ServerTokenManager.authorizedDio.get(
         "/api/work-places/$workPlaceId/work-change-requests",
         queryParameters: {
           "scope": scope,
           "page": page,
           "size": size,
         },
-        options: Options(
-          headers: {
-            "Authorization": "Bearer $token",
-          },
-        ),
       );
 
       debugPrint(
@@ -113,22 +96,11 @@ class WorkChangeRequestListApi {
     required int workChangeRequestId,
     required bool accept,
   }) async {
-    final token = await ServerTokenManager.getValidAccessToken();
-
-    if (token == null) {
-      throw Exception("로그인 정보가 만료되었습니다. 다시 로그인해주세요.");
-    }
-
     final action = accept ? "accept" : "reject";
 
     try {
-      final response = await _dio.post(
+      final response = await ServerTokenManager.authorizedDio.post(
         "/api/work-places/$workPlaceId/work-change-requests/$workChangeRequestId/$action",
-        options: Options(
-          headers: {
-            "Authorization": "Bearer $token",
-          },
-        ),
       );
 
       debugPrint(

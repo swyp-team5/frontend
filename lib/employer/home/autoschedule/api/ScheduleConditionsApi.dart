@@ -4,25 +4,20 @@ import '../../../../common/auth/server_token_manager.dart';
 import '../models/ScheduleConditionsLatestResponse.dart';
 
 class ScheduleConditionsApi {
-  static const _baseUrl = "https://chackchack.shop";
-
   /// 최근 저장된 스케줄 조건(그룹별 근무 시간대) 조회
   /// GET /api/work-places/{workPlaceId}/schedule-conditions/latest
   static Future<ScheduleConditionsLatestResponse> getLatest({
     required int workPlaceId,
   }) async {
-    final token = await ServerTokenManager.getAccessToken();
+    final token = await ServerTokenManager.getValidAccessToken();
 
     if (token == null || token.isEmpty) {
       throw Exception("인증이 필요합니다. 다시 로그인해주세요.");
     }
 
-    final dio = Dio();
-
     try {
-      final res = await dio.get(
-        "$_baseUrl/api/work-places/$workPlaceId/schedule-conditions/latest",
-        options: Options(headers: {"Authorization": "Bearer $token"}),
+      final res = await ServerTokenManager.authorizedDio.get(
+        "/api/work-places/$workPlaceId/schedule-conditions/latest",
       );
 
       // ⭐ 원인 파악용: 실제 서버 응답을 그대로 출력
@@ -50,24 +45,19 @@ class ScheduleConditionsApi {
     required int workPlaceId,
     required int weekScheduleId,
   }) async {
-    final token = await ServerTokenManager.getAccessToken();
+    final token = await ServerTokenManager.getValidAccessToken();
 
     if (token == null || token.isEmpty) {
       throw Exception("인증이 필요합니다. 다시 로그인해주세요.");
     }
 
     final url =
-        "$_baseUrl/api/work-places/$workPlaceId/schedule-conditions/$weekScheduleId";
+        "/api/work-places/$workPlaceId/schedule-conditions/$weekScheduleId";
 
     debugPrint("📤 [schedule-conditions DELETE] 요청 URL: $url");
 
-    final dio = Dio();
-
     try {
-      final res = await dio.delete(
-        url,
-        options: Options(headers: {"Authorization": "Bearer $token"}),
-      );
+      final res = await ServerTokenManager.authorizedDio.delete(url);
 
       debugPrint(
           "✅ [schedule-conditions DELETE] 성공 — statusCode: ${res.statusCode}");

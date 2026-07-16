@@ -8,28 +8,21 @@ import '../model/NotificationSettingsResponse.dart';
 // - fcmPushEnabled=false이면 PushPolicy.PUSH 알림도 앱 내부 알림함에만 저장되고
 //   실제 기기로는 FCM delivery가 생성되지 않는다.
 class NotificationSettingsApi {
-  static final Dio _dio = Dio(
-    BaseOptions(baseUrl: "https://chackchack.shop"),
-  );
 
   // 현재 로그인한 회원의 FCM 푸시 수신 설정 조회
   /// GET /api/members/me/notification-settings
   static Future<NotificationSettingsResponse> getSettings() async {
-    final accessToken = await ServerTokenManager.getAccessToken();
+    final accessToken = await ServerTokenManager.getValidAccessToken();
 
     if (accessToken == null || accessToken.isEmpty) {
       throw Exception("인증이 필요합니다. 다시 로그인해주세요.");
     }
 
-    debugPrint(
-        "📤 [NotificationSettingsApi] 요청 URL: ${_dio.options.baseUrl}/api/members/me/notification-settings");
+    debugPrint("📤 [NotificationSettingsApi] 요청 URL: /api/members/me/notification-settings");
 
     try {
-      final res = await _dio.get(
+      final res = await ServerTokenManager.authorizedDio.get(
         "/api/members/me/notification-settings",
-        options: Options(
-          headers: {"Authorization": "Bearer $accessToken"},
-        ),
       );
 
       debugPrint("✅ [NotificationSettingsApi] 조회 성공 — 응답 body: ${res.data}");
@@ -51,7 +44,7 @@ class NotificationSettingsApi {
   static Future<NotificationSettingsResponse> updateSettings({
     required bool fcmPushEnabled,
   }) async {
-    final accessToken = await ServerTokenManager.getAccessToken();
+    final accessToken = await ServerTokenManager.getValidAccessToken();
 
     if (accessToken == null || accessToken.isEmpty) {
       throw Exception("인증이 필요합니다. 다시 로그인해주세요.");
@@ -61,14 +54,11 @@ class NotificationSettingsApi {
         "📤 [NotificationSettingsApi] 변경 요청 — fcmPushEnabled=$fcmPushEnabled");
 
     try {
-      final res = await _dio.patch(
+      final res = await ServerTokenManager.authorizedDio.patch(
         "/api/members/me/notification-settings",
         data: {
           "fcmPushEnabled": fcmPushEnabled,
         },
-        options: Options(
-          headers: {"Authorization": "Bearer $accessToken"},
-        ),
       );
 
       debugPrint("✅ [NotificationSettingsApi] 변경 성공 — 응답 body: ${res.data}");

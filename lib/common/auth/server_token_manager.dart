@@ -21,17 +21,17 @@ class DioTokenRefreshClient implements TokenRefreshClient {
 
   DioTokenRefreshClient({Dio? dio})
       : dio = dio ??
-            Dio(
-              BaseOptions(
-                baseUrl: 'https://chackchack.shop',
-                connectTimeout: const Duration(seconds: 10),
-                receiveTimeout: const Duration(seconds: 10),
-                headers: const {
-                  'Accept': 'application/json',
-                  'Content-Type': 'application/json',
-                },
-              ),
-            );
+      Dio(
+        BaseOptions(
+          baseUrl: 'https://chackchack.shop',
+          connectTimeout: const Duration(seconds: 10),
+          receiveTimeout: const Duration(seconds: 10),
+          headers: const {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
 
   @override
   Future<RefreshTokens> refresh(String refreshToken, String deviceId) async {
@@ -63,11 +63,16 @@ class ServerTokenManager implements AuthSessionSaver {
 
   Future<String?>? _refreshFuture;
 
+  /// 앱 전역에서 재사용할 "인증이 필요한" API 호출용 공용 Dio.
+  /// 이 Dio를 쓰면 각 API 파일에서 직접 토큰을 읽어 헤더에 넣거나
+  /// 만료 여부를 신경 쓸 필요가 없다 — 인터셉터가 자동으로 처리한다.
+  static Dio? _authorizedDio;
+
   ServerTokenManager({
     AuthSessionStore? store,
     TokenRefreshClient? refreshClient,
   }) : store = store ?? SecureAuthSessionStore(),
-       refreshClient = refreshClient ?? DioTokenRefreshClient();
+        refreshClient = refreshClient ?? DioTokenRefreshClient();
 
   @override
   Future<void> saveSession(AuthSession session) {
@@ -204,5 +209,73 @@ class ServerTokenManager implements AuthSessionSaver {
       throw const FormatException('Invalid token payload');
     }
     return data;
+  }
+
+  /// ✅ 인증이 필요한 API 호출에 사용할 공용 Dio.
+  ///
+  /// - 요청 전: 만료 여부와 상관없이 항상 "유효한" 액세스 토큰을 확보해서
+  ///   Authorization 헤더에 자동으로 넣어준다 (만료 시 자동 refresh).
+  /// - 그래도 서버가 401을 내려주면(예: 토큰 확인 시점 이후 서버 쪽에서
+  ///   즉시 만료/폐기 처리된 경우) 한 번 더 refresh를 시도한 뒤
+  ///   원래 요청을 자동으로 재시도한다.
+  /// - refresh 자체가 실패하면(리프레시 토큰도 만료 등) 세션을 지우고
+  ///   원래 401 에러를 그대로 전달한다. 이 경우 로그인 화면으로 보내는
+  ///   처리는 호출부(또는 앱 전역 에러 핸들러)에서 하면 된다.
+  static Dio get authorizedDio {
+    return _authorizedDio ??= _buildAuthorizedDio();
+  }
+
+  static Dio _buildAuthorizedDio() {
+    final dio = Dio(
+      BaseOptions(
+        baseUrl: 'https://chackchack.shop',
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+      ),
+    );
+
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          final token = await getValidAccessToken();
+          if (token != null) {
+            options.headers['Authorization'] = 'Bearer $token';
+          }
+          handler.next(options);
+        },
+        onError: (error, handler) async {
+          final isUnauthorized = error.response?.statusCode == 401;
+          // 재시도 무한 루프 방지용 플래그
+          final alreadyRetried =
+              error.requestOptions.extra['retried'] == true;
+
+          if (!isUnauthorized || alreadyRetried) {
+            handler.next(error);
+            return;
+          }
+
+          final refreshed = await refreshAccessToken();
+
+          if (refreshed == null) {
+            // refresh 자체가 실패 → 세션 만료. 원래 에러를 그대로 전달.
+            handler.next(error);
+            return;
+          }
+
+          try {
+            final retryOptions = error.requestOptions;
+            retryOptions.headers['Authorization'] = 'Bearer $refreshed';
+            retryOptions.extra['retried'] = true;
+
+            final response = await dio.fetch(retryOptions);
+            handler.resolve(response);
+          } catch (e) {
+            handler.next(error);
+          }
+        },
+      ),
+    );
+
+    return dio;
   }
 }

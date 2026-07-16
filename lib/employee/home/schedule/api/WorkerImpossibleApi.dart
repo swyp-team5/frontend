@@ -3,14 +3,12 @@ import '../../../../common/auth/server_token_manager.dart';
 import '../models/WorkerImpossibleResponse.dart';
 
 class WorkerImpossibleApi {
-  static const _baseUrl = "https://chackchack.shop";
-
   static Future<WorkerImpossibleResponse> postWorkerSelect({
     required int workPlaceId,
     required int weekScheduleId,
     required List<int> timeDetails,
   }) async {
-    final token = await ServerTokenManager.getAccessToken();
+    final token = await ServerTokenManager.getValidAccessToken();
 
     if (token == null || token.isEmpty) {
       throw Exception("인증이 필요합니다. 다시 로그인해주세요.");
@@ -21,22 +19,14 @@ class WorkerImpossibleApi {
       "timeDetails": timeDetails,
     };
 
-    final url = "$_baseUrl/api/work-places/$workPlaceId/worker-select";
+    final url = "/api/work-places/$workPlaceId/worker-select";
 
     debugPrintCompat("📤 [worker-select] 요청 URL: $url");
     debugPrintCompat("📤 [worker-select] 요청 body: $requestBody");
 
-    final dio = Dio();
-
     try {
-      final res = await dio.post(
+      final res = await ServerTokenManager.authorizedDio.post(
         url,
-        options: Options(
-          headers: {
-            "Authorization": "Bearer $token",
-            "Content-Type": "application/json",
-          },
-        ),
         data: requestBody,
       );
 
@@ -64,8 +54,6 @@ class WorkerImpossibleApi {
   }
 }
 
-/// flutter/material.dart 없이도 쓸 수 있게 하는 간단한 wrapper.
-/// 이미 material.dart를 import하고 있다면 그냥 debugPrint를 써도 됩니다.
 void debugPrintCompat(String message) {
   // ignore: avoid_print
   print(message);

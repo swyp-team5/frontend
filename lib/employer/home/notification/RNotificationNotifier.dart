@@ -1,4 +1,3 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -48,9 +47,7 @@ class NoticeListState {
 class RNotificationNotifier extends StateNotifier<NoticeListState> {
   RNotificationNotifier() : super(const NoticeListState());
 
-  final NoticeListApi _api = NoticeListApi(
-    Dio(BaseOptions(baseUrl: "https://chackchack.shop")),
-  );
+  final NoticeListApi _api = NoticeListApi(ServerTokenManager.authorizedDio);
 
   static const int _pageSize = 20;
 
@@ -64,7 +61,7 @@ class RNotificationNotifier extends StateNotifier<NoticeListState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final token = await ServerTokenManager.getAccessToken();
+      final token = await ServerTokenManager.getValidAccessToken();
       final workPlaceId = await _getWorkPlaceId();
 
       debugPrint("=== fetchFirstPage 시작 ===");
@@ -80,7 +77,6 @@ class RNotificationNotifier extends StateNotifier<NoticeListState> {
 
       final json = await _api.getNotices(
         workPlaceId: workPlaceId,
-        accessToken: token,
         page: 0,
         size: _pageSize,
       );
@@ -116,7 +112,7 @@ class RNotificationNotifier extends StateNotifier<NoticeListState> {
     state = state.copyWith(isLoadingMore: true);
 
     try {
-      final token = await ServerTokenManager.getAccessToken();
+      final token = await ServerTokenManager.getValidAccessToken();
       final workPlaceId = await _getWorkPlaceId();
 
       if (token == null || workPlaceId == null) {
@@ -128,7 +124,6 @@ class RNotificationNotifier extends StateNotifier<NoticeListState> {
 
       final json = await _api.getNotices(
         workPlaceId: workPlaceId,
-        accessToken: token,
         page: nextPage,
         size: _pageSize,
       );

@@ -61,14 +61,12 @@ class _RHomePageState extends State<RHomePage> {
 
   int? notSubmittedCount;
 
-  // ✅ 슬라이드 카드용 컨트롤러 & 현재 페이지 인덱스
+  // 슬라이드 카드용 컨트롤러 & 현재 페이지 인덱스
   final PageController _scheduleCardPageController = PageController();
   int _currentSchedulePage = 0;
 
-  // ✅ 공통 Dio 인스턴스 (baseUrl 지정 필수)
-  final Dio _dio = Dio(
-    BaseOptions(baseUrl: "https://chackchack.shop"),
-  );
+  // 공통 Dio 인스턴스 (baseUrl 지정 필수)
+  Dio get _dio => ServerTokenManager.authorizedDio;
 
   /// 카드에서 사용할 남은 일수
   int get daysLeft {
@@ -521,23 +519,14 @@ class _RHomePageState extends State<RHomePage> {
 
   Future<void> _loadWorkPlaces() async {
     try {
-      final token = await ServerTokenManager.getAccessToken();
-
+      final token = await ServerTokenManager.getValidAccessToken();
       debugPrint("HOME TOKEN = $token");
-
       if (token == null || token.isEmpty) {
         debugPrint("토큰 없음");
         return;
       }
 
-      final response = await _dio.get(
-        "/api/work-places/me",
-        options: Options(
-          headers: {
-            "Authorization": "Bearer $token",
-          },
-        ),
-      );
+      final response = await _dio.get("/api/work-places/me");
 
       debugPrint("========== /work-places/me ==========");
       debugPrint("statusCode = ${response.statusCode}");

@@ -5,34 +5,25 @@ import '../../../../common/auth/server_token_manager.dart';
 import '../models/WorkersResponse.dart';
 
 class WorkersApi {
-  static const _baseUrl = "https://chackchack.shop";
-
   /// 근무자 조회
   static Future<WorkersResponse> getWorkers({
     required int workPlaceId,
   }) async {
-    final token = await ServerTokenManager.getAccessToken();
+    final token = await ServerTokenManager.getValidAccessToken();
 
     debugPrint("========== Workers API ==========");
     debugPrint("workPlaceId : $workPlaceId");
     debugPrint("token exists : ${token != null}");
     debugPrint("token empty : ${token?.isEmpty}");
-    debugPrint("request url : $_baseUrl/api/work-places/$workPlaceId/crews");
+    debugPrint("request url : /api/work-places/$workPlaceId/crews");
 
     if (token == null || token.isEmpty) {
       throw Exception("인증이 필요합니다. 다시 로그인해주세요.");
     }
 
-    final dio = Dio();
-
     try {
-      final res = await dio.get(
-        "$_baseUrl/api/work-places/$workPlaceId/crews",
-        options: Options(
-          headers: {
-            "Authorization": "Bearer $token",
-          },
-        ),
+      final res = await ServerTokenManager.authorizedDio.get(
+        "/api/work-places/$workPlaceId/crews",
       );
 
       debugPrint("========== Response ==========");

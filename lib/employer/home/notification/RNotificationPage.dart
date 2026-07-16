@@ -11,7 +11,7 @@ import '../../mypage/RMyPage.dart';
 import '../../mypage/api/profile_api.dart';
 import '../RHomePage.dart';
 import 'RNotiDetailPage.dart';
-import 'RNotificationProvider.dart';
+import 'RNotificationNotifier.dart';
 import 'RNotiWritingPage.dart';
 import 'RNotificationModel.dart';
 

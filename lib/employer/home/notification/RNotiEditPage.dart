@@ -11,7 +11,7 @@ import 'package:dio/dio.dart';
 import '../../../common/auth/server_token_manager.dart';
 import '../../../common/image_upload/upload_image_normalizer.dart';
 import 'RNotificationModel.dart';
-import 'RNotificationProvider.dart';
+import 'RNotificationNotifier.dart';
 import 'api/notice_api.dart';
 import 'api/notice_upload_service.dart';
 
@@ -31,7 +31,6 @@ class _RNotiEditPageState extends ConsumerState<RNotiEditPage> {
   late TextEditingController titleController;
   late TextEditingController contentController;
 
-  late final Dio dio;
   late final NoticeApi noticeApi;
   late final NoticeUploadService uploadService;
 
@@ -56,10 +55,8 @@ class _RNotiEditPageState extends ConsumerState<RNotiEditPage> {
     existingImage =
     widget.notice.images.isNotEmpty ? widget.notice.images.first : null;
 
-    dio = Dio();
-    dio.options.baseUrl = "https://chackchack.shop";
-    noticeApi = NoticeApi(dio);
-    uploadService = NoticeUploadService(dio);
+    noticeApi = NoticeApi(ServerTokenManager.authorizedDio);
+    uploadService = NoticeUploadService(ServerTokenManager.authorizedDio);
   }
 
   @override
@@ -77,7 +74,7 @@ class _RNotiEditPageState extends ConsumerState<RNotiEditPage> {
     setState(() => isSubmitting = true);
 
     try {
-      final accessToken = await ServerTokenManager.getAccessToken();
+      final accessToken = await ServerTokenManager.getValidAccessToken();
 
       if (accessToken == null || accessToken.isEmpty) {
         throw Exception("로그인이 필요합니다.");

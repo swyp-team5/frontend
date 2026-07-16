@@ -11,7 +11,7 @@ import '../../../common/widgets/BottomNavBar.dart';
 import '../../crews/RCrewPage.dart';
 import '../../mypage/RMyPage.dart';
 import '../RHomePage.dart';
-import 'RNotificationProvider.dart';
+import 'RNotificationNotifier.dart';
 import 'RNotificationModel.dart';
 import 'package:dio/dio.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
@@ -33,8 +33,8 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
 
   File? selectedImage;
 
-  late final Dio dio;
   late final NoticeUploadService uploadService;
+  late NoticeApi noticeApi;
 
   // [수정] 등록 요청이 진행 중인지 추적하는 플래그.
   // 이게 true인 동안에는 버튼을 눌러도 _registerNotice()가 다시 실행되지 않는다.
@@ -48,7 +48,7 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
     setState(() => _isSubmitting = true);
 
     try {
-      final accessToken = await ServerTokenManager.getAccessToken();
+      final accessToken = await ServerTokenManager.getValidAccessToken();
 
       if (accessToken == null || accessToken.isEmpty) {
         throw Exception("로그인이 필요합니다.");
@@ -566,17 +566,13 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
       },
     );
   }
-  late NoticeApi noticeApi;
 
   @override
   void initState() {
     super.initState();
 
-    dio = Dio();
-    dio.options.baseUrl = "https://chackchack.shop";
-
-    noticeApi = NoticeApi(dio);
-    uploadService = NoticeUploadService(dio);
+    noticeApi = NoticeApi(ServerTokenManager.authorizedDio);
+    uploadService = NoticeUploadService(ServerTokenManager.authorizedDio);
   }
 
   @override

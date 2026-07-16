@@ -32,8 +32,7 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
 
   Future<void> updateProfileImage(File file) async {
     try {
-      final token =
-      await ServerTokenManager.getAccessToken();
+      final token = await ServerTokenManager.getValidAccessToken();
 
       if (token == null) {
         throw Exception("로그인이 필요합니다.");
@@ -89,7 +88,7 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
 
   Future<void> deleteProfileImage() async {
     try {
-      final token = await ServerTokenManager.getAccessToken();
+      final token = await ServerTokenManager.getValidAccessToken();
 
       if (token == null) {
         throw Exception("로그인이 필요합니다.");
@@ -349,21 +348,7 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
   void initState() {
     super.initState();
 
-    dio = Dio();
-    dio.options.baseUrl = "https://chackchack.shop";
-
-    dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) {
-          debugPrint("========== REQUEST ==========");
-          debugPrint("${options.method} ${options.uri}");
-          debugPrint("Headers : ${options.headers}");
-          debugPrint("Body : ${options.data}");
-          handler.next(options);
-        },
-      ),
-    );
-
+    dio = ServerTokenManager.authorizedDio;
     profileApi = ProfileApi(dio);
 
     _loadProfile();
@@ -378,7 +363,7 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
 
   Future<void> _loadProfile() async {
     try {
-      final token = await ServerTokenManager.getAccessToken();
+      final token = await ServerTokenManager.getValidAccessToken();
 
       debugPrint("GET TOKEN = $token");
 
@@ -408,7 +393,7 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
 
   Future<void> _saveProfile() async {
     try {
-      final token = await ServerTokenManager.getAccessToken();
+      final token = await ServerTokenManager.getValidAccessToken();
 
       if (token == null) {
         throw Exception("로그인이 필요합니다.");

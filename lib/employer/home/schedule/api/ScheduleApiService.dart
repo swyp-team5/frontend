@@ -6,8 +6,6 @@ import '../models/ScheduleCondition.dart';
 import '../models/LatestScheduleCondition.dart';
 
 class ScheduleApiService {
-  static const _baseUrl = "https://chackchack.shop";
-
   /// SharedPreferences에 저장할 때 사용하는 key
   static const String activeWeekScheduleIdKey = "activeWeekScheduleId";
 
@@ -15,20 +13,11 @@ class ScheduleApiService {
     required int workPlaceId,
     required ScheduleConditionRequest body,
   }) async {
-    final token = await ServerTokenManager.getAccessToken();
-
-    if (token == null || token.isEmpty) {
-      throw Exception("인증이 필요합니다. 다시 로그인해주세요.");
-    }
-
-    final dio = Dio();
-
     try {
-      final res = await dio.post(
-        "$_baseUrl/api/work-places/$workPlaceId/schedule-conditions",
+      final res = await ServerTokenManager.authorizedDio.post(
+        "/api/work-places/$workPlaceId/schedule-conditions",
         options: Options(
           headers: {
-            "Authorization": "Bearer $token",
             "Content-Type": "application/json",
           },
         ),
@@ -55,22 +44,9 @@ class ScheduleApiService {
   static Future<LatestScheduleResponse?> getLatestScheduleConditions({
     required int workPlaceId,
   }) async {
-    final token = await ServerTokenManager.getAccessToken();
-
-    if (token == null || token.isEmpty) {
-      throw Exception("인증이 필요합니다. 다시 로그인해주세요.");
-    }
-
-    final dio = Dio();
-
     try {
-      final res = await dio.get(
-        "$_baseUrl/api/work-places/$workPlaceId/schedule-conditions/latest",
-        options: Options(
-          headers: {
-            "Authorization": "Bearer $token",
-          },
-        ),
+      final res = await ServerTokenManager.authorizedDio.get(
+        "/api/work-places/$workPlaceId/schedule-conditions/latest",
       );
 
       debugPrint("📥 서버 원본 응답: ${res.data}");
@@ -101,22 +77,9 @@ class ScheduleApiService {
     required int workPlaceId,
     required int weekScheduleId,
   }) async {
-    final token = await ServerTokenManager.getAccessToken();
-
-    if (token == null || token.isEmpty) {
-      throw Exception("인증이 필요합니다. 다시 로그인해주세요.");
-    }
-
-    final dio = Dio();
-
     try {
-      await dio.delete(
-        "$_baseUrl/api/work-places/$workPlaceId/schedule-conditions/$weekScheduleId",
-        options: Options(
-          headers: {
-            "Authorization": "Bearer $token",
-          },
-        ),
+      await ServerTokenManager.authorizedDio.delete(
+        "/api/work-places/$workPlaceId/schedule-conditions/$weekScheduleId",
       );
 
       final prefs = await SharedPreferences.getInstance();

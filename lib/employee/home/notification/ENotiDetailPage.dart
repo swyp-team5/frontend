@@ -25,7 +25,7 @@ class ENotiDetailPage extends ConsumerStatefulWidget {
 }
 
 class _ENotiDetailPageState extends ConsumerState<ENotiDetailPage> {
-  late final Dio dio;
+
   late final NoticeApi noticeApi;
 
   NoticeModel? notice;
@@ -36,9 +36,7 @@ class _ENotiDetailPageState extends ConsumerState<ENotiDetailPage> {
   void initState() {
     super.initState();
 
-    dio = Dio();
-    dio.options.baseUrl = "https://chackchack.shop";
-    noticeApi = NoticeApi(dio);
+    noticeApi = NoticeApi(ServerTokenManager.authorizedDio);
 
     notice = widget.initialNotice;
     isLoading = widget.initialNotice == null;
@@ -48,7 +46,7 @@ class _ENotiDetailPageState extends ConsumerState<ENotiDetailPage> {
 
   Future<void> _fetchDetail() async {
     try {
-      final accessToken = await ServerTokenManager.getAccessToken();
+      final accessToken = await ServerTokenManager.getValidAccessToken();
 
       if (accessToken == null || accessToken.isEmpty) {
         throw Exception("로그인이 필요합니다.");

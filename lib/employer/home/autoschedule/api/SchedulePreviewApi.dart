@@ -4,10 +4,6 @@ import '../../../../common/auth/server_token_manager.dart';
 import '../models/SchedulePreviewResponse.dart';
 
 class SchedulePreviewApi {
-  static final Dio _dio = Dio(
-    BaseOptions(baseUrl: "https://chackchack.shop"),
-  );
-
   /// GET /api/work-places/{workPlaceId}/week-schedules/{weekScheduleId}/schedule-generation-runs/{runId}/preview
   static Future<SchedulePreviewResponse> getPreview({
     required int workPlaceId,
@@ -17,21 +13,12 @@ class SchedulePreviewApi {
     final url =
         "/api/work-places/$workPlaceId/week-schedules/$weekScheduleId/schedule-generation-runs/$runId/preview";
 
-    debugPrint("📤 [SchedulePreviewApi] 요청 URL: ${_dio.options.baseUrl}$url");
+    debugPrint("📤 [SchedulePreviewApi] 요청 URL: $url");
     debugPrint(
         "📤 [SchedulePreviewApi] 파라미터: workPlaceId=$workPlaceId, weekScheduleId=$weekScheduleId, runId=$runId");
 
-    final token = await ServerTokenManager.getAccessToken();
-
     try {
-      final response = await _dio.get(
-        url,
-        options: Options(
-          headers: {
-            "Authorization": "Bearer $token",
-          },
-        ),
-      );
+      final response = await ServerTokenManager.authorizedDio.get(url);
 
       debugPrint("🟢 [SchedulePreviewApi] 성공 — statusCode: ${response.statusCode}");
       debugPrint("🟢 [SchedulePreviewApi] 응답 body: ${response.data}");
