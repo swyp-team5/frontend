@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'ECrewPage.dart';
 import 'package:dio/dio.dart';
@@ -102,6 +103,44 @@ class _ECrewCodePageState extends State<ECrewCodePage> {
 
       debugPrint("========== ACCEPT ==========");
       debugPrint(response.data.toString());
+
+      // ✅ 방금 가입한 매장을 홈 화면에서 우선 보여주기 위해,
+      // accept 응답의 workPlaceId/workPlaceName을 selectedWorkPlaceId로 저장한다.
+      // (EHomePage._loadMyWorkPlace()가 이 값을 우선 사용하도록 이미 구현되어 있음)
+      //
+      // accept 성공 응답 예시:
+      // {
+      //   "crewId": 20,
+      //   "workPlaceId": 10,
+      //   "workPlaceName": "스위프",
+      //   "joinStatus": "APPROVED",
+      //   "crewRole": "WORKER",
+      //   "status": "ACTIVE"
+      // }
+      final data = response.data;
+      final int? joinedWorkPlaceId =
+      data is Map ? data['workPlaceId'] as int? : null;
+      final String? joinedWorkPlaceName =
+      data is Map ? data['workPlaceName'] as String? : null;
+
+      if (joinedWorkPlaceId != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt("selectedWorkPlaceId", joinedWorkPlaceId);
+
+        if (joinedWorkPlaceName != null) {
+          await prefs.setString(
+            "selectedWorkPlaceName",
+            joinedWorkPlaceName,
+          );
+        }
+
+        debugPrint(
+          "✅ 가입한 매장을 selectedWorkPlaceId로 저장: "
+              "$joinedWorkPlaceId ($joinedWorkPlaceName)",
+        );
+      } else {
+        debugPrint("⚠️ accept 응답에 workPlaceId가 없습니다: $data");
+      }
 
       setState(() {
         isMatched = true;
