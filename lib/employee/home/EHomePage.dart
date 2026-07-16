@@ -1,5 +1,6 @@
 import 'package:chack_chack/employee/crews/ECrewFirstPage.dart';
 import 'package:chack_chack/employee/home/schedule/ESubmitSchedulePage.dart';
+import 'package:chack_chack/employee/home/schedule/api/CalendarActivateApi.dart';
 import 'package:chack_chack/employee/home/widgets/ECheckInCard.dart';
 import 'package:chack_chack/employee/home/widgets/EHomeCalendar.dart';
 import 'package:chack_chack/employee/home/widgets/EHomeHeader.dart';
@@ -51,6 +52,8 @@ class _EHomePageState extends State<EHomePage> {
   String workPlaceName = "";
   int? workPlaceId;
   String? accessToken; // 배너용 accessToken 상태 추가
+
+  String? dueDate;
 
   /// ✅ 매장 변경 바텀시트에 표시할 전체 매장 목록
   List<Map<String, dynamic>> stores = [];
@@ -185,10 +188,31 @@ class _EHomePageState extends State<EHomePage> {
       // (initState에서 _loadConfirmedSchedules()를 병렬로 호출하면
       //  이 시점보다 먼저 실행되어 workPlaceId가 아직 null인 채로
       //  스킵되는 경쟁 조건이 있었음 — 그래서 여기서 명시적으로 호출)
-      _loadWorkChangeRequestCards(id);
-      _loadConfirmedSchedules();
+      await _loadCalendarActivate();
+      await _loadWorkChangeRequestCards(id);
+      await _loadConfirmedSchedules();
     } catch (e) {
       debugPrint("workPlace 로딩 실패: $e");
+    }
+  }
+
+  Future<void> _loadCalendarActivate() async {
+    if (workPlaceId == null) return;
+
+    try {
+      final result = await CalendarActivateApi.getCalendarActivate(
+        workPlaceId: workPlaceId!,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        dueDate = result.dueDate;
+      });
+
+      debugPrint("마감일 : ${result.dueDate}");
+    } catch (e) {
+      debugPrint("CalendarActivate 조회 실패 : $e");
     }
   }
 
@@ -392,6 +416,7 @@ class _EHomePageState extends State<EHomePage> {
                           Navigator.pop(context);
 
                           // ✅ 새 매장 기준으로 요청 카드 / 근무 일정을 즉시 다시 조회
+                          await _loadCalendarActivate();
                           await _loadWorkChangeRequestCards(newWorkPlaceId);
                           await _loadConfirmedSchedules();
                         },
@@ -723,8 +748,33 @@ class _EHomePageState extends State<EHomePage> {
 
   /// 월요일~일요일 기준 남은 일수
   int get daysLeft {
-    final now = DateTime.now();
-    return 8 - now.weekday;
+    if (dueDate == null || dueDate!.isEmpty) {
+      return 0;
+    }
+
+    try {
+      final deadline = DateTime.parse(dueDate!);
+
+      final today = DateTime.now();
+
+      final now = DateTime(
+        today.year,
+        today.month,
+        today.day,
+      );
+
+      final end = DateTime(
+        deadline.year,
+        deadline.month,
+        deadline.day,
+      );
+
+      final diff = end.difference(now).inDays;
+
+      return diff < 0 ? 0 : diff;
+    } catch (_) {
+      return 0;
+    }
   }
 
   //==========================================================
