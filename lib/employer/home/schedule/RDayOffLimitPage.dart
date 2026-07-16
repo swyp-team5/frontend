@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:chack_chack/employer/home/schedule/widgets/RCompleteMakingSchedule.dart';
+import 'package:chack_chack/employer/home/schedule/widgets/RScheduleDeadlineBottomSheet.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -425,8 +426,8 @@ class _RDayOffLimitPageState extends State<RDayOffLimitPage> {
     return null; // 모든 요일이 휴무이거나 스케줄로 커버됨
   }
 
-  Future<void> _onSubmit() async {
-    if (_isSubmitting) return;
+  Future<bool> _onSubmit(DateTime selectedDueDate) async {
+    if (_isSubmitting) return false;
 
     // 서버로 보내기 전, 요일 커버리지부터 먼저 검증한다.
     final coverageError = _validateAllDaysCovered();
@@ -434,7 +435,7 @@ class _RDayOffLimitPageState extends State<RDayOffLimitPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(coverageError)),
       );
-      return;
+      return false;
     }
 
     setState(() => _isSubmitting = true);
@@ -445,7 +446,7 @@ class _RDayOffLimitPageState extends State<RDayOffLimitPage> {
         workPlaceCloseTime: _fmtTime(widget.closeTime),
         minPersonalWorkCount: widget.minWork,
         maxPersonalWorkCount: widget.maxWork,
-        dueDate: _fmtDate(_dueDate), // 금주 일요일
+        dueDate: _fmtDate(selectedDueDate), // 바텀시트에서 선택한 마감일
         days: _buildDayConditions(),
       );
 
@@ -456,7 +457,6 @@ class _RDayOffLimitPageState extends State<RDayOffLimitPage> {
         body: request,
       );
 
-      // ===== 연동 성공 로그 =====
       debugPrint("========== 스케줄 등록 성공 ==========");
       debugPrint("weekScheduleId = ${response.weekScheduleId}");
       debugPrint("workPlaceId    = ${response.workPlaceId}");
@@ -467,35 +467,45 @@ class _RDayOffLimitPageState extends State<RDayOffLimitPage> {
       debugPrint("updatedAt      = ${response.updatedAt}");
       debugPrint("=====================================");
 
-      // 홈 화면 등에서 재사용할 수 있도록 활성 weekScheduleId 저장
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt("activeWeekScheduleId", response.weekScheduleId);
 
       debugPrint("💾 activeWeekScheduleId 저장 완료: ${response.weekScheduleId}");
 
-      if (!mounted) return;
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => const RCompleteMakingSchedule(),
-        ),
-      );
+      return true;
     } catch (e) {
       debugPrint("========== 스케줄 등록 실패 ==========");
       debugPrint(e.toString());
       debugPrint("=====================================");
 
-      if (!mounted) return;
-
-      final message = _resolveErrorMessage(e);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      if (mounted) {
+        final message = _resolveErrorMessage(e);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
+      return false;
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
+  }
+
+  Future<void> _openDeadlineSheet() async {
+    final success = await RScheduleDeadlineBottomSheet.show(
+      context,
+      todayKst: DateTime(_koreaNow.year, _koreaNow.month, _koreaNow.day),
+      dueDate: _dueDate,
+      onSubmit: _onSubmit,
+    );
+
+    if (!success || !mounted) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const RCompleteMakingSchedule(),
+      ),
+    );
   }
 
 
@@ -734,27 +744,18 @@ class _RDayOffLimitPageState extends State<RDayOffLimitPage> {
           child: SizedBox(
             height: 56,
             child: ElevatedButton(
-              onPressed: (_canProceed && !_isSubmitting) ? _onSubmit : null,
+              onPressed: (_canProceed && !_isSubmitting) ? _openDeadlineSheet : null,
               style: ElevatedButton.styleFrom(
                 backgroundColor: _canProceed
                     ? const Color(0xFF0084FF)
-                    : const Color(0xFFA9D0FB), // 비활성화 색상
+                    : const Color(0xFFA9D0FB),
                 disabledBackgroundColor: const Color(0xFFA9D0FB),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: _isSubmitting
-                  ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  color: Colors.white,
-                  strokeWidth: 2.5,
-                ),
-              )
-                  : const Text(
+              child: const Text(
                 "스케줄 만들기",
                 style: TextStyle(
                   color: Colors.white,
