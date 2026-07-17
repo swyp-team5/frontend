@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'dart:io' show Platform;
-
 import 'package:chack_chack/employer/mypage/RMyPage.dart';
 import 'package:chack_chack/employer/schedule/RMainSchedulePage.dart';
 import 'package:flutter/material.dart';
@@ -14,8 +11,10 @@ import '../home/RHomePage.dart';
 import 'RCrewInvitationHistoryPage.dart';
 import 'RCrewDetailPage.dart';
 import 'model/RCrewModel.dart';
+import 'share/crew_invitation_share_service.dart';
 
 import 'widgets/RCrewCard.dart';
+import 'widgets/crew_invitation_share_actions.dart';
 
 import '../../common/auth/server_token_manager.dart';
 import 'package:dio/dio.dart';
@@ -37,8 +36,7 @@ class _RCrewPageState extends State<RCrewPage> {
 
   int? invitationId;
   String inviteCode = "";
-  String inviteUrl = "";       // 커스텀 스킴 (chack-chack://crew-invitations/{code}) - iOS용
-  String inviteShareUrl = "";  // https App Links URL - Android용
+  String inviteShareUrl = "";
   DateTime? inviteExpiresAt;
   bool isCreatingInvitation = false;
 
@@ -51,15 +49,40 @@ class _RCrewPageState extends State<RCrewPage> {
       ),
     ),
   );
+  final CrewInvitationShareService _invitationShareService =
+      CrewInvitationShareService();
 
-  /// 플랫폼별로 공유/복사에 사용할 초대 링크를 결정한다.
-  /// - iOS: 커스텀 스킴(inviteUrl)
-  /// - Android 및 그 외: https App Links(inviteShareUrl)
-  String get _platformInviteUrl {
-    if (Platform.isIOS) {
-      return inviteUrl;
+  Future<void> _copyInvitationLink() async {
+    if (inviteShareUrl.isEmpty) {
+      _showMessage('복사할 초대 링크가 없어요.');
+      return;
     }
-    return inviteShareUrl;
+
+    await Clipboard.setData(ClipboardData(text: inviteShareUrl));
+    _showMessage('초대 링크가 복사되었습니다.');
+  }
+
+  Future<void> _shareInvitationToKakao() async {
+    try {
+      final result = await _invitationShareService.share(
+        inviteCode: inviteCode,
+      );
+      if (result == KakaoInvitationShareResult.unavailable) {
+        _showMessage('카카오톡이 설치되어 있지 않아요.');
+      }
+    } catch (error) {
+      debugPrint('카카오톡 초대 공유 실패: $error');
+      _showMessage('카카오톡 공유를 시작하지 못했어요.');
+    }
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) {
+      return;
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
   }
 
   Future<void> _createCrewInvitation() async {
@@ -98,7 +121,6 @@ class _RCrewPageState extends State<RCrewPage> {
       setState(() {
         invitationId = data["invitationId"];
         inviteCode = data["inviteCode"] ?? "";
-        inviteUrl = data["inviteUrl"] ?? "";
         inviteShareUrl = data["inviteShareUrl"] ?? "";
         inviteExpiresAt = data["expiresAt"] != null
             ? DateTime.tryParse(data["expiresAt"])
@@ -213,7 +235,7 @@ class _RCrewPageState extends State<RCrewPage> {
 
                 const SizedBox(height: 20),
 
-                /// 초대 링크 (플랫폼별: iOS는 커스텀 스킴, Android는 https App Links)
+                /// 초대 링크
                 const Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -239,7 +261,7 @@ class _RCrewPageState extends State<RCrewPage> {
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Text(
-                    _platformInviteUrl,
+                    inviteShareUrl,
                     style: const TextStyle(
                       fontSize: 15,
                       color: Colors.black54,
@@ -285,44 +307,9 @@ class _RCrewPageState extends State<RCrewPage> {
 
                 const SizedBox(height: 28),
 
-                SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      // 링크(플랫폼별 URL) 및 코드 복사
-                      await Clipboard.setData(
-                        ClipboardData(
-                          text: "$_platformInviteUrl\n$inviteCode",
-                        ),
-                      );
-
-                      if (!context.mounted) {
-                        return;
-                      }
-
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('링크와 초대 코드가 복사되었습니다.'),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF0084FF),
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    child: const Text(
-                      "링크 및 코드 복사",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
+                CrewInvitationShareActions(
+                  onCopyLink: _copyInvitationLink,
+                  onShareToKakao: _shareInvitationToKakao,
                 ),
               ],
             ),
