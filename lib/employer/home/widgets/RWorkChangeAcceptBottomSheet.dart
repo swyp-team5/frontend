@@ -42,6 +42,37 @@ class _RWorkChangeAcceptBottomSheetState
 
   bool _isSubmitting = false;
 
+  // 서버가 내려주는 raw 메시지/코드 대신, 사용자가 이해하기 쉬운 문구로 바꿔서 보여준다.
+  static String _errorMessage(int? statusCode, String? serverMessage) {
+    final msg = serverMessage ?? "";
+
+    switch (statusCode) {
+      case 400:
+        if (msg.contains("이미 지난 근무는 교대/대타를 요청할 수 없습니다.")) {
+          return "이미 지난 근무여서 승인할 수 없습니다.";
+        }
+        return "요청 내용을 다시 확인해 주세요.";
+      case 401:
+        return "로그인이 만료됐어요. 다시 로그인해주세요.";
+      case 403:
+        return "근무 배정 정보가 변경되어 승인할 수 없습니다.";
+      case 404:
+        return "요청 또는 사업장 정보를 찾을 수 없어요. 새로고침 후 다시 시도해주세요.";
+      case 409:
+        if (msg.contains("대상 근무자가 수락한 요청만 승인할 수 있습니다.")) {
+          return "이미 처리된 요청이에요. 새로고침 후 다시 확인해 주세요.";
+        }
+        if (msg.contains("확정 근무 배정 상태가 변경되어 요청을 처리할 수 없습니다.") ||
+            msg.contains("대상 근무자가 해당 시간에 이미 근무 중입니다.")) {
+          return "이미 같은 시간대에 다른 요청이 먼저 승인되어 "
+              "이 요청은 처리할 수 없습니다.";
+        }
+        return "다른 요청과 상태가 충돌해 처리할 수 없어요.";
+      default:
+        return "승인 처리에 실패했어요. 잠시 후 다시 시도해주세요.";
+    }
+  }
+
   /// POST /api/work-places/{workPlaceId}/owner/work-change-requests/{requestId}/approve
   Future<void> _approve() async {
     if (_isSubmitting) {
@@ -105,11 +136,13 @@ class _RWorkChangeAcceptBottomSheetState
       if (!mounted) return;
       setState(() => _isSubmitting = false);
 
-      final message = (e.response?.data is Map)
-          ? e.response?.data["message"]?.toString()
-          : null;
+      final data = e.response?.data;
+      final serverMessage = (data is Map) ? data["message"]?.toString() : null;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message ?? "승인 처리에 실패했어요. 다시 시도해주세요.")),
+        SnackBar(
+          content: Text(_errorMessage(e.response?.statusCode, serverMessage)),
+        ),
       );
     } catch (e, st) {
       debugPrint("🔴 [AcceptBottomSheet] approve 실패: $e");
