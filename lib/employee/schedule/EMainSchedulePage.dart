@@ -1,8 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:dio/dio.dart';
 
+import '../../common/auth/server_token_manager.dart';
 import '../../common/widgets/BottomNavBar.dart';
+import '../../employer/mypage/api/profile_api.dart';
 import '../crews/ECrewPage.dart';
 import '../home/EHomePage.dart';
 import '../mypage/EMyPage.dart';
@@ -50,6 +53,14 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
   /// 응답 데이터로 덮어쓰지 않는다 (이전 버그: 응답 첫 항목으로 역산하던 방식 제거).
   int? selectedWorkPlaceId;
 
+  /// 로그인한 근무자 본인 이름. 화면 진입 시 프로필 API로 조회한다.
+  /// (MyConfirmedSchedulesApi 응답엔 매장명만 있고 본인 이름이 없어서 별도 조회)
+  String? myName;
+
+  final ProfileApi _profileApi = ProfileApi(
+    Dio(BaseOptions(baseUrl: "https://chackchack.shop")),
+  );
+
   DateTime? _loadedWeekStart;
 
   WeeklyWorkersResponse? weeklyWorkersResponse;
@@ -88,10 +99,32 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
 
     debugPrint("[EMainSchedulePage] 초기 selectedWorkPlaceId: $selectedWorkPlaceId");
 
+    // 본인 이름을 먼저 조회해서 확보한 뒤 스케줄을 불러온다.
+    // (매장명이 먼저 잠깐 보였다가 이름으로 바뀌는 깜빡임을 방지)
+    await _loadMyName();
+
     if (isAllViewSelected) {
       await _loadWeeklyWorkers(force: true);
     } else {
       await _loadMySchedules(force: true);
+    }
+  }
+
+  /// 본인 이름 조회 — MyConfirmedSchedulesApi 응답엔 매장명만 있고
+  /// 근무자 본인 이름이 없어서, 별도로 프로필 API를 호출한다.
+  Future<void> _loadMyName() async {
+    try {
+      final token = await ServerTokenManager.getAccessToken();
+      if (token == null) return;
+
+      final profile = await _profileApi.getMyProfile(token: token);
+
+      if (!mounted) return;
+      setState(() {
+        myName = profile["name"];
+      });
+    } catch (e) {
+      debugPrint("[EMainSchedulePage] 본인 이름 조회 실패: $e");
     }
   }
 
@@ -134,7 +167,7 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
       result.putIfAbsent(item.workDate, () => []);
       result[item.workDate]!.add(
         MySchedule(
-          name: item.workPlaceName,
+          name: myName ?? item.workPlaceName,
           startTime: _formatHHmm(item.startTime),
           closeTime: _formatHHmm(item.closeTime), // endTime -> closeTime
           timeName: item.timeName,
