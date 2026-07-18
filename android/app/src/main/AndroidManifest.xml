@@ -49,12 +49,8 @@
                     android:pathPrefix="/crew-invitations"/>
             </intent-filter>
 
-            <!-- ⚠️ 기존 커스텀 스킴. 카카오톡/문자 앱이 http(s)가 아닌
-                 스킴은 텍스트에서 링크로 인식하지 않아 탭이 안 되는
-                 문제가 있었음 (안드로이드 딥링크 미동작 원인).
-                 앱 내부에서 QR코드 등 다른 경로로 이 스킴을 직접
-                 사용하는 곳이 없다면 삭제해도 무방하다. -->
-            <intent-filter android:autoVerify="true">
+            <!-- 기존 커스텀 스킴. 직접 URI 실행과 기존 링크 호환을 위해 유지한다. -->
+            <intent-filter>
                 <action android:name="android.intent.action.VIEW"/>
 
                 <category android:name="android.intent.category.DEFAULT"/>
@@ -63,6 +59,18 @@
                 <data
                     android:scheme="chack-chack"
                     android:host="crew-invitations"/>
+            </intent-filter>
+
+            <!-- Kakao Talk Share message button opens this app with inviteCode. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+
+                <data
+                    android:scheme="kakao05952ada0dceff8e149cd664e5459465"
+                    android:host="kakaolink"/>
             </intent-filter>
 
         </activity>
@@ -104,6 +112,7 @@
 
          In particular, this is used by the Flutter engine in io.flutter.plugin.text.ProcessTextPlugin. -->
     <queries>
+        <package android:name="com.kakao.talk" />
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>
             <data android:mimeType="text/plain"/>

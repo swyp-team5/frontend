@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 
+import 'common/deeplink/crew_invite_deep_link.dart';
 import 'common/fcm/AlarmListPage.dart';
 import 'common/fcm/fcm_notification_service.dart';
 import 'common/onboarding/OnboardingPage.dart';
@@ -67,6 +68,11 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final _appLinks = AppLinks();
   StreamSubscription<Uri>? _linkSub;
+  StreamSubscription<String?>? _kakaoLinkSub;
+  Timer? _deepLinkDedupeTimer;
+  String? _pendingInviteCode;
+  String? _lastHandledLink;
+  bool _navigationScheduled = false;
 
   @override
   void initState() {
@@ -103,52 +109,80 @@ class _MyAppState extends State<MyApp> {
       _handleDeepLink,
       onError: (err) => debugPrint("딥링크 에러: $err"),
     );
+
+    try {
+      final initialKakaoScheme = await receiveKakaoScheme();
+      if (initialKakaoScheme != null) {
+        _handleDeepLink(Uri.parse(initialKakaoScheme));
+      }
+    } catch (error) {
+      debugPrint('초기 카카오 공유 링크 조회 실패: $error');
+    }
+
+    _kakaoLinkSub = kakaoSchemeStream.listen((link) {
+      if (link != null) {
+        _handleDeepLink(Uri.parse(link));
+      }
+    }, onError: (error) => debugPrint('카카오 공유 링크 에러: $error'));
   }
 
   void _handleDeepLink(Uri uri) {
     debugPrint("딥링크 수신: $uri");
 
-    // 크루 초대 링크. 아래 두 형태를 모두 지원한다.
-    //   ① https App Links (카카오톡/문자 등에서 자동 링크화됨, 권장)
-    //      https://chackchack.shop/crew-invitations/470314
-    //   ② 기존 커스텀 스킴 (하위 호환용 — 신규 채널에서는 링크화가
-    //      안 될 수 있으니 서서히 걷어낼 예정)
-    //      chack-chack://crew-invitations/470314
-    final inviteCode = _extractCrewInviteCode(uri);
+    final link = uri.toString();
+    if (_lastHandledLink == link) {
+      return;
+    }
+
+    // HTTPS App Links, 직접 커스텀 스킴, Kakao Talk Share 콜백을 지원한다.
+    final inviteCode = CrewInviteDeepLink.extractInviteCode(uri);
 
     if (inviteCode != null) {
-      navigatorKey.currentState?.push(
+      _lastHandledLink = link;
+      _deepLinkDedupeTimer?.cancel();
+      _deepLinkDedupeTimer = Timer(const Duration(seconds: 1), () {
+        if (_lastHandledLink == link) {
+          _lastHandledLink = null;
+        }
+      });
+      _pendingInviteCode = inviteCode;
+      _schedulePendingDeepLinkNavigation();
+    }
+  }
+
+  void _schedulePendingDeepLinkNavigation() {
+    if (_navigationScheduled) {
+      return;
+    }
+    _navigationScheduled = true;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _navigationScheduled = false;
+      if (!mounted || _pendingInviteCode == null) {
+        return;
+      }
+
+      final navigator = navigatorKey.currentState;
+      if (navigator == null) {
+        _schedulePendingDeepLinkNavigation();
+        return;
+      }
+
+      final inviteCode = _pendingInviteCode!;
+      _pendingInviteCode = null;
+      navigator.push(
         MaterialPageRoute(
           builder: (_) => ECrewFirstPage(inviteCode: inviteCode),
         ),
       );
-    }
-  }
-
-  /// 크루 초대 딥링크에서 초대 코드를 추출한다.
-  /// 매칭되는 형태가 없으면 null을 반환한다.
-  String? _extractCrewInviteCode(Uri uri) {
-    // ① https://chackchack.shop/crew-invitations/{code}
-    if (uri.scheme == "https" &&
-        uri.host == "chackchack.shop" &&
-        uri.pathSegments.length >= 2 &&
-        uri.pathSegments[0] == "crew-invitations") {
-      return uri.pathSegments[1];
-    }
-
-    // ② chack-chack://crew-invitations/{code} (레거시)
-    if (uri.scheme == "chack-chack" &&
-        uri.host == "crew-invitations" &&
-        uri.pathSegments.isNotEmpty) {
-      return uri.pathSegments.first;
-    }
-
-    return null;
+    });
   }
 
   @override
   void dispose() {
     _linkSub?.cancel();
+    _kakaoLinkSub?.cancel();
+    _deepLinkDedupeTimer?.cancel();
     super.dispose();
   }
 

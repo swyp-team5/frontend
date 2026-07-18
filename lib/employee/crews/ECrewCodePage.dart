@@ -219,50 +219,55 @@ class _ECrewCodePageState extends State<ECrewCodePage> {
 
             if (!isMatched) const SizedBox(height: 28),
 
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                6,
-                    (index) => Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 6),
-                  child: SizedBox(
-                    width: 54,
-                    height: 80,
-                    child: TextField(
-                      controller: controllers[index],
-                      focusNode: focusNodes[index],
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.center,
-                      maxLength: 1,
-                      style: const TextStyle(
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 384),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Row(
+                    children: [
+                      for (int index = 0; index < 6; index++) ...[
+                        if (index > 0) const SizedBox(width: 8),
+                        Expanded(
+                          child: SizedBox(
+                            height: 80,
+                            child: TextField(
+                              controller: controllers[index],
+                              focusNode: focusNodes[index],
+                              keyboardType: TextInputType.number,
+                              textAlign: TextAlign.center,
+                              maxLength: 1,
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
+                              decoration: InputDecoration(
+                                counterText: "",
+                                filled: true,
+                                fillColor: const Color(0xFFF4F4F4),
+                                enabledBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: borderColor,
+                                  ),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderSide: BorderSide(
+                                    color: borderColor,
+                                    width: 2,
+                                  ),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                              ),
+                              onChanged: (v) => _onChanged(index, v),
+                            ),
+                          ),
+                        ),
                       ],
-                      decoration: InputDecoration(
-                        counterText: "",
-                        filled: true,
-                        fillColor: const Color(0xFFF4F4F4),
-                        enabledBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: borderColor,
-                          ),
-                          borderRadius:
-                          BorderRadius.circular(6),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderSide: BorderSide(
-                            color: borderColor,
-                            width: 2,
-                          ),
-                          borderRadius:
-                          BorderRadius.circular(6),
-                        ),
-                      ),
-                      onChanged: (v) => _onChanged(index, v),
-                    ),
+                    ],
                   ),
                 ),
               ),
