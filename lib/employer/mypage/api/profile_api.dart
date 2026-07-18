@@ -16,12 +16,22 @@ class ProfileApi {
 
     final ext = file.path.split('.').last.toLowerCase();
 
-    String contentType = "image/jpeg";
-
-    if (ext == "png") {
-      contentType = "image/png";
-    } else if (ext == "webp") {
-      contentType = "image/webp";
+    // 명세서 15.3: 확장자와 contentType이 반드시 일치해야 하므로,
+    // 알 수 없는 확장자를 무조건 jpeg로 우기지 않고 명확히 실패시킨다.
+    final String contentType;
+    switch (ext) {
+      case "jpg":
+      case "jpeg":
+        contentType = "image/jpeg";
+        break;
+      case "png":
+        contentType = "image/png";
+        break;
+      case "webp":
+        contentType = "image/webp";
+        break;
+      default:
+        throw Exception("지원하지 않는 이미지 형식이에요. (jpg, png, webp만 가능)");
     }
 
     final response = await dio.post(

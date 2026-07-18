@@ -46,6 +46,16 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
         throw Exception("로그인이 필요합니다.");
       }
 
+      // 명세서 15.3: fileSize는 10MB 이하만 허용. 서버까지 안 가고 미리 걸러낸다.
+      final fileSize = await file.length();
+      if (fileSize > 10 * 1024 * 1024) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("이미지 용량은 10MB를 넘을 수 없어요.")),
+        );
+        return;
+      }
+
       final uploadInfo =
       await profileApi.getUploadUrl(
         token: token,
@@ -88,8 +98,48 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
           content: Text("프로필 이미지가 변경되었습니다."),
         ),
       );
+    } on DioException catch (e) {
+      debugPrint(
+        "🔴 [updateProfileImage] DioException: "
+        "status=${e.response?.statusCode}, data=${e.response?.data}",
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _profileImageErrorMessage(e.response?.statusCode, e.response?.data),
+          ),
+        ),
+      );
     } catch (e) {
       debugPrint(e.toString());
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst("Exception: ", ""))),
+      );
+    }
+  }
+
+  // 서버가 내려주는 raw 메시지/코드 대신, 사용자가 이해하기 쉬운 문구로 바꿔서 보여준다.
+  // (15.3 업로드 URL 발급 / 15.5 업로드 확정 기준)
+  String _profileImageErrorMessage(int? statusCode, dynamic data) {
+    final serverMessage = (data is Map) ? data["message"]?.toString() : null;
+
+    switch (statusCode) {
+      case 400:
+        return serverMessage ?? "이미지 파일을 확인해주세요. (jpg/png/webp, 최대 10MB)";
+      case 401:
+        return "로그인이 만료됐어요. 다시 로그인해주세요.";
+      case 403:
+        return "이 이미지를 등록할 권한이 없어요.";
+      case 404:
+        return "업로드 정보를 찾을 수 없어요. 처음부터 다시 시도해주세요.";
+      default:
+        return "프로필 이미지 변경에 실패했어요. 잠시 후 다시 시도해주세요.";
     }
   }
 
@@ -120,9 +170,61 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
           content: Text("프로필 이미지가 삭제되었습니다."),
         ),
       );
+    } on DioException catch (e) {
+      debugPrint(
+        "🔴 [deleteProfileImage] DioException: "
+        "status=${e.response?.statusCode}, data=${e.response?.data}",
+      );
+
+      if (!mounted) return;
+
+      final serverMessage = (e.response?.data is Map)
+          ? e.response?.data["message"]?.toString()
+          : null;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            e.response?.statusCode == 401
+                ? "로그인이 만료됐어요. 다시 로그인해주세요."
+                : (serverMessage ?? "프로필 이미지 삭제에 실패했어요. 잠시 후 다시 시도해주세요."),
+          ),
+        ),
+      );
     } catch (e) {
       debugPrint(e.toString());
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString().replaceFirst("Exception: ", ""))),
+      );
     }
+  }
+
+  /// 최근 항목 목록을 (재)조회한다. "다른 사진 선택"으로 허용 목록이
+  /// 바뀐 뒤 다시 불러올 때도 재사용한다.
+  Future<List<AssetEntity>> _fetchRecentImages() async {
+    final List<AssetPathEntity> albums = await PhotoManager.getAssetPathList(
+      type: RequestType.image,
+      onlyAll: true,
+      // 정렬 옵션을 안 주면 기기 기본 순서(최신순이 아닐 수 있음)로 오기 때문에,
+      // 페이징으로 100장만 잘라오기 전에 최신순 정렬을 명시적으로 지정한다.
+      filterOption: FilterOptionGroup(
+        orders: [
+          const OrderOption(type: OrderOptionType.createDate, asc: false),
+        ],
+      ),
+    );
+
+    if (albums.isEmpty) return [];
+
+    final List<AssetEntity> images = await albums.first.getAssetListPaged(
+      page: 0,
+      size: 300,
+    );
+
+    return images;
   }
 
   /// 프로필 이미지 선택
@@ -130,36 +232,24 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
     final PermissionState ps =
     await PhotoManager.requestPermissionExtend();
 
+    // 거부된 상태: 기기 설정으로 안내한다.
     if (!ps.isAuth && ps != PermissionState.limited) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("갤러리 접근 권한이 필요합니다."),
+          SnackBar(
+            content: const Text("갤러리 접근 권한이 필요합니다. 설정에서 허용해주세요."),
+            action: SnackBarAction(
+              label: "설정으로 이동",
+              onPressed: () => PhotoManager.openSetting(),
+            ),
           ),
         );
       }
       return;
     }
 
-    final List<AssetPathEntity> albums =
-    await PhotoManager.getAssetPathList(
-      type: RequestType.image,
-      onlyAll: true,
-    );
-
-    if (albums.isEmpty) return;
-
-    final AssetPathEntity album = albums.first;
-
-    final List<AssetEntity> images =
-    await album.getAssetListPaged(
-      page: 0,
-      size: 100,
-    );
-
-    images.sort(
-          (a, b) => b.createDateTime.compareTo(a.createDateTime),
-    );
+    final bool isLimited = ps == PermissionState.limited;
+    final List<AssetEntity> initialImages = await _fetchRecentImages();
 
     if (!mounted) return;
 
@@ -174,9 +264,53 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
       ),
       builder: (_) {
         AssetEntity? selectedAsset;
+        List<AssetEntity> currentImages = initialImages;
+        bool isConfirming = false;
 
         return StatefulBuilder(
           builder: (context, setModalState) {
+            // 제한된 접근 상태에서 허용 목록에 사진을 추가로 선택하는
+            // 시스템 화면을 다시 띄운 뒤, 새로 허용된 사진을 반영해서
+            // 최근 항목을 다시 조회한다.
+            Future<void> pickMorePhotos() async {
+              await PhotoManager.presentLimited();
+              final refreshed = await _fetchRecentImages();
+              if (!context.mounted) return;
+              setModalState(() {
+                currentImages = refreshed;
+              });
+            }
+
+            Future<void> confirmSelection() async {
+              if (selectedAsset == null || isConfirming) return;
+
+              setModalState(() => isConfirming = true);
+
+              final file = await UploadImageNormalizer.normalizeAssetForUpload(
+                selectedAsset!,
+              );
+
+              if (file == null) {
+                setModalState(() => isConfirming = false);
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        "이 사진을 불러올 수 없어요. 다른 사진을 선택하거나 잠시 후 다시 시도해주세요.",
+                      ),
+                    ),
+                  );
+                }
+                return;
+              }
+
+              await updateProfileImage(file);
+
+              if (context.mounted) {
+                Navigator.pop(context);
+              }
+            }
+
             return SizedBox(
               height: MediaQuery.of(context).size.height * 0.7,
               child: Column(
@@ -193,20 +327,50 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
 
                   const SizedBox(height: 16),
 
-                  const Text(
-                    "최근 항목",
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const SizedBox(width: 64),
+                        const Text(
+                          "최근 항목",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(
+                          width: 64,
+                          child: isLimited
+                              ? Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton(
+                                    onPressed: pickMorePhotos,
+                                    child: const Text(
+                                      "다른 사진",
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF007AFF),
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : const SizedBox(),
+                        ),
+                      ],
                     ),
                   ),
 
                   const SizedBox(height: 16),
 
                   Expanded(
-                    child: GridView.builder(
+                    child: currentImages.isEmpty
+                        ? const Center(child: Text("표시할 사진이 없어요."))
+                        : GridView.builder(
                       padding: EdgeInsets.zero,
-                      itemCount: images.length,
+                      itemCount: currentImages.length,
                       gridDelegate:
                       const SliverGridDelegateWithFixedCrossAxisCount(
                         crossAxisCount: 3,
@@ -214,7 +378,7 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
                         mainAxisSpacing: 2,
                       ),
                       itemBuilder: (context, index) {
-                        final asset = images[index];
+                        final asset = currentImages[index];
 
                         final isSelected =
                             selectedAsset?.id == asset.id;
@@ -233,7 +397,8 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
                             return GestureDetector(
                               onTap: () {
                                 setModalState(() {
-                                  selectedAsset = asset;
+                                  // 이미 선택된 사진을 다시 누르면 선택 해제
+                                  selectedAsset = isSelected ? null : asset;
                                 });
                               },
                               child: Stack(
@@ -294,21 +459,9 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
                       width: double.infinity,
                       height: 54,
                       child: ElevatedButton(
-                        onPressed: selectedAsset == null
+                        onPressed: (selectedAsset == null || isConfirming)
                             ? null
-                            : () async {
-                          final file =
-                          await UploadImageNormalizer.normalizeAssetForUpload(selectedAsset!);
-
-                          if (file != null) {
-
-                            await updateProfileImage(file);
-
-                            if (mounted) {
-                              Navigator.pop(context);
-                            }
-                          }
-                        },
+                            : confirmSelection,
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
                           const Color(0xff007AFF),
@@ -319,14 +472,22 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
                             BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text(
-                          "사진 선택",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 17,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
+                        child: isConfirming
+                            ? const SizedBox(
+                                width: 22, height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text(
+                                "사진 선택",
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
                       ),
                     ),
                   ),
@@ -393,10 +554,29 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
         throw Exception("로그인이 필요합니다.");
       }
 
+      final trimmedName = nameController.text.trim();
+      // 명세서 15.2: 휴대폰 번호는 클라이언트에서 하이픈 없는 11자리 숫자로 정규화해서 보낸다.
+      final normalizedPhone =
+          phoneController.text.replaceAll(RegExp(r'[^0-9]'), '');
+
+      if (trimmedName.isEmpty || trimmedName.length > 10) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("이름은 1~10자로 입력해주세요.")),
+        );
+        return;
+      }
+
+      if (normalizedPhone.length != 11) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("휴대폰 번호는 숫자 11자리로 입력해주세요.")),
+        );
+        return;
+      }
+
       await profileApi.updateProfile(
         token: token,
-        name: nameController.text.trim(),
-        phoneNumber: phoneController.text.trim(),
+        name: trimmedName,
+        phoneNumber: normalizedPhone,
       );
 
       final profile = await profileApi.getMyProfile(
@@ -430,10 +610,13 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
 
       if (!mounted) return;
 
+      final data = e.response?.data;
+      final serverMessage = (data is Map) ? data["message"]?.toString() : null;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            e.response?.data.toString() ?? "서버 오류",
+            serverMessage ?? "프로필 수정에 실패했어요. 잠시 후 다시 시도해주세요.",
           ),
         ),
       );
