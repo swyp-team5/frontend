@@ -42,6 +42,21 @@ class _RWorkChangeRejectBottomSheetState
 
   bool _isSubmitting = false;
 
+  // 서버가 내려주는 raw 메시지/코드 대신, 사용자가 이해하기 쉬운 문구로 바꿔서 보여준다.
+  // (WorkChangeRequestService.rejectByOwner 기준)
+  static String _errorMessage(int? statusCode, String? serverMessage) {
+    switch (statusCode) {
+      case 401:
+        return "인증이 만료됐어요. 다시 로그인해주세요.";
+      case 404:
+        return "요청 또는 사업장 정보를 찾을 수 없어요. 새로고침 후 다시 시도해주세요.";
+      case 409:
+        return "이미 처리된 요청이라 거절할 수 없습니다. 새로고침 후 다시 확인해 주세요.";
+      default:
+        return "거절 처리에 실패했어요. 잠시 후 다시 시도해주세요.";
+    }
+  }
+
   /// POST /api/work-places/{workPlaceId}/owner/work-change-requests/{requestId}/reject
   Future<void> _reject() async {
     if (_isSubmitting) {
@@ -112,11 +127,13 @@ class _RWorkChangeRejectBottomSheetState
       if (!mounted) return;
       setState(() => _isSubmitting = false);
 
-      final message = (e.response?.data is Map)
-          ? e.response?.data["message"]?.toString()
-          : null;
+      final data = e.response?.data;
+      final serverMessage = (data is Map) ? data["message"]?.toString() : null;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message ?? "거절 처리에 실패했어요. 다시 시도해주세요.")),
+        SnackBar(
+          content: Text(_errorMessage(e.response?.statusCode, serverMessage)),
+        ),
       );
     } catch (e, st) {
       debugPrint("🔴 [RejectBottomSheet] reject 실패: $e");

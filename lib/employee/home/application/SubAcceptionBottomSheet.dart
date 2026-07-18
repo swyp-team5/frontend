@@ -29,7 +29,8 @@ class _SubAcceptionBottomSheetState extends State<SubAcceptionBottomSheet> {
 
   /// POST /api/work-places/{workPlaceId}/work-change-requests/{requestId}/accept
   /// accept는 별도 요청 바디(reason 등)가 필요 없음.
-  Future<bool> _acceptRequest() async {
+  /// 성공하면 null, 실패하면 사용자에게 보여줄 에러 메시지를 반환한다.
+  Future<String?> _acceptRequest() async {
     final url =
         "/api/work-places/${widget.workPlaceId}/work-change-requests/${widget.workChangeRequestId}/accept";
     debugPrint("[SubAcceptionBottomSheet] accept 요청 시작: $url");
@@ -38,7 +39,7 @@ class _SubAcceptionBottomSheetState extends State<SubAcceptionBottomSheet> {
       final token = await ServerTokenManager.getValidAccessToken();
       if (token == null) {
         debugPrint("[SubAcceptionBottomSheet] accept 실패: 토큰 없음");
-        return false;
+        return "인증이 만료되었습니다. 다시 로그인해 주세요.";
       }
 
       final response = await _dio.post(
@@ -56,18 +57,39 @@ class _SubAcceptionBottomSheetState extends State<SubAcceptionBottomSheet> {
       final success =
           response.statusCode == 200 || response.statusCode == 204;
       debugPrint("[SubAcceptionBottomSheet] accept 결과: success=$success");
-      return success;
+
+      return success ? null : _errorMessage(response.statusCode, null);
     } on DioException catch (e) {
       debugPrint(
         "[SubAcceptionBottomSheet] accept DioException: "
             "status=${e.response?.statusCode}, data=${e.response?.data}, "
             "requestUri=${e.requestOptions.uri}",
       );
-      return false;
+
+      final data = e.response?.data;
+      final serverMessage = (data is Map) ? data["message"]?.toString() : null;
+      return _errorMessage(e.response?.statusCode, serverMessage);
     } catch (e, st) {
       debugPrint("[SubAcceptionBottomSheet] accept 실패(예상치 못한 예외): $e");
       debugPrint("$st");
-      return false;
+      return "수락 처리에 실패했어요. 잠시 후 다시 시도해주세요.";
+    }
+  }
+
+  // 서버가 내려주는 raw 메시지/코드 대신, 사용자가 이해하기 쉬운 문구로 바꿔서 보여준다.
+  // (WorkChangeRequestService.acceptByTarget 기준)
+  static String _errorMessage(int? statusCode, String? serverMessage) {
+    switch (statusCode) {
+      case 401:
+        return "인증이 만료되었습니다. 다시 로그인해 주세요.";
+      case 403:
+        return "이 요청을 처리할 권한이 없습니다.";
+      case 404:
+        return "요청 정보를 찾을 수 없습니다. 새로고침 후 다시 시도해주세요.";
+      case 409:
+        return "이미 처리된 요청이라 수락할 수 없습니다. 새로고침 후 다시 확인해주세요.";
+      default:
+        return "수락 처리에 실패했어요. 잠시 후 다시 시도해주세요.";
     }
   }
 
@@ -80,7 +102,7 @@ class _SubAcceptionBottomSheetState extends State<SubAcceptionBottomSheet> {
       _isLoading = true;
     });
 
-    final success = await _acceptRequest();
+    final errorMessage = await _acceptRequest();
 
     if (!mounted) return;
 
@@ -88,7 +110,7 @@ class _SubAcceptionBottomSheetState extends State<SubAcceptionBottomSheet> {
       _isLoading = false;
     });
 
-    if (success) {
+    if (errorMessage == null) {
       debugPrint("[SubAcceptionBottomSheet] 수락 성공 → ESubstituteAccept로 이동");
       widget.onAccept();
 
@@ -99,9 +121,9 @@ class _SubAcceptionBottomSheetState extends State<SubAcceptionBottomSheet> {
         ),
       );
     } else {
-      debugPrint("[SubAcceptionBottomSheet] 수락 실패 → 스낵바 표시");
+      debugPrint("[SubAcceptionBottomSheet] 수락 실패 → 스낵바 표시: $errorMessage");
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("수락 처리에 실패했어요. 다시 시도해주세요.")),
+        SnackBar(content: Text(errorMessage)),
       );
     }
   }
