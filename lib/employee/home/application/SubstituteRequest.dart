@@ -91,7 +91,8 @@ class _SubstituteRequestState extends State<SubstituteRequest> {
 
   /// POST /api/work-places/{workPlaceId}/work-change-requests/{requestId}/reject
   /// reject는 별도 요청 바디(reason 등)가 필요 없음.
-  Future<bool> _rejectRequest() async {
+  /// 성공하면 null, 실패하면 사용자에게 보여줄 에러 메시지를 반환한다.
+  Future<String?> _rejectRequest() async {
     final url =
         "/api/work-places/${widget.workPlaceId}/work-change-requests/${widget.workChangeRequestId}/reject";
     debugPrint("[SubstituteRequest] reject 요청 시작: $url");
@@ -100,7 +101,7 @@ class _SubstituteRequestState extends State<SubstituteRequest> {
       final token = await ServerTokenManager.getValidAccessToken();
       if (token == null) {
         debugPrint("[SubstituteRequest] reject 실패: 토큰 없음");
-        return false;
+        return "인증이 만료되었습니다. 다시 로그인해 주세요.";
       }
 
       final response = await _dio.post(
@@ -119,18 +120,39 @@ class _SubstituteRequestState extends State<SubstituteRequest> {
       final success =
           response.statusCode == 200 || response.statusCode == 204;
       debugPrint("[SubstituteRequest] reject 결과: success=$success");
-      return success;
+
+      return success ? null : _errorMessage(response.statusCode, null);
     } on DioException catch (e) {
       debugPrint(
         "[SubstituteRequest] reject DioException: "
             "status=${e.response?.statusCode}, data=${e.response?.data}, "
             "requestUri=${e.requestOptions.uri}",
       );
-      return false;
+
+      final data = e.response?.data;
+      final serverMessage = (data is Map) ? data["message"]?.toString() : null;
+      return _errorMessage(e.response?.statusCode, serverMessage);
     } catch (e, st) {
       debugPrint("[SubstituteRequest] reject 실패(예상치 못한 예외): $e");
       debugPrint("$st");
-      return false;
+      return "거절 처리에 실패했어요. 잠시 후 다시 시도해주세요.";
+    }
+  }
+
+  // 서버가 내려주는 raw 메시지/코드 대신, 사용자가 이해하기 쉬운 문구로 바꿔서 보여준다.
+  // (WorkChangeRequestService.rejectByTarget 기준)
+  static String _errorMessage(int? statusCode, String? serverMessage) {
+    switch (statusCode) {
+      case 401:
+        return "인증이 만료되었습니다. 다시 로그인해 주세요.";
+      case 403:
+        return "이 요청을 처리할 권한이 없습니다.";
+      case 404:
+        return "요청 정보를 찾을 수 없습니다. 새로고침 후 다시 시도해주세요.";
+      case 409:
+        return "이미 처리된 요청이라 거절할 수 없습니다. 새로고침 후 다시 확인해주세요.";
+      default:
+        return "거절 처리에 실패했어요. 잠시 후 다시 시도해주세요.";
     }
   }
 
@@ -143,7 +165,7 @@ class _SubstituteRequestState extends State<SubstituteRequest> {
       _isRejecting = true;
     });
 
-    final success = await _rejectRequest();
+    final errorMessage = await _rejectRequest();
 
     if (!mounted) return;
 
@@ -151,7 +173,7 @@ class _SubstituteRequestState extends State<SubstituteRequest> {
       _isRejecting = false;
     });
 
-    if (success) {
+    if (errorMessage == null) {
       debugPrint("[SubstituteRequest] 거절 성공 → ESubstituteReject로 이동");
       Navigator.push(
         context,
@@ -160,9 +182,9 @@ class _SubstituteRequestState extends State<SubstituteRequest> {
         ),
       );
     } else {
-      debugPrint("[SubstituteRequest] 거절 실패 → 스낵바 표시");
+      debugPrint("[SubstituteRequest] 거절 실패 → 스낵바 표시: $errorMessage");
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("거절 처리에 실패했어요. 다시 시도해주세요.")),
+        SnackBar(content: Text(errorMessage)),
       );
     }
   }

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../common/auth/server_token_manager.dart';
 import '../crews/model/WorkChangeRequestResponse.dart';
 import '../home/api/WorkChangeRequestListApi.dart';
-import '../home/model/AssignmentResolver.dart';
 
 /// 목록 한 줄에 필요한 데이터: 원본 요청 + 미리 조회해둔 상대(요청자) 회원 이름
 class _ReceivedRequestItem {
@@ -46,6 +46,32 @@ class _ReceivedWorkChangeRequestsPageState
     _future = _load();
   }
 
+  /// 사업장 크루 목록을 조회해서 memberId -> 이름 맵으로 변환한다.
+  /// assignmentId 기반 조회와 달리 요청이 승인/거절되어 배정이 바뀌어도
+  /// memberId는 그대로라 안정적으로 이름을 찾을 수 있다.
+  Future<Map<int, String>> _loadNameByMemberId() async {
+    try {
+      final response = await ServerTokenManager.authorizedDio.get(
+        "/api/work-places/${widget.workPlaceId}/crews",
+      );
+
+      final List crews = (response.data["crews"] ?? []) as List;
+      final map = <int, String>{};
+      for (final e in crews) {
+        final crew = Map<String, dynamic>.from(e ?? {});
+        final memberId = crew["memberId"] is int
+            ? crew["memberId"] as int
+            : int.tryParse(crew["memberId"]?.toString() ?? "");
+        if (memberId == null) continue;
+        map[memberId] = crew["name"]?.toString() ?? "이름 없음";
+      }
+      return map;
+    } catch (e) {
+      debugPrint("[ReceivedWorkChangeRequestsPage] 크루 목록 조회 실패: $e");
+      return {};
+    }
+  }
+
   Future<List<_ReceivedRequestItem>> _load() async {
     final result = await _api.fetchRequests(
       workPlaceId: widget.workPlaceId,
@@ -55,44 +81,15 @@ class _ReceivedWorkChangeRequestsPageState
     );
 
     final requests = result.content;
+    final nameByMemberId = await _loadNameByMemberId();
 
-    // 요청마다 상대(요청자) 회원 쪽 근무 정보를 조회해서 이름을 채워 넣는다.
-    final items = await Future.wait(
-      requests.map((request) async {
-        final name = await _resolveRequesterName(request);
-        return _ReceivedRequestItem(request: request, requesterName: name);
-      }),
-    );
+    final items = requests.map((request) {
+      final name = nameByMemberId[request.requesterMemberId] ??
+          "멤버 #${request.requesterMemberId}";
+      return _ReceivedRequestItem(request: request, requesterName: name);
+    }).toList();
 
     return items;
-  }
-
-  /// 요청을 보낸 상대(requester) 이름 조회.
-  /// requester 쪽 근무는 requestAssignmentId를 기준으로 삼는다.
-  /// (SENT 페이지에서 target 쪽을 targetAssignmentId ?? requestAssignmentId로
-  /// 봤던 것과 대칭되는 개념: RECEIVED에서는 요청을 보낸 사람의 근무 = requestAssignmentId)
-  /// 이름을 찾지 못하면 "멤버 #id"로 대체 표시한다.
-  Future<String> _resolveRequesterName(
-      WorkChangeRequestResponse request) async {
-    try {
-      final createdAt = DateTime.parse(request.createdAt);
-      final (fromDate, toDate) =
-      AssignmentResolver.defaultRangeAround(createdAt);
-
-      final assignmentMap = await AssignmentResolver.buildAssignmentMap(
-        workPlaceId: widget.workPlaceId,
-        fromDate: fromDate,
-        toDate: toDate,
-      );
-
-      final resolved = request.requestAssignmentId != null
-          ? assignmentMap[request.requestAssignmentId]
-          : null;
-
-      return resolved?.workerName ?? "멤버 #${request.requesterMemberId}";
-    } catch (_) {
-      return "멤버 #${request.requesterMemberId}";
-    }
   }
 
   Future<void> _refresh() async {
