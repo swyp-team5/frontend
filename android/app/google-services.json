@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "954357709497",
-    "project_id": "chackchack-9fe40",
-    "storage_bucket": "chackchack-9fe40.firebasestorage.app"
+    "project_number": "16472809022",
+    "project_id": "chack-chack-fcm",
+    "storage_bucket": "chack-chack-fcm.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:954357709497:android:b2ae60e40d9ce0a4ca7968",
+        "mobilesdk_app_id": "1:16472809022:android:00096c2b708f37ab41fb6f",
         "android_client_info": {
           "package_name": "com.example.chack_chack"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyD8Hw41NWNp5vAYUI2tIcxy1sWWMR76wL4"
+          "current_key": "AIzaSyC6Q6JuOhytW_75mDl0iQzb7YlF845iRmE"
         }
       ],
       "services": {

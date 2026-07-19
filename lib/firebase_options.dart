@@ -2,7 +2,7 @@
 // ignore_for_file: type=lint
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'
-    show defaultTargetPlatform, kIsWeb, TargetPlatform;
+    show defaultTargetPlatform, TargetPlatform;
 
 /// Default [FirebaseOptions] for use with your Firebase apps.
 ///
@@ -16,73 +16,31 @@ import 'package:flutter/foundation.dart'
 /// ```
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
-    if (kIsWeb) {
-      return web;
-    }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
         return ios;
-      case TargetPlatform.macOS:
-        return macos;
-      case TargetPlatform.windows:
-        return windows;
-      case TargetPlatform.linux:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for linux - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
       default:
         throw UnsupportedError(
-          'DefaultFirebaseOptions are not supported for this platform.',
+          'DefaultFirebaseOptions are configured only for Android and iOS.',
         );
     }
   }
 
-  static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBE48FA3k3D7D_BzPTFLiuzCs0Hr8gySOk',
-    appId: '1:954357709497:web:1b84e492bdeb8d4fca7968',
-    messagingSenderId: '954357709497',
-    projectId: 'chackchack-9fe40',
-    authDomain: 'chackchack-9fe40.firebaseapp.com',
-    storageBucket: 'chackchack-9fe40.firebasestorage.app',
-    measurementId: 'G-T1LJ476XZX',
-  );
-
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyD8Hw41NWNp5vAYUI2tIcxy1sWWMR76wL4',
-    appId: '1:954357709497:android:b2ae60e40d9ce0a4ca7968',
-    messagingSenderId: '954357709497',
-    projectId: 'chackchack-9fe40',
-    storageBucket: 'chackchack-9fe40.firebasestorage.app',
+    apiKey: 'AIzaSyC6Q6JuOhytW_75mDl0iQzb7YlF845iRmE',
+    appId: '1:16472809022:android:00096c2b708f37ab41fb6f',
+    messagingSenderId: '16472809022',
+    projectId: 'chack-chack-fcm',
+    storageBucket: 'chack-chack-fcm.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBCQ6UG4U3rSMC9y5eNx30mVPHL7ldkElk',
-    appId: '1:954357709497:ios:9a9d001e88e90dd9ca7968',
-    messagingSenderId: '954357709497',
-    projectId: 'chackchack-9fe40',
-    storageBucket: 'chackchack-9fe40.firebasestorage.app',
+    apiKey: 'AIzaSyArlNEjdY19ysedf9rd7LlB9ca0Dj1-67Y',
+    appId: '1:16472809022:ios:2a070a2013294f4a41fb6f',
+    messagingSenderId: '16472809022',
+    projectId: 'chack-chack-fcm',
+    storageBucket: 'chack-chack-fcm.firebasestorage.app',
     iosBundleId: 'com.example.chackChack',
-  );
-
-  static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyBCQ6UG4U3rSMC9y5eNx30mVPHL7ldkElk',
-    appId: '1:954357709497:ios:9a9d001e88e90dd9ca7968',
-    messagingSenderId: '954357709497',
-    projectId: 'chackchack-9fe40',
-    storageBucket: 'chackchack-9fe40.firebasestorage.app',
-    iosBundleId: 'com.example.chackChack',
-  );
-
-  static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyBE48FA3k3D7D_BzPTFLiuzCs0Hr8gySOk',
-    appId: '1:954357709497:web:53c6e8be52a11a8fca7968',
-    messagingSenderId: '954357709497',
-    projectId: 'chackchack-9fe40',
-    authDomain: 'chackchack-9fe40.firebaseapp.com',
-    storageBucket: 'chackchack-9fe40.firebasestorage.app',
-    measurementId: 'G-SZCVB3WB59',
   );
 }
