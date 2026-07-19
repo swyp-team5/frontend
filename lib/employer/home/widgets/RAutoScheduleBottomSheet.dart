@@ -75,10 +75,9 @@ class _RAutoScheduleBottomSheetState extends State<RAutoScheduleBottomSheet> {
 
       if (!mounted) return;
 
-      widget.onNext?.call();
       Navigator.pop(context);
 
-      Navigator.of(context, rootNavigator: true).push(
+      await Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(
           builder: (_) => RAutoSchedulingPage(
             scheduleGenerationRunId: result.scheduleGenerationRunId,
@@ -89,6 +88,9 @@ class _RAutoScheduleBottomSheetState extends State<RAutoScheduleBottomSheet> {
           ),
         ),
       );
+
+      // 미리보기/생성 흐름을 마치고 홈으로 돌아왔을 때 호출
+      widget.onNext?.call();
     } on NoScheduleCandidateException catch (e) {
       debugPrint("🟠 [_onNextTap] 후보 없음: ${e.guidanceText}");
       await _showNoCandidateDialog(e);
@@ -118,10 +120,9 @@ class _RAutoScheduleBottomSheetState extends State<RAutoScheduleBottomSheet> {
 
       if (!mounted) return;
 
-      widget.onNext?.call();
       Navigator.pop(context);
 
-      Navigator.of(context, rootNavigator: true).push(
+      await Navigator.of(context, rootNavigator: true).push(
         MaterialPageRoute(
           builder: (_) => RAutoSchedulingPage(
             scheduleGenerationRunId: result.scheduleGenerationRunId,
@@ -132,6 +133,8 @@ class _RAutoScheduleBottomSheetState extends State<RAutoScheduleBottomSheet> {
           ),
         ),
       );
+
+      widget.onNext?.call();
     } on NoScheduleCandidateException catch (e) {
       debugPrint("🟠 [_onRegenerateTap] 후보 없음: ${e.guidanceText}");
       await _showNoCandidateDialog(e);

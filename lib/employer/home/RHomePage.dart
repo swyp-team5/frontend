@@ -28,6 +28,7 @@ import '../mypage/RMyPage.dart';
 import '../mypage/RTodayWorkingPage.dart';
 import '../mypage/RWorkPlaceSettingPage.dart';
 import '../schedule/RMainSchedulePage.dart';
+import '../schedule/api/ConfirmedSchedulesApi.dart';
 import 'api/SubmitStatusApi.dart';
 
 enum HomeCardType {
@@ -58,6 +59,10 @@ class _RHomePageState extends State<RHomePage> {
 
   /// schedule-conditions POST 성공 시 저장된 활성 weekScheduleId
   int? weekScheduleId;
+
+  /// 다음 주(스케줄 조건이 적용될 주)에 이미 확정 스케줄이 생성되어 있는지.
+  /// null이면 아직 확정 안 됨, 값이 있으면 이미 확정된 confirmedWeekScheduleId.
+  int? nextWeekConfirmedWeekScheduleId;
 
   int? notSubmittedCount;
 
@@ -334,30 +339,29 @@ class _RHomePageState extends State<RHomePage> {
   }
 
   //==========================================================
-  // 개발용
-  //==========================================================
-
-  /// 여러 장을 동시에 보여주고 싶은 카드 타입 목록
-  static const List<HomeCardType> debugCardTypes = [
-    HomeCardType.weeklySchedule,
-    HomeCardType.scheduleCreationAvailable,
-    HomeCardType.submissionStatus,
-  ];
-
-  // static const List<HomeCardType> debugCardTypes = [];
-
-  //==========================================================
-  // 실제 카드 타입 (모두 표시)
+  // 실제 카드 타입 (상황별로 하나씩/필요한 것만 표시)
   //==========================================================
 
   List<HomeCardType> get cardTypes {
-    if (debugCardTypes.isNotEmpty) {
-      return debugCardTypes;
+    final hasCondition = weekScheduleId != null;
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    // 조건의 제출 마감일이 이미 지났으면, 이 조건은 이미 다 쓰였거나(스케줄
+    // 확정 완료) 마감이 지나버린 상태로 보고 새 조건을 만들어야 하는
+    // 시점으로 판단한다. (오늘 당일 생성 직후에는 dueDate가 아직 안
+    // 지났으므로 바로 전환되지 않는다.)
+    final conditionExpired = dueDate != null && dueDate!.isBefore(today);
+
+    if (!hasCondition || conditionExpired) {
+      return [HomeCardType.weeklySchedule];
     }
 
-    /// TODO : API 연결
-
-    return [];
+    return [
+      HomeCardType.submissionStatus,
+      HomeCardType.scheduleCreationAvailable,
+    ];
   }
 
   /// RMakingSchedulePage로 이동 후 돌아오면 weekScheduleId를 다시 조회
@@ -623,6 +627,38 @@ class _RHomePageState extends State<RHomePage> {
     } catch (e) {
       debugPrint("[_loadWeekScheduleId] 조회 실패: $e");
     }
+
+    await _loadNextWeekConfirmedStatus();
+  }
+
+  /// 다음 주(스케줄 조건이 적용될 주)에 이미 확정 스케줄이 있는지 조회한다.
+  /// confirmedWeekScheduleId가 null이 아니면 이미 확정된 것으로 판단한다.
+  Future<void> _loadNextWeekConfirmedStatus() async {
+    if (selectedWorkPlaceId == null) return;
+
+    try {
+      final result = await ConfirmedSchedulesApi.getConfirmedWeeklySchedule(
+        workPlaceId: selectedWorkPlaceId!,
+        weekStartDate: _nextMonday,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        nextWeekConfirmedWeekScheduleId = result.confirmedWeekScheduleId;
+      });
+    } catch (e) {
+      debugPrint("[_loadNextWeekConfirmedStatus] 조회 실패: $e");
+    }
+  }
+
+  /// 다음 주(스케줄 조건이 적용될 주)의 월요일 날짜.
+  /// RScheduleCard.nextWeekRange와 동일한 계산 규칙을 사용한다.
+  DateTime get _nextMonday {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final thisMonday = today.subtract(Duration(days: today.weekday - 1));
+    return thisMonday.add(const Duration(days: 7));
   }
 
   @override
@@ -680,6 +716,12 @@ class _RHomePageState extends State<RHomePage> {
           break;
         }
 
+        // 다음 주 확정 스케줄이 이미 생성되어 있으면 생성 흐름 대신 안내만 띄운다.
+        if (nextWeekConfirmedWeekScheduleId != null) {
+          _showAlreadyConfirmedSheet();
+          break;
+        }
+
         showModalBottomSheet(
           context: context,
           isScrollControlled: true,
@@ -687,6 +729,13 @@ class _RHomePageState extends State<RHomePage> {
           builder: (_) => RAutoScheduleBottomSheet(
             workPlaceId: selectedWorkPlaceId!,
             weekScheduleId: weekScheduleId!,
+            onNext: () async {
+              // 미리보기/생성 흐름을 마치고 홈으로 돌아왔을 때 최신 상태로 갱신.
+              // (조건 초기화를 했다면 weekScheduleId가 null이 되어
+              //  "스케줄 조건 만들기" 카드로 바뀐다.)
+              await _loadWeekScheduleId();
+              await _loadSubmitStatus();
+            },
           ),
         );
         break;
@@ -699,6 +748,97 @@ class _RHomePageState extends State<RHomePage> {
       case HomeCardType.none:
         break;
     }
+  }
+
+  /// 다음 주 확정 스케줄이 이미 생성되어 있을 때 보여주는 안내 바텀시트.
+  void _showAlreadyConfirmedSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (_) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDADADA),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                "스케줄 생성 완료",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                "다음주 스케줄이 이미 생성되어 이후 스케줄은\n아직 생성할 수 없어요.",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF767676),
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => RMainSchedulePage(
+                          workPlaceId: selectedWorkPlaceId!,
+                        ),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0084FF),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    "스케줄 확인하기",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  "취소",
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Color(0xFF767676),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -847,21 +987,6 @@ class _RHomePageState extends State<RHomePage> {
                           },
 
                           onMakeScheduleTap: () => _onMakeScheduleTap(type),
-
-                          onResetConditions: () async {
-                            debugPrint("========== 부모 callback 실행 ==========");
-
-                            // 다시 최신 데이터 조회
-                            await _loadWorkPlaces();
-                            await _loadWeekScheduleId();
-                            await _loadSubmitStatus();
-
-                            if (!mounted) return;
-
-                            setState(() {});
-
-                            debugPrint("========== 홈 새로고침 완료 ==========");
-                          },
                         )
                       );
                     },

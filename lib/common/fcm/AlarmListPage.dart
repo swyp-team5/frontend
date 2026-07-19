@@ -3,6 +3,105 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'model/AlarmResponse.dart';
 import 'providers/AlarmProvider.dart';
 
+import '../auth/server_token_manager.dart';
+import '../auth/model/social_auth_models.dart';
+import '../../employer/home/notification/RNotificationPage.dart';
+import '../../employer/home/widgets/RWorkChangeRequestListPage.dart';
+import '../../employee/home/EHomePage.dart';
+import '../../employee/home/notification/ENotificationPage.dart';
+import '../../employee/mypage/ReceivedWorkChangeRequestsPage.dart';
+import '../../employee/schedule/EMainSchedulePage.dart';
+
+/// 알림 종류(notificationType)와 data를 참고해 관련 화면으로 이동한다.
+/// 서버가 모든 알림에 workPlaceId를 data로 함께 내려주므로, data에서
+/// 바로 꺼내 쓴다 (별도 저장소 폴백 불필요).
+Future<void> _navigateForAlarm(BuildContext context, AlarmItem alarm) async {
+  final data = alarm.data ?? {};
+
+  int? intFromData(String key) {
+    final raw = data[key];
+    if (raw == null) return null;
+    return int.tryParse(raw.toString());
+  }
+
+  final workPlaceId = intFromData("workPlaceId");
+
+  switch (alarm.notificationType) {
+    // 1. 공지 -> 공지내역 페이지
+    case "NOTICE":
+      if (workPlaceId == null) return;
+
+      final token = await ServerTokenManager.getValidAccessToken();
+      final role = token != null ? ServerTokenManager.roleFromToken(token) : null;
+      if (!context.mounted) return;
+
+      if (role == AuthMemberRole.owner) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => RNotificationPage(workPlaceId: workPlaceId),
+          ),
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ENotificationPage()),
+        );
+      }
+      break;
+
+    // 2, 3, 10. 근무자 스케줄 조건 생성/초기화/제출 반려 -> 홈으로
+    case "SCHEDULE_CONDITION_CREATED":
+    case "SCHEDULE_CONDITION_RESET":
+    case "WORKER_SELECT_REJECTED":
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const EHomePage()),
+      );
+      break;
+
+    // 4, 5. 스케줄 생성/수정·추가 -> 근무자 스케줄 탭
+    case "SCHEDULE_CONFIMED":
+    case "SCHEDULE_UPDATED":
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const EMainSchedulePage()),
+      );
+      break;
+
+    // 6, 8, 9. 근무자가 받는 교대/대타 요청 관련 알림 -> 근무자 받은 요청 내역
+    case "WORK_CHANGE_REQUESTED":
+    case "WORK_CHANGE_TARGET_REJECTED":
+    case "WORK_CHANGE_OWNER_APPROVED":
+    case "WORK_CHANGE_OWNER_REJECTED":
+      if (workPlaceId == null) return;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ReceivedWorkChangeRequestsPage(workPlaceId: workPlaceId),
+        ),
+      );
+      break;
+
+    // 7. 사장님이 받는 "근무자 수락" 알림 -> 사장 받은 승인 내역
+    case "WORK_CHANGE_TARGET_ACCEPTED":
+      if (workPlaceId == null) return;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => RWorkChangeRequestListPage(workPlaceId: workPlaceId),
+        ),
+      );
+      break;
+
+    default:
+      // 알 수 없는 알림 타입은 이동하지 않는다.
+      break;
+  }
+}
+
 // 종 아이콘을 눌렀을 때 진입하는 알림함(Alarm) 리스트 화면.
 // - 공지사항 목록(RNotificationPage)과 다른 도메인이라 별도 페이지로 분리했다.
 // - 사장님/근무자 공용 화면이라 role별 BottomNavBar는 두지 않고 뒤로가기만 제공한다.
@@ -112,7 +211,7 @@ class _AlarmListPageState extends ConsumerState<AlarmListPage> {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: state.alarms.length,
-                      separatorBuilder: (_, __) =>
+                      separatorBuilder: (_, _) =>
                       const Divider(height: 1, color: Color(0xFFF2F2F2)),
                       itemBuilder: (context, index) {
                         final alarm = state.alarms[index];
@@ -150,10 +249,9 @@ class _AlarmTile extends ConsumerWidget {
     final labelColor = alarm.read ? const Color(0xFFBBBBBB) : const Color(0xFF767676);
 
     return InkWell(
-      onTap: () {
+      onTap: () async {
         ref.read(alarmListProvider.notifier).markAsRead(alarm.notificationId);
-        // TODO: notificationType(NOTICE 등)에 따라 관련 상세 화면으로 이동하는 라우팅은
-        // 알림 종류가 확정되면 여기서 alarm.data를 참고해 분기 처리한다.
+        await _navigateForAlarm(context, alarm);
       },
       child: Container(
         color: backgroundColor,

@@ -3,6 +3,45 @@ import 'package:flutter/material.dart';
 import '../Month/RMonthAllSchedulePage.dart';
 import 'RWeekScheduleCard.dart';
 
+/// 하루의 근무 그룹(같은 timeName)별 (start, end, shifts) 목록을 받아,
+/// 실제로 겹치는 시간대에는 그 시간대에 동시에 진행 중인 모든 그룹의 근무를
+/// 합쳐서 하나의 구간으로 만든다. 시간축을 모든 그룹의 시작/끝 지점(breakpoint)
+/// 기준으로 잘게 나눈 뒤, 각 조각마다 그 시점에 활성 상태인 그룹들을 모아
+/// 하나의 박스로 그리도록 반환한다. 폭은 항상 전체 너비를 그대로 쓴다.
+List<(double start, double end, List<RScheduleShift> shifts)>
+_mergeOverlappingSegments(
+    List<(double start, double end, List<RScheduleShift> shifts)> groups) {
+  if (groups.isEmpty) return [];
+
+  final points = <double>{};
+  for (final g in groups) {
+    points.add(g.$1);
+    points.add(g.$2);
+  }
+  final sortedPoints = points.toList()..sort();
+
+  final result = <(double, double, List<RScheduleShift>)>[];
+
+  for (int i = 0; i < sortedPoints.length - 1; i++) {
+    final segStart = sortedPoints[i];
+    final segEnd = sortedPoints[i + 1];
+    if (segStart >= segEnd) continue;
+
+    final active = <RScheduleShift>[];
+    for (final g in groups) {
+      if (g.$1 <= segStart && g.$2 >= segEnd) {
+        active.addAll(g.$3);
+      }
+    }
+
+    if (active.isEmpty) continue;
+
+    result.add((segStart, segEnd, active));
+  }
+
+  return result;
+}
+
 class RWeekGrid extends StatelessWidget {
   final List<DateTime> weekDates;
 
@@ -144,95 +183,77 @@ class RWeekGrid extends StatelessWidget {
                         ),
                       ),
                       child: Stack(
-                        children: [
-                          /// ======================
-                          /// 30분 셀
-                          /// ======================
-                          Column(
-                            children: List.generate(
-                              halfRows,
-                                  (index) => Container(
-                                height: halfHourHeight,
-                                decoration: BoxDecoration(
-                                  border: Border(
-                                    top: BorderSide(
-                                      color: Colors.grey.shade300,
-                                      width: .5,
+                            children: [
+                              /// ======================
+                              /// 30분 셀
+                              /// ======================
+                              Column(
+                                children: List.generate(
+                                  halfRows,
+                                      (index) => Container(
+                                    height: halfHourHeight,
+                                    decoration: BoxDecoration(
+                                      border: Border(
+                                        top: BorderSide(
+                                          color: Colors.grey.shade300,
+                                          width: .5,
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
-                            ),
+
+                              /// ======================
+                              /// 스케줄 카드
+                              /// ======================
+                              if (!isHoliday && shifts.isNotEmpty)
+                                ...(() {
+                                  /// 역할별 그룹핑
+                                  final Map<String, List<RScheduleShift>> grouped = {};
+
+                                  for (final shift in shifts) {
+                                    grouped.putIfAbsent(shift.timeName, () => []);
+                                    grouped[shift.timeName]!.add(shift);
+                                  }
+
+                                  // 그룹(역할)별 시간 범위.
+                                  final groupRanges = grouped.entries.map((entry) {
+                                    final roleShifts = entry.value;
+
+                                    final start = roleShifts
+                                        .map((e) => _timeToPosition(e.startTime, startHour))
+                                        .reduce((a, b) => a < b ? a : b);
+
+                                    final end = roleShifts
+                                        .map((e) => _timeToPosition(e.endTime, startHour))
+                                        .reduce((a, b) => a > b ? a : b);
+
+                                    return (start, end, roleShifts);
+                                  }).toList();
+
+                                  // 폭은 나누지 않고, 겹치는 시간대에는 그 시간대에
+                                  // 동시에 진행 중인 근무들을 모두 합쳐서 한 박스로
+                                  // 그린다(원래 있던 근무 + 새로 추가된 근무 모두 표시).
+                                  final segments =
+                                  _mergeOverlappingSegments(groupRanges);
+
+                                  return segments.map((segment) {
+                                    final (start, end, activeShifts) = segment;
+
+                                    return Positioned(
+                                      top: start * halfHourHeight,
+                                      left: 0,
+                                      right: 0,
+                                      height: (end - start) * halfHourHeight,
+                                      child: RWeekScheduleCard(
+                                        shifts: activeShifts,
+                                      ),
+                                    );
+                                  }).toList();
+                                })(),
+                            ],
                           ),
-
-                          /// ======================
-                          /// 스케줄 카드
-                          /// ======================
-                          // if (!isHoliday && workers.isNotEmpty)
-                          //   Builder(
-                          //     builder: (_) {
-                          //       final start = workers
-                          //           .map((e) => _timeToPosition(
-                          //         e.startTime,
-                          //         startHour,
-                          //       ))
-                          //           .reduce((a, b) => a < b ? a : b);
-                          //
-                          //       final end = workers
-                          //           .map((e) => _timeToPosition(
-                          //         e.endTime,
-                          //         startHour,
-                          //       ))
-                          //           .reduce((a, b) => a > b ? a : b);
-                          //
-                          //       return Positioned(
-                          //         top: start * halfHourHeight,
-                          //         left: 0,
-                          //         right: 0,
-                          //         height: (end - start) * halfHourHeight,
-                          //         child: RWeekScheduleCard(
-                          //           workers: workers,
-                          //         ),
-                          //       );
-                          //     },
-                          //   ),
-                          if (!isHoliday && shifts.isNotEmpty)
-                            ...(() {
-
-                              /// 역할별 그룹핑
-                              final Map<String, List<RScheduleShift>> grouped = {};
-
-                              for (final shift in shifts) {
-                                grouped.putIfAbsent(shift.timeName, () => []);
-                                grouped[shift.timeName]!.add(shift);
-                              }
-
-                              return grouped.entries.map((entry) {
-
-                                final roleShifts = entry.value;
-
-                                final start = roleShifts
-                                    .map((e) => _timeToPosition(e.startTime, startHour))
-                                    .reduce((a, b) => a < b ? a : b);
-
-                                final end = roleShifts
-                                    .map((e) => _timeToPosition(e.endTime, startHour))
-                                    .reduce((a, b) => a > b ? a : b);
-
-                                return Positioned(
-                                  top: start * halfHourHeight,
-                                  left: 0,
-                                  right: 0,
-                                  height: (end - start) * halfHourHeight,
-                                  child: RWeekScheduleCard(
-                                    shifts: roleShifts,
-                                  ),
-                                );
-                              }).toList();
-
-                            })(),
-                        ],
-                      ),
                     ),
                   );
                 }),

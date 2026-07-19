@@ -9,6 +9,7 @@ import 'api/AssignmentApi.dart';
 import 'api/ConfirmedSchedulesApi.dart';
 import 'api/WorkersApi.dart';
 import 'models/AssignmentCreateRequest.dart';
+import 'models/AssignmentCreateResponse.dart';
 import 'models/WorkersResponse.dart';
 import 'widgets/RCompleteButton.dart';
 import 'widgets/RDropdownField.dart';
@@ -189,6 +190,8 @@ class _RAddSchedulePageState extends State<RAddSchedulePage> {
       // 선택된 날짜 수만큼 순차적으로 등록.
       // workPartNo는 서버에서 자동으로 계산해서 응답으로 내려주므로
       // 클라이언트에서 별도로 조회하지 않습니다.
+      final List<AssignmentCreateResponse> createdAssignments = [];
+
       for (final date in selectedDates) {
         final monday = _mondayOf(date);
 
@@ -221,6 +224,8 @@ class _RAddSchedulePageState extends State<RAddSchedulePage> {
           ),
         );
 
+        createdAssignments.add(response);
+
         debugPrint(
           "근무 등록 성공 : workDate=${response.workDate}, "
               "timeDetailId=${response.timeDetailId}, "
@@ -240,6 +245,7 @@ class _RAddSchedulePageState extends State<RAddSchedulePage> {
           breakTime: breakTime,
           dates: selectedDates,
           workers: List<WorkerItem>.from(selectedWorkers),
+          createdAssignments: createdAssignments,
         ),
       );
     } catch (e) {

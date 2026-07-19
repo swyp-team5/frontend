@@ -108,16 +108,9 @@ class EScheduleCard extends StatelessWidget {
 
   String get nextWeekRange {
     final now = DateTime.now();
-
-    DateTime nextMonday;
-
-    if (now.weekday == DateTime.monday) {
-      nextMonday = now.add(const Duration(days: 14));
-    } else {
-      nextMonday = now.add(
-        Duration(days: 8 - now.weekday),
-      );
-    }
+    final today = DateTime(now.year, now.month, now.day);
+    final thisMonday = today.subtract(Duration(days: today.weekday - 1));
+    final nextMonday = thisMonday.add(const Duration(days: 7));
 
     final nextSunday = nextMonday.add(
       const Duration(days: 6),

@@ -33,15 +33,22 @@ class RWeekScheduleCard extends StatelessWidget {
       return const SizedBox();
     }
 
-    final colorIndex = shifts.first.colorIndex; // ⭐ role 대신 colorIndex
+    // 겹치는 시간대를 합쳐서 그릴 때는 가장 나중에 추가된 근무(리스트의
+    // 마지막 항목)의 색을 써서, 새로 추가된 근무가 겹쳐 있는 구간을
+    // 시각적으로 구분할 수 있게 한다.
+    final colorIndex = shifts.last.colorIndex; // ⭐ role 대신 colorIndex
 
     final hasShortage = shifts.any((e) => e.shortage);
 
     final shortageCount =
     shifts.fold<int>(0, (sum, e) => sum + e.shortageCount);
 
+    // 겹치는 시간대를 합쳐서 하나의 박스로 그릴 때, 같은 근무자가 여러 근무에
+    // 동시에 배정돼 있으면 이름이 중복 표시되지 않도록 memberId로 걸러낸다.
+    final seenMemberIds = <int>{};
     final names = shifts
         .expand((e) => e.workers)
+        .where((w) => seenMemberIds.add(w.memberId))
         .map((e) => e.name)
         .join("\n");
 

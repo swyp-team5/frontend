@@ -11,6 +11,7 @@ import 'Week/RWeekSchedulePage.dart';
 import 'RYearMonthBottomSheet.dart';
 import 'models/schedule_model.dart';
 import 'models/ConfirmedSchedulesResponse.dart';
+import 'models/WorkersResponse.dart';
 import 'api/ConfirmedSchedulesApi.dart'; // 실제 경로에 맞게 수정
 
 class RMainSchedulePage extends StatefulWidget {
@@ -287,9 +288,47 @@ class _RMainSchedulePageState extends State<RMainSchedulePage> {
                             );
 
                             if (schedule != null) {
-                              // 서버 등록은 RAddSchedulePage에서 이미 완료되었으므로
-                              // 최신 상태를 다시 받아오기 위해 재조회합니다.
-                              _loadSchedules(force: true);
+                              // 서버가 실제로 생성한 결과를 그대로 기존 목록에
+                              // "추가"한다. 재조회(GET)에 의존하지 않는 이유:
+                              // 재조회 시점의 응답이 방금 추가한 근무만 반영하고
+                              // 기존에 보여주던 다른 근무들을 덮어써버리는 문제가
+                              // 있어서, 서버가 이미 확정적으로 알려준 생성 결과만
+                              // 신뢰한다.
+                              setState(() {
+                                for (final created
+                                    in schedule.createdAssignments) {
+                                  final shift = RScheduleShift(
+                                    timeDetailId: created.timeDetailId,
+                                    workPartNo: created.workPartNo,
+                                    startTime: _formatHHmm(created.startTime),
+                                    endTime: _formatHHmm(created.closeTime),
+                                    timeName: created.timeName,
+                                    breakTime: created.restTime > 0
+                                        ? "${created.restTime}분"
+                                        : "없음",
+                                    required: created.workerMemberIds.length,
+                                    workers: created.workerMemberIds.map((id) {
+                                      final worker = schedule.workers.firstWhere(
+                                        (w) => w.memberId == id,
+                                        orElse: () => WorkerItem(
+                                          memberId: id,
+                                          memberName: "이름없음",
+                                        ),
+                                      );
+                                      return RScheduleWorker(
+                                        memberId: id,
+                                        name: worker.memberName,
+                                      );
+                                    }).toList(),
+                                    colorIndex:
+                                    _colorIndexForTimeName(created.timeName),
+                                  );
+
+                                  allSchedules
+                                      .putIfAbsent(created.workDate, () => [])
+                                      .add(shift);
+                                }
+                              });
                             }
                           }
                         },
