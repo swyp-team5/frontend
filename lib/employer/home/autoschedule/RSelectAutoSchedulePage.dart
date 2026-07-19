@@ -223,8 +223,10 @@ class _RSelectAutoSchedulePageState extends State<RSelectAutoSchedulePage> {
         const SnackBar(content: Text("스케줄 조건이 초기화되었어요.")),
       );
 
-      // 초기화 후 최신 상태로 다시 불러오기
-      await _load();
+      // 초기화 후에는 이 미리보기 화면에 머무를 이유가 없으므로 홈으로 돌아간다.
+      // (RAutoSchedulingPage가 pushReplacement로 이 화면을 열었기 때문에,
+      //  루트 네비게이터에서 한 번만 pop하면 바로 홈이 나온다.)
+      Navigator.of(context, rootNavigator: true).pop();
     } catch (e) {
       debugPrint("스케줄 조건 초기화 실패: $e");
       if (!mounted) return;
