@@ -847,21 +847,6 @@ class _RHomePageState extends State<RHomePage> {
                           },
 
                           onMakeScheduleTap: () => _onMakeScheduleTap(type),
-
-                          onResetConditions: () async {
-                            debugPrint("========== 부모 callback 실행 ==========");
-
-                            // 다시 최신 데이터 조회
-                            await _loadWorkPlaces();
-                            await _loadWeekScheduleId();
-                            await _loadSubmitStatus();
-
-                            if (!mounted) return;
-
-                            setState(() {});
-
-                            debugPrint("========== 홈 새로고침 완료 ==========");
-                          },
                         )
                       );
                     },
