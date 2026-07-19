@@ -343,9 +343,18 @@ class _RHomePageState extends State<RHomePage> {
   //==========================================================
 
   List<HomeCardType> get cardTypes {
-    // 스케줄 조건이 아직 없으면(weekScheduleId == null) "스케줄 조건 만들기" 카드만,
-    // 조건이 생성되어 있으면 "제출 현황"과 "자동 스케줄 생성하기" 카드를 보여준다.
-    if (weekScheduleId == null) {
+    final hasCondition = weekScheduleId != null;
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    // 조건의 제출 마감일이 이미 지났으면, 이 조건은 이미 다 쓰였거나(스케줄
+    // 확정 완료) 마감이 지나버린 상태로 보고 새 조건을 만들어야 하는
+    // 시점으로 판단한다. (오늘 당일 생성 직후에는 dueDate가 아직 안
+    // 지났으므로 바로 전환되지 않는다.)
+    final conditionExpired = dueDate != null && dueDate!.isBefore(today);
+
+    if (!hasCondition || conditionExpired) {
       return [HomeCardType.weeklySchedule];
     }
 
@@ -647,10 +656,9 @@ class _RHomePageState extends State<RHomePage> {
   /// RScheduleCard.nextWeekRange와 동일한 계산 규칙을 사용한다.
   DateTime get _nextMonday {
     final now = DateTime.now();
-    if (now.weekday == DateTime.monday) {
-      return now.add(const Duration(days: 14));
-    }
-    return now.add(Duration(days: 8 - now.weekday));
+    final today = DateTime(now.year, now.month, now.day);
+    final thisMonday = today.subtract(Duration(days: today.weekday - 1));
+    return thisMonday.add(const Duration(days: 7));
   }
 
   @override
