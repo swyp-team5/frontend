@@ -48,7 +48,7 @@ class FcmSetupService {
     // 나중에 실제로 토큰이 발급되는 경우 등) 서버에도 다시 등록한다.
     // 이 줄은 위 _registerOnce의 성공/실패와 무관하게 항상 실행된다.
     messaging.onTokenRefresh.listen((newToken) async {
-      debugPrint("🔄 [FcmSetupService] 토큰 갱신 감지: $newToken");
+      debugPrint("🔄 [FcmSetupService] 토큰 갱신 감지 (전체): $newToken");
       try {
         await FcmTokenApi.register(
           deviceId: deviceId,
@@ -112,10 +112,13 @@ class FcmSetupService {
 
       final token = await messaging.getToken();
 
-      // [수정] FCM 토큰 값도 로그로 확인 (앞자리만이 아니라 존재 여부/길이 체크용).
+      // [수정] FCM 토큰 전체 값을 로그로 출력한다.
+      // Firebase 콘솔의 "기기에서 테스트"에 이 값을 그대로 붙여넣어
+      // 서버 코드와 무관하게 Firebase → APNs → 기기 구간만 따로 테스트할 수 있다.
       debugPrint(
         "📮 [FcmSetupService] FCM 토큰 발급됨 (길이: ${token?.length ?? 0})",
       );
+      debugPrint("🔥 [FcmSetupService] FCM 토큰 전체 값: $token");
 
       if (token == null) {
         debugPrint("🔴 [FcmSetupService] FCM 토큰 발급 실패 — token이 null");

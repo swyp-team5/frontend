@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class BottomNavBar extends StatelessWidget {
 
@@ -16,27 +17,27 @@ class BottomNavBar extends StatelessWidget {
 
     final items = [
       {
-        "icon": Icons.home_filled,
+        "icon": "assets/images/home.svg",
         "label": "홈",
       },
 
       {
-        "icon": Icons.groups_rounded,
+        "icon": "assets/images/worker.svg",
         "label": "동료",
       },
 
       {
-        "icon": Icons.calendar_month,
+        "icon": "assets/images/calendar.svg", // calender -> calendar 오타 수정
         "label": "스케줄",
       },
 
       // {
-      //   "icon": Icons.payments_outlined,
+      //   "icon": "assets/images/salary.svg",
       //   "label": "급여",
       // },
 
       {
-        "icon": Icons.person_outline,
+        "icon": "assets/images/mypage.svg",
         "label": "마이페이지",
       },
     ];
@@ -82,15 +83,18 @@ class BottomNavBar extends StatelessWidget {
 
                   children: [
 
-                    Icon(
-                      item["icon"] as IconData,
+                    SvgPicture.asset(
+                      item["icon"] as String,
 
-                      size: 24,
+                      width: 24,
+                      height: 24,
 
-                      color:
-                      isSelected
-                          ? Colors.grey.shade700
-                          : Colors.grey.shade400,
+                      colorFilter: ColorFilter.mode(
+                        isSelected
+                            ? Colors.grey.shade700
+                            : Colors.grey.shade400,
+                        BlendMode.srcIn,
+                      ),
                     ),
 
                     const SizedBox(height: 4),

@@ -42,12 +42,20 @@ class FcmNotificationService {
 
   static Future<void> showFromRemoteMessage(RemoteMessage message) async {
     final notification = message.notification;
-    if (notification == null) return;
+    final data = message.data;
+
+    // notification payload가 있으면 그걸 쓰고,
+    // 없으면(data-only 메시지인 경우) data에서 title/body를 꺼내 쓴다.
+    final title = notification?.title ?? data['title'];
+    final body = notification?.body ?? data['body'];
+
+    // 둘 다 없으면 표시할 내용이 없으므로 종료한다.
+    if (title == null && body == null) return;
 
     await _plugin.show(
-      notification.hashCode,
-      notification.title,
-      notification.body,
+      notification?.hashCode ?? message.hashCode,
+      title,
+      body,
       NotificationDetails(
         android: AndroidNotificationDetails(
           _channel.id,

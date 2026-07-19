@@ -21,10 +21,20 @@ final navigatorKey = GlobalKey<NavigatorState>();
 
 // 백그라운드/종료 상태에서 FCM 메시지를 받았을 때 호출되는 top-level 핸들러.
 // 별도 isolate에서 실행되므로 반드시 top-level(또는 static) 함수여야 하고, @pragma가 필요하다.
-// notification payload가 있으면 OS가 알아서 배너를 띄워주므로 별도 처리는 하지 않는다.
+//
+// notification payload가 있으면 OS가 알아서 배너를 띄워주지만,
+// data-only 메시지인 경우 OS가 자동으로 띄워주지 않으므로 직접 로컬 알림으로 띄워준다.
+// 별도 isolate이라 Firebase/플러그인이 초기화되어 있지 않으므로 여기서 다시 초기화해야 한다.
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   debugPrint('[FCM] 백그라운드 메시지 수신: ${message.messageId}');
+
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  await FcmNotificationService.initialize();
+  await FcmNotificationService.showFromRemoteMessage(message);
 }
 
 void main() async {
@@ -39,7 +49,31 @@ void main() async {
   // 백그라운드 핸들러는 Firebase 초기화 이후, runApp 이전에 등록해야 한다.
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   // 포그라운드에서 받은 메시지를 로컬 알림으로 띄우기 위한 플러그인 초기화
+  // (내부적으로 iOS 알림 권한 요청(requestAlertPermission 등)도 함께 이루어진다)
   await FcmNotificationService.initialize();
+
+  // ===== 디버깅용: 알림 권한 상태 및 FCM 토큰 확인 =====
+  NotificationSettings settings =
+  await FirebaseMessaging.instance.requestPermission(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
+  debugPrint('🟡 알림 권한 상태: ${settings.authorizationStatus}');
+
+  String? fcmToken = await FirebaseMessaging.instance.getToken();
+  debugPrint('🟢 FCM 토큰: $fcmToken');
+
+  // TODO: 여기서 받은 fcmToken을 서버에 등록하는 API 호출이 필요합니다.
+  // 예: await ApiService.updateFcmToken(fcmToken);
+  // 로그인 이후 시점에 처리하고 있다면 로그인 처리 코드 쪽도 함께 확인해주세요.
+
+  FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
+    debugPrint('🔄 FCM 토큰 갱신됨: $newToken');
+    // TODO: 갱신된 토큰도 서버에 재전송하는 로직이 필요합니다.
+    // 예: await ApiService.updateFcmToken(newToken);
+  });
+  // ===================================================
 
   // 한국어 로케일 데이터 초기화
   await initializeDateFormatting('ko_KR', null);
@@ -84,6 +118,8 @@ class _MyAppState extends State<MyApp> {
   void _initFcmListeners() {
     // 앱이 포그라운드일 때 메시지가 오면 OS가 자동으로 배너를 안 띄워주므로 직접 띄운다.
     FirebaseMessaging.onMessage.listen((message) {
+      debugPrint(
+          '[FCM] 포그라운드 메시지 수신: ${message.messageId}, data: ${message.data}, notification: ${message.notification?.title}');
       FcmNotificationService.showFromRemoteMessage(message);
     });
 
