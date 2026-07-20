@@ -157,20 +157,23 @@ class _RNotiEditPageState extends ConsumerState<RNotiEditPage> {
       Navigator.pop(context);
     } on DioException catch (e) {
       debugPrint("🔴 DioException: ${e.response?.statusCode} / ${e.response?.data}");
-
       if (!mounted) return;
 
+      final data = e.response?.data;
+      final serverMessage = (data is Map) ? data["message"]?.toString() : null;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.response?.data.toString() ?? "수정 실패")),
+        SnackBar(
+          content: Text(serverMessage ?? "공지 수정에 실패했어요. 잠시 후 다시 시도해주세요."),
+        ),
       );
     } catch (e, stack) {
       debugPrint("🔴 일반 예외: $e");
       debugPrint("스택: $stack");
-
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
+        const SnackBar(content: Text("공지 수정 중 문제가 발생했어요. 잠시 후 다시 시도해주세요.")),
       );
     } finally {
       if (mounted) setState(() => isSubmitting = false);
@@ -561,7 +564,7 @@ class _RNotiEditPageState extends ConsumerState<RNotiEditPage> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('갤러리를 여는 중 오류가 발생했습니다: $e')),
+          SnackBar(content: Text('갤러리를 여는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')),
         );
       }
     }

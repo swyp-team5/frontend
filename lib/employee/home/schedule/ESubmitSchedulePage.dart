@@ -63,8 +63,9 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
         _isLoading = false;
       });
     } catch (e) {
+      debugPrint("[ESubmitSchedulePage] 캘린더 조회 실패: $e");
       setState(() {
-        _loadError = e.toString();
+        _loadError = "스케줄 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.";
         _isLoading = false;
       });
     }
@@ -75,7 +76,6 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
 
     setState(() => _isSubmitting = true);
 
-    // 휴무 없음 체크 시에는 빈 배열로 제출
     final allTimeDetailIds = holiday
         ? <int>[]
         : savedSchedules.values
@@ -102,9 +102,11 @@ class _ESubmitSchedulePageState extends State<ESubmitSchedulePage> {
         ),
       );
     } catch (e) {
+      debugPrint("[ESubmitSchedulePage] 스케줄 제출 실패: $e");
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.toString())));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("스케줄 제출에 실패했어요. 잠시 후 다시 시도해주세요.")),
+      );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }

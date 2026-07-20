@@ -119,7 +119,7 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst("Exception: ", ""))),
+        SnackBar(content: Text("일시적인 오류가 발생했어요. 잠시 후 다시 시도해주세요.")),
       );
     }
   }
@@ -197,7 +197,7 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString().replaceFirst("Exception: ", ""))),
+        SnackBar(content: Text("일시적인 오류가 발생했어요. 잠시 후 다시 시도해주세요.")),
       );
     }
   }
@@ -627,7 +627,7 @@ class _EProfileEditPageState extends State<EProfileEditPage> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(e.toString()),
+          content: Text("일시적인 오류가 발생했어요. 잠시 후 다시 시도해주세요."),
         ),
       );
     }

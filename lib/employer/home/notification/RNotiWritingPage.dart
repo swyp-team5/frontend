@@ -127,20 +127,23 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
     } on DioException catch (e) {
       debugPrint("🔴 DioException: ${e.response?.statusCode}");
       debugPrint("🔴 응답 데이터: ${e.response?.data}");
-
       if (!mounted) return;
 
+      final data = e.response?.data;
+      final serverMessage = (data is Map) ? data["message"]?.toString() : null;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.response?.data.toString() ?? "등록 실패")),
+        SnackBar(
+          content: Text(serverMessage ?? "공지 등록에 실패했어요. 잠시 후 다시 시도해주세요."),
+        ),
       );
     } catch (e, stack) {
       debugPrint("🔴 일반 예외: $e");
       debugPrint("스택: $stack");
-
       if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
+        const SnackBar(content: Text("공지 등록 중 문제가 발생했어요. 잠시 후 다시 시도해주세요.")),
       );
     } finally {
       // [수정] 성공/실패/예외 등 어떤 경로로 끝나도 반드시 플래그를 되돌린다.
