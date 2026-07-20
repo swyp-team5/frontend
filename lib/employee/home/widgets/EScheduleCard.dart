@@ -9,6 +9,7 @@ class EScheduleCard extends StatelessWidget {
   final HomeCardType type;
   final int daysLeft;
   final VoidCallback? onDetailTap;
+  final VoidCallback? onClose;
 
   /// substituteRequest / shiftRequest 타입 카드에서 상세 화면으로 이동할 때 필요
   final int? workPlaceId;
@@ -35,6 +36,7 @@ class EScheduleCard extends StatelessWidget {
     required this.type,
     required this.daysLeft,
     this.onDetailTap,
+    this.onClose,
     this.workPlaceId,
     this.workChangeRequestId,
     this.substituteDateLabel,
@@ -440,6 +442,30 @@ class EScheduleCard extends StatelessWidget {
                 ],
               ),
             ),
+
+            /// ✅ 닫기(X) 버튼
+            if (onClose != null)
+              Positioned(
+                right: 12,
+                top: 12,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: onClose,
+                  child: Container(
+                    width: 28,
+                    height: 28,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.35),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      size: 16,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),

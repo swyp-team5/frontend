@@ -76,8 +76,53 @@ class _EHomePageState extends ConsumerState<EHomePage> {
   String? myDateLabel;
   String? myTimeLabel;
 
-  /// 카드별로 닫혔는지 여부 (개발용: 6개 타입 전부 보여주기 위해 단일 bool 대신 Set 사용)
-  final Set<HomeCardType> hiddenCardTypes = {};
+  /// 카드 타입별로 "닫았을 때의 식별값"을 저장 (SharedPreferences에 문자열로 영속화)
+  final Map<HomeCardType, String?> _hiddenCardKeys = {};
+
+  String _hiddenCardPrefKey(HomeCardType type) => 'hiddenHomeCard_${type.name}';
+
+  /// 앱 재시작/페이지 재생성 이후에도 "닫힘" 상태를 복원
+  Future<void> _loadHiddenCardKeys() async {
+    final prefs = await SharedPreferences.getInstance();
+    final Map<HomeCardType, String?> loaded = {};
+
+    for (final type in _allCardTypes) {
+      final saved = prefs.getString(_hiddenCardPrefKey(type));
+      if (saved != null) {
+        loaded[type] = saved;
+      }
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _hiddenCardKeys
+        ..clear()
+        ..addAll(loaded);
+    });
+  }
+
+  /// 카드를 닫을 때 호출: 현재 식별값을 "닫힘"으로 기록하고 영속화
+  Future<void> _hideCard(HomeCardType type, dynamic key) async {
+    final str = key?.toString();
+
+    setState(() {
+      _hiddenCardKeys[type] = str;
+      if (_currentSchedulePage > 0) {
+        _currentSchedulePage = 0;
+      }
+    });
+
+    final prefs = await SharedPreferences.getInstance();
+    if (str == null) {
+      await prefs.remove(_hiddenCardPrefKey(type));
+    } else {
+      await prefs.setString(_hiddenCardPrefKey(type), str);
+    }
+  }
+
+  /// 정렬/식별용: 교대·대타 요청이 "언제" 생성됐는지
+  DateTime? _shiftRequestCreatedAt;
+  DateTime? _substituteRequestCreatedAt;
 
   Set<DateTime> workedDates = {};
 
@@ -463,23 +508,47 @@ class _EHomePageState extends ConsumerState<EHomePage> {
             "(workPlaceId: $workPlaceId, scope: RECEIVED)",
       );
 
-      final pendingSubstitute = result.content.where(
-            (e) => e.requestType == "SUBSTITUTE" && e.status == "REQUESTED",
-      );
+      final pendingSubstituteList = result.content
+          .where((e) => e.requestType == "SUBSTITUTE" && e.status == "REQUESTED")
+          .toList();
 
-      final pendingShiftSwap = result.content.where(
-            (e) => e.requestType == "SHIFT_SWAP" && e.status == "REQUESTED",
-      );
+      final pendingShiftSwapList = result.content
+          .where((e) => e.requestType == "SHIFT_SWAP" && e.status == "REQUESTED")
+          .toList();
+
+      // ✅ 리스트 정렬 순서에 의존하지 않고, createdAt 기준으로 가장 최근 것을 직접 선택
+      //    (홈카드 정렬/재노출 판단에 createdAt을 쓰므로, "가장 최근"의 기준을 여기서도
+      //     동일하게 맞춰야 함)
+      DateTime? _parseCreatedAt(dynamic e) =>
+          DateTime.tryParse(e.createdAt as String);
+
+      dynamic _latest(List<dynamic> list) {
+        if (list.isEmpty) return null;
+        final sorted = [...list]..sort((a, b) {
+          final ta = _parseCreatedAt(a);
+          final tb = _parseCreatedAt(b);
+          if (ta == null && tb == null) return 0;
+          if (ta == null) return 1;
+          if (tb == null) return -1;
+          return tb.compareTo(ta); // 최신이 먼저
+        });
+        return sorted.first;
+      }
+
+      final latestSubstitute = _latest(pendingSubstituteList);
+      final latestShiftSwap = _latest(pendingShiftSwapList);
 
       if (!mounted) return;
 
       setState(() {
-        substituteWorkChangeRequestId = pendingSubstitute.isNotEmpty
-            ? pendingSubstitute.first.workChangeRequestId
-            : null;
-        shiftWorkChangeRequestId = pendingShiftSwap.isNotEmpty
-            ? pendingShiftSwap.first.workChangeRequestId
-            : null;
+        substituteWorkChangeRequestId = latestSubstitute?.workChangeRequestId;
+        shiftWorkChangeRequestId = latestShiftSwap?.workChangeRequestId;
+
+        // ✅ 정렬 / 카드 재노출 판단(같은 건인지 비교)에 쓸 생성 시각 저장
+        _substituteRequestCreatedAt =
+        latestSubstitute != null ? _parseCreatedAt(latestSubstitute) : null;
+        _shiftRequestCreatedAt =
+        latestShiftSwap != null ? _parseCreatedAt(latestShiftSwap) : null;
 
         // 요청이 바뀌었으니 이전 카드에 남아있던 날짜/시간 라벨은 일단 초기화
         substituteDateLabel = null;
@@ -491,25 +560,27 @@ class _EHomePageState extends ConsumerState<EHomePage> {
       });
 
       debugPrint(
-        "[EHomePage] 대타 요청 카드용 id 로딩 성공: $substituteWorkChangeRequestId",
+        "[EHomePage] 대타 요청 카드용 id 로딩 성공: $substituteWorkChangeRequestId "
+            "(createdAt: $_substituteRequestCreatedAt)",
       );
       debugPrint(
-        "[EHomePage] 교대 요청 카드용 id 로딩 성공: $shiftWorkChangeRequestId",
+        "[EHomePage] 교대 요청 카드용 id 로딩 성공: $shiftWorkChangeRequestId "
+            "(createdAt: $_shiftRequestCreatedAt)",
       );
 
       /// 대타 요청 카드에 표시할 실제 근무 날짜/시간 조회
-      if (pendingSubstitute.isNotEmpty) {
+      if (latestSubstitute != null) {
         _loadSubstituteScheduleLabels(
           workPlaceId: workPlaceId,
-          request: pendingSubstitute.first,
+          request: latestSubstitute,
         );
       }
 
       /// 교대 요청 카드에 표시할 실제 근무 날짜/시간 조회
-      if (pendingShiftSwap.isNotEmpty) {
+      if (latestShiftSwap != null) {
         _loadShiftScheduleLabels(
           workPlaceId: workPlaceId,
-          request: pendingShiftSwap.first,
+          request: latestShiftSwap,
         );
       }
     } catch (e) {
@@ -705,6 +776,8 @@ class _EHomePageState extends ConsumerState<EHomePage> {
   void initState() {
     super.initState();
 
+    _loadHiddenCardKeys();
+
     // ✅ _loadConfirmedSchedules()는 여기서 별도로 호출하지 않는다.
     // workPlaceId가 확정된 뒤 _loadMyWorkPlace() 내부에서 호출되므로,
     // 여기서 동시에 호출하면 workPlaceId가 아직 null인 상태로 스킵되는
@@ -764,7 +837,6 @@ class _EHomePageState extends ConsumerState<EHomePage> {
     HomeCardType.weeklySchedule,
     HomeCardType.scheduleCompleted,
     HomeCardType.scheduleChanged,
-    HomeCardType.ownerWorkRequest,
   ];
 
   /// 카드 타입에 맞는 workChangeRequestId를 반환합니다.
@@ -806,62 +878,111 @@ class _EHomePageState extends ConsumerState<EHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    // ✅ 읽음 여부와 무관하게, SCHEDULE_CONDITION_CREATED 알람이 한 번이라도
-    // 도착한 적이 있으면 카드가 계속 표시된다. (읽음 처리해도 사라지지 않음)
-    final hasScheduleConditionCreated = ref.watch(
-      alarmListProvider.select(
-            (s) => s.alarms.any(
-              (a) => a.notificationType == 'SCHEDULE_CONDITION_CREATED',
-        ),
-      ),
-    );
+    final alarms = ref.watch(alarmListProvider.select((s) => s.alarms));
 
-    // ✅ SCHEDULE_CONFIMED 알람이 도착하면 scheduleCompleted 카드가 추가된다.
-    final hasScheduleConfirmed = ref.watch(
-      alarmListProvider.select(
-            (s) => s.alarms.any(
-              (a) => a.notificationType == 'SCHEDULE_CONFIMED',
-        ),
-      ),
-    );
+    // ✅ 알림 타입별 "가장 최근 도착 시각"을 구한다.
+    // ⚠️ Alarm 모델에 시각 필드가 createdAt(String or DateTime)이 맞는지 확인 필요.
+    DateTime? _latestAlarmTime(String notificationType) {
+      DateTime? latest;
+      for (final a in alarms) {
+        if (a.notificationType != notificationType) continue;
 
-    // ✅ SCHEDULE_UPDATED 알람이 도착하면 scheduleChanged 카드가 추가된다.
-    final hasScheduleUpdated = ref.watch(
-      alarmListProvider.select(
-            (s) => s.alarms.any(
-              (a) => a.notificationType == 'SCHEDULE_UPDATED',
-        ),
-      ),
-    );
+        final dynamic raw = a.createdAt;
+        DateTime? t;
+        if (raw is DateTime) {
+          t = raw;
+        } else if (raw is String) {
+          t = DateTime.tryParse(raw);
+        }
+
+        if (t == null) continue;
+
+        final DateTime? current = latest; // ✅ 로컬 변수에 담아 promotion 가능하게 만듦
+        if (current == null || t.isAfter(current)) {
+          latest = t;
+        }
+      }
+      return latest;
+    }
+
+    final weeklyScheduleTime = _latestAlarmTime('SCHEDULE_CONDITION_CREATED');
+    final scheduleCompletedTime = _latestAlarmTime('SCHEDULE_CONFIMED');
+    final scheduleChangedTime = _latestAlarmTime('SCHEDULE_UPDATED');
+    final workChangeRequestedTime = _latestAlarmTime('WORK_CHANGE_REQUESTED');
+
+    final hasScheduleConditionCreated = weeklyScheduleTime != null;
+    final hasScheduleConfirmed = scheduleCompletedTime != null;
+    final hasScheduleUpdated = scheduleChangedTime != null;
+
+    // ✅ 카드별 "현재 식별값" (닫기 상태 비교용)
+    final currentKeys = <HomeCardType, dynamic>{
+      // ✅ id + WORK_CHANGE_REQUESTED 알림 시각을 합쳐서 식별값으로 사용.
+      // 같은 요청이어도 새 알림이 오면 값이 달라져 닫아뒀던 카드가 다시 노출됨.
+      HomeCardType.shiftRequest:
+      '$shiftWorkChangeRequestId|$workChangeRequestedTime',
+      HomeCardType.substituteRequest:
+      '$substituteWorkChangeRequestId|$workChangeRequestedTime',
+      HomeCardType.weeklySchedule: weeklyScheduleTime,
+      HomeCardType.scheduleCompleted: scheduleCompletedTime,
+      HomeCardType.scheduleChanged: scheduleChangedTime,
+    };
+
+    // ✅ 카드별 "정렬 기준 시각"
+    DateTime? _laterOf(DateTime? a, DateTime? b) {
+      if (a == null) return b;
+      if (b == null) return a;
+      return a.isAfter(b) ? a : b;
+    }
+
+    final currentTimes = <HomeCardType, DateTime?>{
+      HomeCardType.shiftRequest:
+      _laterOf(_shiftRequestCreatedAt, workChangeRequestedTime),
+      HomeCardType.substituteRequest:
+      _laterOf(_substituteRequestCreatedAt, workChangeRequestedTime),
+      HomeCardType.weeklySchedule: weeklyScheduleTime,
+      HomeCardType.scheduleCompleted: scheduleCompletedTime,
+      HomeCardType.scheduleChanged: scheduleChangedTime,
+    };
 
     final visibleCardTypes = _allCardTypes.where((type) {
-      switch (type) {
-        case HomeCardType.weeklySchedule:
-          return hasScheduleConditionCreated;
+      final meetsCondition = switch (type) {
+        HomeCardType.weeklySchedule => hasScheduleConditionCreated,
+        HomeCardType.scheduleCompleted => hasScheduleConfirmed,
+        HomeCardType.scheduleChanged => hasScheduleUpdated,
+        HomeCardType.shiftRequest =>
+        (shiftWorkChangeRequestId != null || workChangeRequestedTime != null) &&
+            shiftWorkChangeRequestId != null &&
+            applicantDateLabel != null &&
+            applicantDateLabel!.isNotEmpty &&
+            myDateLabel != null &&
+            myDateLabel!.isNotEmpty,
+        HomeCardType.substituteRequest =>
+        (substituteWorkChangeRequestId != null || workChangeRequestedTime != null) &&
+            substituteWorkChangeRequestId != null &&
+            substituteDateLabel != null &&
+            substituteDateLabel!.isNotEmpty,
+        _ => true,
+      };
+      if (!meetsCondition) return false;
 
-        case HomeCardType.scheduleCompleted:
-          return hasScheduleConfirmed;
+      // ✅ 닫은 적이 있고, 그때 닫았던 건과 지금 건이 같으면 계속 숨김.
+      // 새로운 요청/알림이 들어와 식별값이 바뀌면 다시 노출된다.
+      final hiddenKey = _hiddenCardKeys[type];
+      final key = currentKeys[type]?.toString();
+      if (hiddenKey != null && hiddenKey == key) return false;
 
-        case HomeCardType.scheduleChanged:
-          return hasScheduleUpdated;
-
-        case HomeCardType.shiftRequest:
-          return shiftWorkChangeRequestId != null &&
-              applicantDateLabel != null &&
-              applicantDateLabel!.isNotEmpty &&
-              myDateLabel != null &&
-              myDateLabel!.isNotEmpty;
-
-        case HomeCardType.substituteRequest:
-          return substituteWorkChangeRequestId != null &&
-              substituteDateLabel != null &&
-              substituteDateLabel!.isNotEmpty;
-
-        default:
-          return true;
-      }
+      return true;
     }).toList();
 
+    // ✅ 알림/요청이 최근에 온 순서대로 앞에 배치 (최신이 먼저)
+    visibleCardTypes.sort((a, b) {
+      final ta = currentTimes[a];
+      final tb = currentTimes[b];
+      if (ta == null && tb == null) return 0;
+      if (ta == null) return 1;
+      if (tb == null) return -1;
+      return tb.compareTo(ta);
+    });
 
     /// 카드가 닫혀서 개수가 줄었을 때 PageView 인덱스가 범위를 벗어나지 않도록 보정
     if (visibleCardTypes.isNotEmpty &&
@@ -928,23 +1049,20 @@ class _EHomePageState extends ConsumerState<EHomePage> {
               /// Notice
               if (workPlaceId != null && accessToken != null)
                 ENoticeBanner(
-                  // ✅ workPlaceId가 바뀌면 위젯을 새로 생성해 즉시 재조회되도록 보강
                   key: ValueKey('notice-$workPlaceId'),
                   workPlaceId: workPlaceId!,
                   accessToken: accessToken!,
                   dio: _dio,
                 )
               else
-                const SizedBox.shrink(), // 로딩 전엔 배너 숨김 (필요 시 스켈레톤으로 교체 가능)
+                const SizedBox.shrink(),
               const SizedBox(height: 20),
 
-              /// Schedule Cards (한 위치에서 좌우로 넘기는 슬라이드 형식)
+              /// Schedule Cards
               if (visibleCardTypes.isNotEmpty) ...[
                 SizedBox(
-                  // EScheduleCard의 실제 디자인 높이에 맞춰 이 값을 조정
                   height: 140,
                   child: PageView.builder(
-                    // ✅ workPlaceId가 바뀌면 PageView 전체를 새로 생성
                     key: ValueKey('schedule-pageview-$workPlaceId'),
                     controller: _scheduleCardPageController,
                     itemCount: visibleCardTypes.length,
@@ -980,6 +1098,9 @@ class _EHomePageState extends ConsumerState<EHomePage> {
                           myTimeLabel:
                           type == HomeCardType.shiftRequest ? myTimeLabel : null,
                           onDetailTap: () => _handleDetailTap(type),
+                          onClose: () {
+                            _hideCard(type, currentKeys[type]);
+                          },
                         ),
                       );
                     },
@@ -988,7 +1109,6 @@ class _EHomePageState extends ConsumerState<EHomePage> {
 
                 const SizedBox(height: 10),
 
-                /// 페이지 인디케이터 (카드가 2장 이상일 때만 표시)
                 if (visibleCardTypes.length > 1)
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -1011,10 +1131,6 @@ class _EHomePageState extends ConsumerState<EHomePage> {
 
                 const SizedBox(height: 20),
               ],
-
-              // /// CheckIn Card
-              // const ECheckInCard(),
-              // const SizedBox(height: 14),
 
               /// Calendar
               EHomeCalendar(
