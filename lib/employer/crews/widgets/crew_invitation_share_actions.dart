@@ -43,8 +43,8 @@ class CrewInvitationShareActions extends StatelessWidget {
           height: 56,
           child: ElevatedButton.icon(
             onPressed: onShareToKakao,
-            icon: SvgPicture.asset(
-              'assets/images/logo/kakao.svg',
+            icon: Image.asset(
+              'assets/images/logo/kakaotalk.png',
               width: 20,
               height: 20,
             ),

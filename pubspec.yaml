@@ -4,7 +4,7 @@ description: "A new Flutter project."
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 
-version: 1.0.0+29
+version: 1.0.0+30
 
 environment:
   sdk: ^3.11.1
@@ -115,6 +115,7 @@ flutter:
     - assets/images/onboarding/onboarding3.png
     - assets/images/onboarding/onboarding4.png
 
+    - assets/images/logo/kakaotalk.svg
     - assets/images/logo/kakaotalk.png
     - assets/images/logo/kakao.svg
     - assets/images/logo/google.png

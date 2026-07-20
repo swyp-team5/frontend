@@ -44,7 +44,7 @@ void main() {
       );
 
       final kakaoIcon = tester.widget<Image>(
-        find.image(const AssetImage('assets/images/logo/kakaotalk.png')),
+        find.image(const AssetImage('assets/images/logo/kakaotalk.svg')),
       );
       final googleIcon = tester.widget<Image>(
         find.image(const AssetImage('assets/images/logo/google.png')),

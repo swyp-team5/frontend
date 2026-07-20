@@ -160,7 +160,7 @@ class _OnboardingBottomSheetState extends ConsumerState<OnboardingBottomSheet> {
                   key: const Key('kakao-login-button'),
                   label: '카카오로 시작하기',
                   backgroundColor: const Color(0xFFFFE200),
-                  assetPath: 'assets/images/logo/kakaotalk.png',
+                  assetPath: 'assets/images/logo/kakaotalk.svg',
                   iconColor: const Color(0xE6111111),
                   isLoading: _loadingProvider == SocialAuthProvider.kakao,
                   onPressed: _isLoading

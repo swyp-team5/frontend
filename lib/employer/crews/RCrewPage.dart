@@ -235,77 +235,77 @@ class _RCrewPageState extends State<RCrewPage> {
 
                 const SizedBox(height: 20),
 
-                /// 초대 링크
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "초대 링크",
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 18,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5F5F7),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Text(
-                    inviteShareUrl,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      color: Colors.black54,
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                /// 초대 코드
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "초대 코드",
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 10),
-
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 18,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF5F5F7),
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Text(
-                    inviteCode,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      color: Colors.black54,
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 28),
+                // /// 초대 링크
+                // const Align(
+                //   alignment: Alignment.centerLeft,
+                //   child: Text(
+                //     "초대 링크",
+                //     style: TextStyle(
+                //       fontSize: 15,
+                //       fontWeight: FontWeight.w600,
+                //       color: Colors.grey,
+                //     ),
+                //   ),
+                // ),
+                //
+                // const SizedBox(height: 10),
+                //
+                // Container(
+                //   width: double.infinity,
+                //   padding: const EdgeInsets.symmetric(
+                //     horizontal: 16,
+                //     vertical: 18,
+                //   ),
+                //   decoration: BoxDecoration(
+                //     color: const Color(0xFFF5F5F7),
+                //     borderRadius: BorderRadius.circular(14),
+                //   ),
+                //   child: Text(
+                //     inviteShareUrl,
+                //     style: const TextStyle(
+                //       fontSize: 15,
+                //       color: Colors.black54,
+                //     ),
+                //   ),
+                // ),
+                //
+                // const SizedBox(height: 20),
+                //
+                // /// 초대 코드
+                // const Align(
+                //   alignment: Alignment.centerLeft,
+                //   child: Text(
+                //     "초대 코드",
+                //     style: TextStyle(
+                //       fontSize: 15,
+                //       fontWeight: FontWeight.w600,
+                //       color: Colors.grey,
+                //     ),
+                //   ),
+                // ),
+                //
+                // const SizedBox(height: 10),
+                //
+                // Container(
+                //   width: double.infinity,
+                //   padding: const EdgeInsets.symmetric(
+                //     horizontal: 16,
+                //     vertical: 18,
+                //   ),
+                //   decoration: BoxDecoration(
+                //     color: const Color(0xFFF5F5F7),
+                //     borderRadius: BorderRadius.circular(14),
+                //   ),
+                //   child: Text(
+                //     inviteCode,
+                //     style: const TextStyle(
+                //       fontSize: 15,
+                //       color: Colors.black54,
+                //     ),
+                //   ),
+                // ),
+                //
+                // const SizedBox(height: 28),
 
                 CrewInvitationShareActions(
                   onCopyLink: _copyInvitationLink,
