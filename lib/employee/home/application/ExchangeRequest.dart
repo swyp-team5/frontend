@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../../common/employee/EExchangeReject.dart';
-import '../../../employer/crews/model/RCrewModel.dart';
 import '../../crews/model/WorkChangeRequestResponse.dart';
 import '../api/WorkChangeRequestListApi.dart';
 import 'ExAcceptionBottomSheet.dart';
@@ -165,13 +164,20 @@ class _ExchangeRequestState extends State<ExchangeRequest> {
         ),
       );
 
-      final List list = response.data["crews"] ?? [];
-      final crews = list.map((e) => RCrewModel.fromJson(e)).toList();
+      debugPrint("🟢 [ExchangeRequest] crews raw response = ${response.data}");
 
-      for (final crew in crews) {
-        names[crew.memberId] = crew.name;
+      final List list = response.data["crews"] ?? [];
+
+      for (final e in list) {
+        final crew = Map<String, dynamic>.from(e ?? {});
+        final memberId = crew["memberId"] is int
+            ? crew["memberId"] as int
+            : int.tryParse(crew["memberId"]?.toString() ?? "");
+        if (memberId == null) continue;
+        names[memberId] = crew["name"]?.toString() ?? "이름 없음";
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint("🔴 [ExchangeRequest] crews 조회 실패: $e");
       // 이름 매핑 실패해도 화면 자체는 보여줘야 하므로 조용히 무시.
     }
     return names;

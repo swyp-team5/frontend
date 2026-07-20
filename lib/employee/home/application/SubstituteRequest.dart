@@ -30,11 +30,13 @@ class _DetailViewData {
   final WorkChangeRequestResponse request;
   final ResolvedAssignment? requestSide; // requestAssignmentId 근무 정보
   final ResolvedAssignment? targetSide; // targetAssignmentId 근무 정보 (SWAP일 때만)
+  final Map<int, String> crewNames; // memberId -> name
 
   _DetailViewData({
     required this.request,
     required this.requestSide,
     required this.targetSide,
+    required this.crewNames,
   });
 }
 
@@ -72,6 +74,8 @@ class _SubstituteRequestState extends State<SubstituteRequest> {
       toDate: toDate,
     );
 
+    final crewNames = await _fetchCrewNames();
+
     final requestSide = request.requestAssignmentId != null
         ? assignmentMap[request.requestAssignmentId]
         : null;
@@ -86,7 +90,40 @@ class _SubstituteRequestState extends State<SubstituteRequest> {
       request: request,
       requestSide: requestSide,
       targetSide: targetSide,
+      crewNames: crewNames,
     );
+  }
+
+  /// memberId -> name 매핑. assignmentId 기반 조회(AssignmentResolver)는
+  /// 요청이 승인되어 배정이 교체되면 실패하므로, 이름은 크루 목록에서
+  /// memberId로 직접 찾는다(승인 여부와 무관하게 항상 안정적).
+  Future<Map<int, String>> _fetchCrewNames() async {
+    final Map<int, String> names = {};
+    try {
+      final token = await ServerTokenManager.getValidAccessToken();
+      if (token == null) return names;
+
+      final response = await _dio.get(
+        "/api/work-places/${widget.workPlaceId}/crews",
+        options: Options(
+          headers: {"Authorization": "Bearer $token"},
+        ),
+      );
+
+      final List list = response.data["crews"] ?? [];
+
+      for (final e in list) {
+        final crew = Map<String, dynamic>.from(e ?? {});
+        final memberId = crew["memberId"] is int
+            ? crew["memberId"] as int
+            : int.tryParse(crew["memberId"]?.toString() ?? "");
+        if (memberId == null) continue;
+        names[memberId] = crew["name"]?.toString() ?? "이름 없음";
+      }
+    } catch (e) {
+      debugPrint("[SubstituteRequest] crews 조회 실패: $e");
+    }
+    return names;
   }
 
   /// POST /api/work-places/{workPlaceId}/work-change-requests/{requestId}/reject
@@ -249,10 +286,9 @@ class _SubstituteRequestState extends State<SubstituteRequest> {
   Widget _buildContent(BuildContext context, _DetailViewData data) {
     final request = data.request;
 
-    // 신청자(applicant) = 요청 보낸 사람의 근무 정보 쪽에서 이름 추출
-    // (근무자 이름을 못 찾으면 memberId로 표시)
-    final applicantName =
-        data.requestSide?.workerName ?? "멤버 #${request.requesterMemberId}";
+    // 신청자(applicant) = 요청 보낸 사람의 이름 (크루 목록 기반, 승인 여부와 무관하게 안정적)
+    final applicantName = data.crewNames[request.requesterMemberId] ??
+        "멤버 #${request.requesterMemberId}";
     final targetName = widget.myName; // 오른쪽엔 항상 '나'로 고정
 
     final applicantDate = data.requestSide?.dateLabel ?? "-";

@@ -99,51 +99,6 @@ class WorkChangeRequestPageResult {
   }
 }
 
-/// 크루(근무자) 정보
-///
-/// GET /api/work-places/{workPlaceId}/owner/crews
-/// 응답이 List<RCrewModel>을 바로 담은 배열이라고 가정 (아니면 아래 파싱부만 수정)
-class RCrewModel {
-  final int crewId;
-  final int memberId;
-
-  final String name;
-  final String phoneNumber;
-  final String? profileImageUrl;
-
-  final String crewRole;
-  final String joinStatus;
-  final String crewStatus;
-
-  final DateTime createdAt;
-
-  RCrewModel({
-    required this.crewId,
-    required this.memberId,
-    required this.name,
-    required this.phoneNumber,
-    required this.profileImageUrl,
-    required this.crewRole,
-    required this.joinStatus,
-    required this.crewStatus,
-    required this.createdAt,
-  });
-
-  factory RCrewModel.fromJson(Map<String, dynamic> json) {
-    return RCrewModel(
-      crewId: json["crewId"],
-      memberId: json["memberId"],
-      name: json["name"],
-      phoneNumber: json["phoneNumber"],
-      profileImageUrl: json["profileImageUrl"],
-      crewRole: json["crewRole"],
-      joinStatus: json["joinStatus"],
-      crewStatus: json["crewStatus"],
-      createdAt: DateTime.parse(json["createdAt"]),
-    );
-  }
-}
-
 class RWorkChangeRequestListPage extends StatefulWidget {
   final int workPlaceId;
 
@@ -307,10 +262,13 @@ class _RWorkChangeRequestListPageState extends State<RWorkChangeRequestListPage>
 
       final List list = response.data["crews"] ?? [];
 
-      final crews = list.map((e) => RCrewModel.fromJson(e)).toList();
-
-      for (final crew in crews) {
-        _memberNames[crew.memberId] = crew.name;
+      for (final e in list) {
+        final crew = Map<String, dynamic>.from(e ?? {});
+        final memberId = crew["memberId"] is int
+            ? crew["memberId"] as int
+            : int.tryParse(crew["memberId"]?.toString() ?? "");
+        if (memberId == null) continue;
+        _memberNames[memberId] = crew["name"]?.toString() ?? "이름 없음";
       }
     } catch (_) {
       // 이름 매핑 실패해도 목록 자체는 보여줘야 하므로 조용히 무시.
