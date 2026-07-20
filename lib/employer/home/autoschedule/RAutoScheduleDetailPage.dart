@@ -382,7 +382,7 @@ class _RAutoScheduleDetailPageState extends State<RAutoScheduleDetailPage> {
         color: shift.shortage ? Colors.redAccent : _bgColor(rowIndex),
         text: shift.shortage
             ? "${shift.workers.join('\n')}\n(${shift.shortageCount}명 부족)"
-            : shift.workers.join('\n'),
+            : shift.workers.join('\n/\n'),
         textColor: shift.shortage ? Colors.white : _txtColor(rowIndex),
       );
     });

@@ -54,7 +54,7 @@ class EWeekAllScheduleCard extends StatelessWidget {
         .expand((s) => s.workers)
         .where((w) => seenNames.add(w.name))
         .map((e) => e.name)
-        .join("\n");
+        .join("\n/\n");
 
     final hasShortage = workers.any((s) => s.shortage);
     final shortageCount =

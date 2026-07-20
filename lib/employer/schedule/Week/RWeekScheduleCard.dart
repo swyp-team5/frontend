@@ -50,7 +50,7 @@ class RWeekScheduleCard extends StatelessWidget {
         .expand((e) => e.workers)
         .where((w) => seenMemberIds.add(w.memberId))
         .map((e) => e.name)
-        .join("\n");
+        .join("\n/\n");
 
     return Container(
       width: double.infinity,
