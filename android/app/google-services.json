@@ -7,9 +7,9 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:16472809022:android:00096c2b708f37ab41fb6f",
+        "mobilesdk_app_id": "1:16472809022:android:e69b23ac254b3c1941fb6f",
         "android_client_info": {
-          "package_name": "com.example.chack_chack"
+          "package_name": "com.chackchack.app"
         }
       },
       "oauth_client": [],

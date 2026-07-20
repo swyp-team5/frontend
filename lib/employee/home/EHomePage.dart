@@ -880,6 +880,11 @@ class _EHomePageState extends ConsumerState<EHomePage> {
   Widget build(BuildContext context) {
     final alarms = ref.watch(alarmListProvider.select((s) => s.alarms));
 
+    debugPrint("alarms count: ${alarms.length}");
+    for (final a in alarms) {
+      debugPrint("alarm: type=${a.notificationType}, createdAt=${a.createdAt} (${a.createdAt.runtimeType})");
+    }
+
     // ✅ 알림 타입별 "가장 최근 도착 시각"을 구한다.
     // ⚠️ Alarm 모델에 시각 필드가 createdAt(String or DateTime)이 맞는지 확인 필요.
     DateTime? _latestAlarmTime(String notificationType) {
@@ -906,13 +911,17 @@ class _EHomePageState extends ConsumerState<EHomePage> {
     }
 
     final weeklyScheduleTime = _latestAlarmTime('SCHEDULE_CONDITION_CREATED');
-    final scheduleCompletedTime = _latestAlarmTime('SCHEDULE_CONFIMED');
+    final scheduleCompletedTime = _latestAlarmTime('SCHEDULE_CONFIRMED');
     final scheduleChangedTime = _latestAlarmTime('SCHEDULE_UPDATED');
     final workChangeRequestedTime = _latestAlarmTime('WORK_CHANGE_REQUESTED');
 
     final hasScheduleConditionCreated = weeklyScheduleTime != null;
     final hasScheduleConfirmed = scheduleCompletedTime != null;
     final hasScheduleUpdated = scheduleChangedTime != null;
+
+    debugPrint("scheduleCompletedTime: $scheduleCompletedTime");
+    debugPrint("hasScheduleConfirmed: $hasScheduleConfirmed");
+    debugPrint("hiddenKey: ${_hiddenCardKeys[HomeCardType.scheduleCompleted]}");
 
     // ✅ 카드별 "현재 식별값" (닫기 상태 비교용)
     final currentKeys = <HomeCardType, dynamic>{

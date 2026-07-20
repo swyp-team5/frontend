@@ -140,7 +140,7 @@ authentication is running.
 
 ## OAuth Configuration
 
-- Android application ID: `com.example.chack_chack`
+- Android application ID: `com.chackchack.app`
 - Existing Google Android OAuth registration and SHA-1 remain unchanged.
 - Existing Kakao application, package registration, and key hash remain
   unchanged.

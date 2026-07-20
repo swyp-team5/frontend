@@ -8,7 +8,7 @@
 PRODUCT_NAME = chack_chack
 
 // The application's bundle identifier
-PRODUCT_BUNDLE_IDENTIFIER = com.example.chackChack
+PRODUCT_BUNDLE_IDENTIFIER = com.chackchack.app
 
 // The copyright displayed in application information
 PRODUCT_COPYRIGHT = Copyright © 2026 com.example. All rights reserved.

@@ -63,7 +63,7 @@ Future<void> _navigateForAlarm(BuildContext context, AlarmItem alarm) async {
       break;
 
     // 4, 5. 스케줄 생성/수정·추가 -> 근무자 스케줄 탭
-    case "SCHEDULE_CONFIMED":
+    case "SCHEDULE_CONFIRMED":
     case "SCHEDULE_UPDATED":
       Navigator.push(
         context,

@@ -41,6 +41,6 @@ class DefaultFirebaseOptions {
     messagingSenderId: '16472809022',
     projectId: 'chack-chack-fcm',
     storageBucket: 'chack-chack-fcm.firebasestorage.app',
-    iosBundleId: 'com.example.chackChack',
+    iosBundleId: 'com.chackchack.app',
   );
 }

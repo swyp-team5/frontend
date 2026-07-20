@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Android application ID remains `com.example.chack_chack`.
+- Android application ID remains `com.chackchack.app`.
 - Android is the verified milestone; shared Dart contracts must remain reusable on iOS.
 - Apple login and Apple UI are excluded from this milestone.
 - Existing Google SHA-1 and Kakao key-hash registrations remain unchanged.
@@ -1162,10 +1162,10 @@ git commit -m "feat: 온보딩에 소셜 로그인 연결"
 
 The user confirms:
 
-- Google Android OAuth client uses `com.example.chack_chack` and the current
+- Google Android OAuth client uses `com.chackchack.app` and the current
   debug/release SHA-1 values.
 - Google Web client ID is included in backend `GOOGLE_CLIENT_IDS`.
-- Kakao Android platform uses `com.example.chack_chack` and current key hashes.
+- Kakao Android platform uses `com.chackchack.app` and current key hashes.
 - Kakao Native App Key matches the existing manifest URL scheme.
 
 Do not request or record a Google client secret.
