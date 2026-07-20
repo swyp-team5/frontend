@@ -86,11 +86,7 @@ class _ECrewCodePageState extends State<ECrewCodePage> {
         return;
       }
 
-      final dio = Dio(
-        BaseOptions(
-          baseUrl: "https://chackchack.shop",
-        ),
-      );
+      final dio = ServerTokenManager.authorizedDio;
 
       final response = await dio.post(
         "/api/crew-invitations/$inviteCode/accept",

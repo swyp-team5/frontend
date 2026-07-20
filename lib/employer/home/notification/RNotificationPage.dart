@@ -2,7 +2,6 @@ import 'package:chack_chack/employer/home/notification/widgets/NoticeImageCacheB
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:dio/dio.dart';
 
 import '../../../common/widgets/BottomNavBar.dart';
 import '../../../common/auth/server_token_manager.dart';
@@ -32,11 +31,7 @@ class _RNotificationPageState extends ConsumerState<RNotificationPage> {
   String? ownerProfileImageUrl;
 
   final ProfileApi profileApi = ProfileApi(
-    Dio(
-      BaseOptions(
-        baseUrl: "https://chackchack.shop",
-      ),
-    ),
+    ServerTokenManager.authorizedDio,
   );
 
   @override

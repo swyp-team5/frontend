@@ -121,6 +121,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
     await _runAccountAction(
       action: widget.logout ?? _accountApi.logout,
       successMessage: null,
+      signOutOnFailure: true,
     );
   }
 
@@ -256,6 +257,7 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
   Future<void> _runAccountAction({
     required Future<void> Function() action,
     required String? successMessage,
+    bool signOutOnFailure = false,
   }) async {
     if (_isProcessing) {
       return;
@@ -264,21 +266,13 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
     setState(() => _isProcessing = true);
     try {
       await action();
-      await (widget.clearSession ?? ServerTokenManager.clear)();
-      if (!mounted) {
-        return;
-      }
-      if (successMessage != null) {
-        _showSnackBar(successMessage);
-      }
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(
-          builder: widget.signedOutBuilder ?? (_) => const OnboardingPage(),
-        ),
-        (_) => false,
-      );
+      await _finishSignOut(successMessage);
     } catch (error) {
       debugPrint('계정 설정 처리 실패: $error');
+      if (signOutOnFailure) {
+        await _finishSignOut(null);
+        return;
+      }
       if (!mounted) {
         return;
       }
@@ -288,6 +282,22 @@ class _AccountSettingsPageState extends State<AccountSettingsPage> {
         setState(() => _isProcessing = false);
       }
     }
+  }
+
+  Future<void> _finishSignOut(String? successMessage) async {
+    await (widget.clearSession ?? ServerTokenManager.clear)();
+    if (!mounted) {
+      return;
+    }
+    if (successMessage != null) {
+      _showSnackBar(successMessage);
+    }
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(
+        builder: widget.signedOutBuilder ?? (_) => const OnboardingPage(),
+      ),
+      (_) => false,
+    );
   }
 
   void _showSnackBar(String message) {

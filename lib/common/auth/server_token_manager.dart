@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:dio/dio.dart';
 
+import 'auth_session_events.dart';
 import 'model/social_auth_models.dart';
 import 'session/auth_session_store.dart';
 
@@ -20,18 +21,19 @@ class DioTokenRefreshClient implements TokenRefreshClient {
   final Dio dio;
 
   DioTokenRefreshClient({Dio? dio})
-      : dio = dio ??
-      Dio(
-        BaseOptions(
-          baseUrl: 'https://chackchack.shop',
-          connectTimeout: const Duration(seconds: 10),
-          receiveTimeout: const Duration(seconds: 10),
-          headers: const {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json',
-          },
-        ),
-      );
+    : dio =
+          dio ??
+          Dio(
+            BaseOptions(
+              baseUrl: 'https://chackchack.shop',
+              connectTimeout: const Duration(seconds: 10),
+              receiveTimeout: const Duration(seconds: 10),
+              headers: const {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+              },
+            ),
+          );
 
   @override
   Future<RefreshTokens> refresh(String refreshToken, String deviceId) async {
@@ -55,13 +57,32 @@ class DioTokenRefreshClient implements TokenRefreshClient {
   }
 }
 
+class AuthSessionGeneration {
+  int _value = 0;
+
+  int get value => _value;
+
+  void advance() {
+    _value += 1;
+  }
+}
+
 class ServerTokenManager implements AuthSessionSaver {
-  static final ServerTokenManager _defaultManager = ServerTokenManager();
+  static const _authGenerationExtra = 'serverAuthGeneration';
+  static final AuthSessionGeneration _globalAuthGeneration =
+      AuthSessionGeneration();
+  static final AuthSessionEvents _globalSessionEvents = AuthSessionEvents();
+  static final ServerTokenManager _defaultManager = ServerTokenManager(
+    sessionEvents: _globalSessionEvents,
+  );
 
   final AuthSessionStore store;
   final TokenRefreshClient refreshClient;
+  final AuthSessionEvents sessionEvents;
+  final AuthSessionGeneration _authGeneration;
 
   Future<String?>? _refreshFuture;
+  int _expiryNotificationSuppressionCount = 0;
 
   /// 앱 전역에서 재사용할 "인증이 필요한" API 호출용 공용 Dio.
   /// 이 Dio를 쓰면 각 API 파일에서 직접 토큰을 읽어 헤더에 넣거나
@@ -71,12 +92,25 @@ class ServerTokenManager implements AuthSessionSaver {
   ServerTokenManager({
     AuthSessionStore? store,
     TokenRefreshClient? refreshClient,
+    AuthSessionEvents? sessionEvents,
+    AuthSessionGeneration? authGeneration,
   }) : store = store ?? SecureAuthSessionStore(),
-        refreshClient = refreshClient ?? DioTokenRefreshClient();
+       refreshClient = refreshClient ?? DioTokenRefreshClient(),
+       sessionEvents = sessionEvents ?? _globalSessionEvents,
+       _authGeneration =
+           authGeneration ??
+           (store == null ? _globalAuthGeneration : AuthSessionGeneration());
 
   @override
-  Future<void> saveSession(AuthSession session) {
-    return store.write(session);
+  Future<void> saveSession(AuthSession session) async {
+    _authGeneration.advance();
+    await store.write(session);
+    sessionEvents.markAuthenticated();
+  }
+
+  Future<void> clearSession() async {
+    _authGeneration.advance();
+    await store.clear();
   }
 
   static Future<void> saveTokens({
@@ -93,16 +127,25 @@ class ServerTokenManager implements AuthSessionSaver {
     );
   }
 
-  static Future<String?> getAccessToken() async {
-    return (await _defaultManager.store.read())?.accessToken;
-  }
-
-  static Future<String?> getRefreshToken() async {
-    return (await _defaultManager.store.read())?.refreshToken;
-  }
-
   static Future<void> clear() {
-    return _defaultManager.store.clear();
+    return _defaultManager.clearSession();
+  }
+
+  static Stream<void> get sessionExpired => _globalSessionEvents.onExpired;
+
+  static Future<T> runExplicitLogout<T>(Future<T> Function() operation) {
+    return _defaultManager.suppressExpiryNotifications(operation);
+  }
+
+  Future<T> suppressExpiryNotifications<T>(
+    Future<T> Function() operation,
+  ) async {
+    _expiryNotificationSuppressionCount += 1;
+    try {
+      return await operation();
+    } finally {
+      _expiryNotificationSuppressionCount -= 1;
+    }
   }
 
   static bool isExpired(String token) {
@@ -137,10 +180,6 @@ class ServerTokenManager implements AuthSessionSaver {
     return _defaultManager.resolveValidAccessToken();
   }
 
-  static Future<String?> refreshAccessToken() {
-    return _defaultManager.refreshSession();
-  }
-
   Future<String?> resolveValidAccessToken() async {
     final session = await store.read();
     if (session == null) {
@@ -149,31 +188,32 @@ class ServerTokenManager implements AuthSessionSaver {
     if (!isExpired(session.accessToken)) {
       return session.accessToken;
     }
-    return _refreshOnce(session);
+    return refreshSession();
   }
 
-  Future<String?> refreshSession() async {
-    final session = await store.read();
-    if (session == null) {
-      return null;
-    }
-    return _refreshOnce(session);
-  }
-
-  Future<String?> _refreshOnce(AuthSession session) {
+  Future<String?> refreshSession() {
     final running = _refreshFuture;
     if (running != null) {
       return running;
     }
 
-    _refreshFuture = _refresh(session).whenComplete(() {
+    _refreshFuture = _refreshCurrentSession().whenComplete(() {
       _refreshFuture = null;
     });
 
     return _refreshFuture!;
   }
 
-  Future<String?> _refresh(AuthSession session) async {
+  Future<String?> _refreshCurrentSession() async {
+    final generation = _authGeneration.value;
+    final session = await store.read();
+    if (session == null) {
+      return null;
+    }
+    if (generation != _authGeneration.value) {
+      return (await store.read())?.accessToken;
+    }
+
     try {
       final tokens = await refreshClient.refresh(
         session.refreshToken,
@@ -182,7 +222,12 @@ class ServerTokenManager implements AuthSessionSaver {
       if (isExpired(tokens.accessToken)) {
         throw const FormatException('Invalid refreshed access token');
       }
-      await saveSession(
+      final currentSession = await store.read();
+      if (generation != _authGeneration.value ||
+          !_isSameSession(currentSession, session)) {
+        return currentSession?.accessToken;
+      }
+      await store.write(
         AuthSession(
           accessToken: tokens.accessToken,
           refreshToken: tokens.refreshToken,
@@ -190,9 +235,39 @@ class ServerTokenManager implements AuthSessionSaver {
         ),
       );
       return tokens.accessToken;
-    } catch (_) {
-      await store.clear();
-      return null;
+    } catch (error) {
+      if (_isRejectedRefresh(error)) {
+        final currentSession = await store.read();
+        if (generation != _authGeneration.value ||
+            !_isSameSession(currentSession, session)) {
+          return currentSession?.accessToken;
+        }
+        await clearSession();
+        _notifySessionExpired();
+        return null;
+      }
+      rethrow;
+    }
+  }
+
+  static bool _isRejectedRefresh(Object error) {
+    if (error is! DioException) {
+      return false;
+    }
+    final statusCode = error.response?.statusCode;
+    return statusCode == 400 || statusCode == 401 || statusCode == 403;
+  }
+
+  static bool _isSameSession(AuthSession? current, AuthSession expected) {
+    return current != null &&
+        current.accessToken == expected.accessToken &&
+        current.refreshToken == expected.refreshToken &&
+        current.deviceId == expected.deviceId;
+  }
+
+  void _notifySessionExpired() {
+    if (_expiryNotificationSuppressionCount == 0) {
+      sessionEvents.notifyExpired();
     }
   }
 
@@ -222,42 +297,99 @@ class ServerTokenManager implements AuthSessionSaver {
   ///   원래 401 에러를 그대로 전달한다. 이 경우 로그인 화면으로 보내는
   ///   처리는 호출부(또는 앱 전역 에러 핸들러)에서 하면 된다.
   static Dio get authorizedDio {
-    return _authorizedDio ??= _buildAuthorizedDio();
+    return _authorizedDio ??= _defaultManager.createAuthorizedDio();
   }
 
-  static Dio _buildAuthorizedDio() {
-    final dio = Dio(
-      BaseOptions(
-        baseUrl: 'https://chackchack.shop',
-        connectTimeout: const Duration(seconds: 10),
-        receiveTimeout: const Duration(seconds: 10),
-      ),
-    );
+  Dio createAuthorizedDio({Dio? dio}) {
+    final client =
+        dio ??
+        Dio(
+          BaseOptions(
+            baseUrl: 'https://chackchack.shop',
+            connectTimeout: const Duration(seconds: 10),
+            receiveTimeout: const Duration(seconds: 10),
+          ),
+        );
 
-    dio.interceptors.add(
+    client.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final token = await getValidAccessToken();
-          if (token != null) {
+          final existingGeneration = options.extra[_authGenerationExtra];
+          final requestGeneration = existingGeneration is int
+              ? existingGeneration
+              : _authGeneration.value;
+          try {
+            final token = await resolveValidAccessToken();
+            if (requestGeneration != _authGeneration.value) {
+              handler.reject(
+                DioException(
+                  requestOptions: options,
+                  error: const AuthSessionChangedException(),
+                  message: 'Authentication session changed before request.',
+                ),
+              );
+              return;
+            }
+            if (token == null) {
+              _notifySessionExpired();
+              handler.reject(
+                DioException(
+                  requestOptions: options,
+                  error: const AuthSessionExpiredException(),
+                  message: 'Authentication session has expired.',
+                ),
+              );
+              return;
+            }
+            options.extra[_authGenerationExtra] = requestGeneration;
             options.headers['Authorization'] = 'Bearer $token';
+            handler.next(options);
+          } catch (error) {
+            handler.reject(
+              DioException(
+                requestOptions: options,
+                error: error,
+                message: 'Failed to refresh the authentication token.',
+              ),
+            );
           }
-          handler.next(options);
         },
         onError: (error, handler) async {
           final isUnauthorized = error.response?.statusCode == 401;
           // 재시도 무한 루프 방지용 플래그
-          final alreadyRetried =
-              error.requestOptions.extra['retried'] == true;
+          final alreadyRetried = error.requestOptions.extra['retried'] == true;
+          final requestGeneration =
+              error.requestOptions.extra[_authGenerationExtra];
+          final sessionChanged =
+              requestGeneration is int &&
+              requestGeneration != _authGeneration.value;
 
-          if (!isUnauthorized || alreadyRetried) {
+          if (!isUnauthorized || alreadyRetried || sessionChanged) {
             handler.next(error);
             return;
           }
 
-          final refreshed = await refreshAccessToken();
+          String? refreshed;
+          try {
+            refreshed = await refreshSession();
+          } catch (refreshError) {
+            handler.reject(
+              DioException(
+                requestOptions: error.requestOptions,
+                error: refreshError,
+                message: 'Failed to refresh the authentication token.',
+              ),
+            );
+            return;
+          }
 
           if (refreshed == null) {
             // refresh 자체가 실패 → 세션 만료. 원래 에러를 그대로 전달.
+            handler.next(error);
+            return;
+          }
+          if (requestGeneration is int &&
+              requestGeneration != _authGeneration.value) {
             handler.next(error);
             return;
           }
@@ -267,15 +399,31 @@ class ServerTokenManager implements AuthSessionSaver {
             retryOptions.headers['Authorization'] = 'Bearer $refreshed';
             retryOptions.extra['retried'] = true;
 
-            final response = await dio.fetch(retryOptions);
+            final response = await client.fetch(retryOptions);
             handler.resolve(response);
-          } catch (e) {
-            handler.next(error);
+          } on DioException catch (retryError) {
+            handler.reject(retryError);
+          } catch (retryError) {
+            handler.reject(
+              DioException(
+                requestOptions: error.requestOptions,
+                error: retryError,
+                message: 'Failed to retry the authenticated request.',
+              ),
+            );
           }
         },
       ),
     );
 
-    return dio;
+    return client;
   }
+}
+
+class AuthSessionExpiredException implements Exception {
+  const AuthSessionExpiredException();
+}
+
+class AuthSessionChangedException implements Exception {
+  const AuthSessionChangedException();
 }

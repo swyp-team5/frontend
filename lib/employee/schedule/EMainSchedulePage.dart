@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:dio/dio.dart';
 
 import '../../common/auth/server_token_manager.dart';
 import '../../common/widgets/BottomNavBar.dart';
@@ -16,6 +15,7 @@ import 'Month/MySchedule/EMonthMySchedulePage.dart';
 import 'Week/EWeekSchedulePage.dart';
 import 'api/MyConfirmedSchedulesApi.dart';
 import 'api/WeeklyWorkersApi.dart';
+import 'api/employee_schedule_error.dart';
 import 'models/MyConfirmedSchedulesResponse.dart';
 import 'models/WeeklyWorkersResponse.dart';
 
@@ -58,8 +58,11 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
   String? myName;
 
   final ProfileApi _profileApi = ProfileApi(
-    Dio(BaseOptions(baseUrl: "https://chackchack.shop")),
+    ServerTokenManager.authorizedDio,
   );
+  final MyConfirmedSchedulesApi _myConfirmedSchedulesApi =
+      MyConfirmedSchedulesApi();
+  final WeeklyWorkersApi _weeklyWorkersApi = WeeklyWorkersApi();
 
   DateTime? _loadedWeekStart;
 
@@ -114,7 +117,7 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
   /// 근무자 본인 이름이 없어서, 별도로 프로필 API를 호출한다.
   Future<void> _loadMyName() async {
     try {
-      final token = await ServerTokenManager.getAccessToken();
+      final token = await ServerTokenManager.getValidAccessToken();
       if (token == null) return;
 
       final profile = await _profileApi.getMyProfile(token: token);
@@ -210,7 +213,7 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
     });
 
     try {
-      final response = await MyConfirmedSchedulesApi.getMyConfirmedSchedules(
+      final response = await _myConfirmedSchedulesApi.getMyConfirmedSchedules(
         from: range.$1,
         to: range.$2,
       );
@@ -239,7 +242,7 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
 
       setState(() {
         isLoading = false;
-        errorMessage = e.toString();
+        errorMessage = employeeScheduleErrorMessage(e);
       });
     }
   }
@@ -268,7 +271,7 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
     });
 
     try {
-      final response = await WeeklyWorkersApi.getWeeklyWorkers(
+      final response = await _weeklyWorkersApi.getWeeklyWorkers(
         workPlaceId: selectedWorkPlaceId!,
         weekStartDate: monday,
       );
@@ -308,7 +311,7 @@ class _EMainSchedulePageState extends State<EMainSchedulePage> {
 
       setState(() {
         isLoading = false;
-        errorMessage = e.toString();
+        errorMessage = employeeScheduleErrorMessage(e);
       });
     }
   }

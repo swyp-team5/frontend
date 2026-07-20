@@ -28,7 +28,7 @@ class _ECrewPageState extends State<ECrewPage> {
   String? myProfileImageUrl;
 
   final ProfileApi profileApi = ProfileApi(
-    Dio(BaseOptions(baseUrl: "https://chackchack.shop")),
+    ServerTokenManager.authorizedDio,
   );
 
   @override
@@ -73,7 +73,7 @@ class _ECrewPageState extends State<ECrewPage> {
         return;
       }
 
-      final dio = Dio();
+      final dio = ServerTokenManager.authorizedDio;
 
       final response = await dio.get(
         "https://chackchack.shop/api/work-places/$workPlaceId/crews",

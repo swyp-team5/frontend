@@ -5,11 +5,7 @@ import '../../../common/auth/server_token_manager.dart';
 import '../model/WorkChangeRequestResponse.dart';
 
 class WorkChangeRequestApi {
-  static const String _baseUrl = "https://chackchack.shop";
-
-  final Dio _dio = Dio(
-    BaseOptions(baseUrl: _baseUrl),
-  );
+  final Dio _dio = ServerTokenManager.authorizedDio;
 
   Future<WorkChangeRequestResponse> requestShiftSwap({
     required int workPlaceId,

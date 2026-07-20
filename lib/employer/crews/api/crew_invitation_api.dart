@@ -100,12 +100,10 @@ class CrewInvitationHistoryItem {
 }
 
 class CrewInvitationApi {
-  static const _baseUrl = 'https://chackchack.shop';
-
   final Dio dio;
 
   CrewInvitationApi({Dio? dio})
-    : dio = dio ?? Dio(BaseOptions(baseUrl: _baseUrl));
+    : dio = dio ?? ServerTokenManager.authorizedDio;
 
   Future<CrewInvitationHistoryResponse> getHistory({
     required int workPlaceId,

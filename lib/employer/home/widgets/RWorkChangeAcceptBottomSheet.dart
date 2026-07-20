@@ -37,8 +37,7 @@ class RWorkChangeAcceptBottomSheet extends StatefulWidget {
 
 class _RWorkChangeAcceptBottomSheetState
     extends State<RWorkChangeAcceptBottomSheet> {
-  static const _baseUrl = "https://chackchack.shop";
-  final Dio _dio = Dio(BaseOptions(baseUrl: _baseUrl));
+  final Dio _dio = ServerTokenManager.authorizedDio;
 
   bool _isSubmitting = false;
 

@@ -538,7 +538,6 @@ class _RHomePageState extends State<RHomePage> {
   Future<void> _loadWorkPlaces() async {
     try {
       final token = await ServerTokenManager.getValidAccessToken();
-      debugPrint("HOME TOKEN = $token");
       if (token == null || token.isEmpty) {
         debugPrint("토큰 없음");
         return;
@@ -682,14 +681,6 @@ class _RHomePageState extends State<RHomePage> {
 
   /// ✅ _init()은 이 하나만 유지 (중복 제거)
   Future<void> _init() async {
-    final access = await ServerTokenManager.getAccessToken();
-    final refresh = await ServerTokenManager.getRefreshToken();
-
-    debugPrint("===============");
-    debugPrint("ACCESS = $access");
-    debugPrint("REFRESH = $refresh");
-    debugPrint("===============");
-
     await _loadWorkPlaces();
     await _loadWeekScheduleId();
     await _loadSubmitStatus();
