@@ -38,14 +38,14 @@ enum HomeCardType {
   ownerWorkRequest,
 }
 
-class EHomePage extends StatefulWidget {
+class EHomePage extends ConsumerStatefulWidget {
   const EHomePage({super.key});
 
   @override
-  State<EHomePage> createState() => _EHomePageState();
+  ConsumerState<EHomePage> createState() => _EHomePageState();
 }
 
-class _EHomePageState extends State<EHomePage> {
+class _EHomePageState extends ConsumerState<EHomePage> {
   DateTime focusedDay = DateTime.now();
   DateTime? selectedDay;
 
@@ -714,9 +714,7 @@ class _EHomePageState extends State<EHomePage> {
 
     // 홈 진입 시 알림함을 한 번 조회해서, 종 아이콘에 미확인 배지를 띄울 수 있게 한다.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ProviderScope.containerOf(context, listen: false)
-          .read(alarmListProvider.notifier)
-          .fetchFirstPage();
+      ref.read(alarmListProvider.notifier).fetchFirstPage();
     });
   }
 
@@ -808,9 +806,45 @@ class _EHomePageState extends State<EHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    /// 실제로 화면에 보여줄 카드 타입들 (닫힌 카드는 제외)
+    // ✅ 읽음 여부와 무관하게, SCHEDULE_CONDITION_CREATED 알람이 한 번이라도
+    // 도착한 적이 있으면 카드가 계속 표시된다. (읽음 처리해도 사라지지 않음)
+    final hasScheduleConditionCreated = ref.watch(
+      alarmListProvider.select(
+            (s) => s.alarms.any(
+              (a) => a.notificationType == 'SCHEDULE_CONDITION_CREATED',
+        ),
+      ),
+    );
+
+    // ✅ SCHEDULE_CONFIMED 알람이 도착하면 scheduleCompleted 카드가 추가된다.
+    final hasScheduleConfirmed = ref.watch(
+      alarmListProvider.select(
+            (s) => s.alarms.any(
+              (a) => a.notificationType == 'SCHEDULE_CONFIMED',
+        ),
+      ),
+    );
+
+    // ✅ SCHEDULE_UPDATED 알람이 도착하면 scheduleChanged 카드가 추가된다.
+    final hasScheduleUpdated = ref.watch(
+      alarmListProvider.select(
+            (s) => s.alarms.any(
+              (a) => a.notificationType == 'SCHEDULE_UPDATED',
+        ),
+      ),
+    );
+
     final visibleCardTypes = _allCardTypes.where((type) {
       switch (type) {
+        case HomeCardType.weeklySchedule:
+          return hasScheduleConditionCreated;
+
+        case HomeCardType.scheduleCompleted:
+          return hasScheduleConfirmed;
+
+        case HomeCardType.scheduleChanged:
+          return hasScheduleUpdated;
+
         case HomeCardType.shiftRequest:
           return shiftWorkChangeRequestId != null &&
               applicantDateLabel != null &&
@@ -827,6 +861,7 @@ class _EHomePageState extends State<EHomePage> {
           return true;
       }
     }).toList();
+
 
     /// 카드가 닫혀서 개수가 줄었을 때 PageView 인덱스가 범위를 벗어나지 않도록 보정
     if (visibleCardTypes.isNotEmpty &&
