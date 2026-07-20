@@ -8,8 +8,10 @@ import '../auth/model/social_auth_models.dart';
 import '../../employer/home/notification/RNotificationPage.dart';
 import '../../employer/home/widgets/RWorkChangeRequestListPage.dart';
 import '../../employee/home/EHomePage.dart';
+import '../../employee/home/api/WorkChangeRequestListApi.dart';
 import '../../employee/home/notification/ENotificationPage.dart';
 import '../../employee/mypage/ReceivedWorkChangeRequestsPage.dart';
+import '../../employee/mypage/SentWorkChangeRequestsPage.dart';
 import '../../employee/schedule/EMainSchedulePage.dart';
 
 /// 알림 종류(notificationType)와 data를 참고해 관련 화면으로 이동한다.
@@ -69,17 +71,52 @@ Future<void> _navigateForAlarm(BuildContext context, AlarmItem alarm) async {
       );
       break;
 
-    // 6, 8, 9. 근무자가 받는 교대/대타 요청 관련 알림 -> 근무자 받은 요청 내역
+    // 6, 8. 근무자가 받는 교대/대타 요청 관련 알림 -> 근무자 받은 요청 내역
     case "WORK_CHANGE_REQUESTED":
     case "WORK_CHANGE_TARGET_REJECTED":
-    case "WORK_CHANGE_OWNER_APPROVED":
-    case "WORK_CHANGE_OWNER_REJECTED":
       if (workPlaceId == null) return;
 
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => ReceivedWorkChangeRequestsPage(workPlaceId: workPlaceId),
+        ),
+      );
+      break;
+
+    // 9. 근무자가 받는 "사장님 최종 수락/반려" 알림.
+    // 요청자/대상자 둘 다에게 가는 알림이라 알림 데이터만으로는 구분이 안
+    // 되므로, "보낸 요청" 목록에 이 요청이 있는지 확인해서 분기한다.
+    // 있으면 내가 보낸 요청(요청자) -> 보낸 요청 내역,
+    // 없으면 내가 받은 요청(대상자) -> 받은 요청 내역.
+    case "WORK_CHANGE_OWNER_APPROVED":
+    case "WORK_CHANGE_OWNER_REJECTED":
+      if (workPlaceId == null) return;
+
+      final workChangeRequestId = intFromData("workChangeRequestId");
+
+      bool isSentByMe = false;
+      if (workChangeRequestId != null) {
+        try {
+          final sent = await WorkChangeRequestListApi().fetchRequestById(
+            workPlaceId: workPlaceId,
+            workChangeRequestId: workChangeRequestId,
+            scope: "SENT",
+          );
+          isSentByMe = sent != null;
+        } catch (_) {
+          isSentByMe = false;
+        }
+      }
+
+      if (!context.mounted) return;
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => isSentByMe
+              ? SentWorkChangeRequestsPage(workPlaceId: workPlaceId)
+              : ReceivedWorkChangeRequestsPage(workPlaceId: workPlaceId),
         ),
       );
       break;
