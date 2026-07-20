@@ -43,6 +43,38 @@ List<(double start, double end, List<T> shifts)> _mergeOverlappingSegments<T>(
   return result;
 }
 
+/// _mergeOverlappingSegments가 breakpoint 때문에 원래 하나였던 근무 구간을
+/// 여러 조각으로 쪼갤 수 있다. 서로 바로 붙어 있고(끝-시작이 같고) 내용물
+/// (근무자 구성)이 동일한 인접 segment는 다시 하나로 합쳐서, 같은 근무가
+/// 두 개의 카드로 나뉘어 이름이 중복으로 보이는 문제를 막는다.
+List<(double start, double end, List<T> shifts)> _collapseAdjacentSegments<T>(
+    List<(double start, double end, List<T> shifts)> segments,
+    String Function(T) keyOf,
+    ) {
+  if (segments.isEmpty) return segments;
+
+  final result = <(double, double, List<T>)>[];
+
+  for (final seg in segments) {
+    if (result.isNotEmpty) {
+      final last = result.last;
+      final lastKeys = last.$3.map(keyOf).toSet();
+      final curKeys = seg.$3.map(keyOf).toSet();
+
+      final sameContent =
+          lastKeys.length == curKeys.length && lastKeys.containsAll(curKeys);
+
+      if (last.$2 == seg.$1 && sameContent) {
+        result[result.length - 1] = (last.$1, seg.$2, last.$3);
+        continue;
+      }
+    }
+    result.add(seg);
+  }
+
+  return result;
+}
+
 class EWeekGrid extends StatelessWidget {
   final List<DateTime> weekDates;
 
@@ -183,128 +215,139 @@ class EWeekGrid extends StatelessWidget {
                         ),
                       ),
                       child: Stack(
-                            children: [
-                              /// =========================
-                              /// 30분 셀
-                              /// =========================
-                              Column(
-                                children: List.generate(
-                                  halfRows,
-                                      (index) => Container(
-                                    height: halfHourHeight,
-                                    decoration: BoxDecoration(
-                                      border: Border(
-                                        top: BorderSide(
-                                          color: Colors.grey.shade300,
-                                          width: .5,
-                                        ),
-                                      ),
+                        children: [
+                          /// =========================
+                          /// 30분 셀
+                          /// =========================
+                          Column(
+                            children: List.generate(
+                              halfRows,
+                                  (index) => Container(
+                                height: halfHourHeight,
+                                decoration: BoxDecoration(
+                                  border: Border(
+                                    top: BorderSide(
+                                      color: Colors.grey.shade300,
+                                      width: .5,
                                     ),
                                   ),
                                 ),
                               ),
-
-                              /// =========================
-                              /// 스케줄 카드
-                              /// =========================
-                              if (!isHoliday && workers.isNotEmpty)
-                                ...(() {
-                                  if (isAllView) {
-                                    /// =========================
-                                    /// 전체보기
-                                    /// =========================
-                                    final Map<String, List<ScheduleShift>> grouped = {};
-
-                                    for (final shift in workers.cast<ScheduleShift>()) {
-                                      grouped.putIfAbsent(shift.role, () => []);
-                                      grouped[shift.role]!.add(shift);
-                                    }
-
-                                    // 그룹(역할)별 시간 범위.
-                                    final groupRanges = grouped.entries.map((entry) {
-                                      final roleWorkers = entry.value;
-
-                                      final start = roleWorkers
-                                          .map((e) => _timeToPosition(
-                                        e.startTime,
-                                        startHour,
-                                      ))
-                                          .reduce((a, b) => a < b ? a : b);
-
-                                      final end = roleWorkers
-                                          .map((e) => _timeToPosition(
-                                        e.closeTime,
-                                        startHour,
-                                      ))
-                                          .reduce((a, b) => a > b ? a : b);
-
-                                      return (start, end, roleWorkers);
-                                    }).toList();
-
-                                    // 폭은 나누지 않고, 겹치는 시간대에는 그 시간대에
-                                    // 동시에 진행 중인 근무들을 모두 합쳐서 한 박스로
-                                    // 그린다(원래 있던 근무 + 새로 추가된 근무 모두 표시).
-                                    final segments =
-                                    _mergeOverlappingSegments(groupRanges);
-
-                                    return segments.map((segment) {
-                                      final (start, end, activeWorkers) = segment;
-
-                                      return Positioned(
-                                        top: start * halfHourHeight,
-                                        left: 0,
-                                        right: 0,
-                                        height: (end - start) * halfHourHeight,
-                                        child: EWeekAllScheduleCard(
-                                          workers: activeWorkers,
-                                        ),
-                                      );
-                                    }).toList();
-                                  }
-
-                                  /// =========================
-                                  /// 개인보기 - timeName별로 그룹핑해서 각각 별도 카드로 표시
-                                  /// =========================
-                                  final myWorkers = workers.cast<MySchedule>();
-
-                                  final Map<String, List<MySchedule>> grouped = {};
-
-                                  for (final schedule in myWorkers) {
-                                    grouped.putIfAbsent(schedule.timeName, () => []);
-                                    grouped[schedule.timeName]!.add(schedule);
-                                  }
-
-                                  final groupRanges = grouped.entries.map((entry) {
-                                    final groupWorkers = entry.value;
-
-                                    final start = groupWorkers
-                                        .map((e) => _timeToPosition(e.startTime, startHour))
-                                        .reduce((a, b) => a < b ? a : b);
-
-                                    final end = groupWorkers
-                                        .map((e) => _timeToPosition(e.closeTime, startHour)) // endTime -> closeTime
-                                        .reduce((a, b) => a > b ? a : b);
-
-                                    return (start, end, groupWorkers);
-                                  }).toList();
-
-                                  final segments =
-                                  _mergeOverlappingSegments(groupRanges);
-
-                                  return segments.map((segment) {
-                                    final (start, end, activeWorkers) = segment;
-
-                                    return Positioned(
-                                      top: start * halfHourHeight,
-                                      left: 0,
-                                      right: 0,
-                                      height: (end - start) * halfHourHeight,
-                                      child: EWeekScheduleCard(workers: activeWorkers),
-                                    );
-                                  }).toList();
-                                })(),
-                            ],
+                            ),
                           ),
+
+                          /// =========================
+                          /// 스케줄 카드
+                          /// =========================
+                          if (!isHoliday && workers.isNotEmpty)
+                            ...(() {
+                              if (isAllView) {
+                                /// =========================
+                                /// 전체보기
+                                /// =========================
+                                final Map<String, List<ScheduleShift>> grouped = {};
+
+                                for (final shift in workers.cast<ScheduleShift>()) {
+                                  grouped.putIfAbsent(shift.role, () => []);
+                                  grouped[shift.role]!.add(shift);
+                                }
+
+                                // 그룹(역할)별 시간 범위.
+                                final groupRanges = grouped.entries.map((entry) {
+                                  final roleWorkers = entry.value;
+
+                                  final start = roleWorkers
+                                      .map((e) => _timeToPosition(
+                                    e.startTime,
+                                    startHour,
+                                  ))
+                                      .reduce((a, b) => a < b ? a : b);
+
+                                  final end = roleWorkers
+                                      .map((e) => _timeToPosition(
+                                    e.closeTime,
+                                    startHour,
+                                  ))
+                                      .reduce((a, b) => a > b ? a : b);
+
+                                  return (start, end, roleWorkers);
+                                }).toList();
+
+                                // 폭은 나누지 않고, 겹치는 시간대에는 그 시간대에
+                                // 동시에 진행 중인 근무들을 모두 합쳐서 한 박스로
+                                // 그린다(원래 있던 근무 + 새로 추가된 근무 모두 표시).
+                                // 이후 인접하고 내용이 동일한 segment는 다시 합쳐서
+                                // 같은 근무가 두 개의 카드로 쪼개져 보이지 않게 한다.
+                                final segments = _collapseAdjacentSegments(
+                                  _mergeOverlappingSegments(groupRanges),
+                                      (ScheduleShift e) =>
+                                  '${e.role}_${e.startTime}_${e.closeTime}',
+                                );
+
+                                return segments.map((segment) {
+                                  final (start, end, activeWorkers) = segment;
+
+                                  return Positioned(
+                                    top: start * halfHourHeight,
+                                    left: 0,
+                                    right: 0,
+                                    height: (end - start) * halfHourHeight,
+                                    child: EWeekAllScheduleCard(
+                                      workers: activeWorkers,
+                                    ),
+                                  );
+                                }).toList();
+                              }
+
+                              /// =========================
+                              /// 개인보기 - timeName별로 그룹핑해서 각각 별도 카드로 표시
+                              /// =========================
+                              final myWorkers = workers.cast<MySchedule>();
+
+                              final Map<String, List<MySchedule>> grouped = {};
+
+                              for (final schedule in myWorkers) {
+                                grouped.putIfAbsent(schedule.timeName, () => []);
+                                grouped[schedule.timeName]!.add(schedule);
+                              }
+
+                              final groupRanges = grouped.entries.map((entry) {
+                                final groupWorkers = entry.value;
+
+                                final start = groupWorkers
+                                    .map((e) => _timeToPosition(e.startTime, startHour))
+                                    .reduce((a, b) => a < b ? a : b);
+
+                                final end = groupWorkers
+                                    .map((e) => _timeToPosition(e.closeTime, startHour)) // endTime -> closeTime
+                                    .reduce((a, b) => a > b ? a : b);
+
+                                return (start, end, groupWorkers);
+                              }).toList();
+
+                              // 인접하고 내용이 동일한 segment는 다시 합쳐서
+                              // 같은 근무가 두 개의 카드로 쪼개져 이름이 중복
+                              // 표시되지 않게 한다.
+                              final segments = _collapseAdjacentSegments(
+                                _mergeOverlappingSegments(groupRanges),
+                                    (MySchedule e) =>
+                                '${e.name}_${e.startTime}_${e.closeTime}_${e.timeName}',
+                              );
+
+                              return segments.map((segment) {
+                                final (start, end, activeWorkers) = segment;
+
+                                return Positioned(
+                                  top: start * halfHourHeight,
+                                  left: 0,
+                                  right: 0,
+                                  height: (end - start) * halfHourHeight,
+                                  child: EWeekScheduleCard(workers: activeWorkers),
+                                );
+                              }).toList();
+                            })(),
+                        ],
+                      ),
                     ),
                   );
                 }),

@@ -60,7 +60,15 @@ class EWeekScheduleCard extends StatelessWidget {
 
     final first = sorted.first;
 
-    final names = sorted.map((e) => e.name).join("\n");
+    // 겹치는 시간대 병합/구간 분할 과정에서 같은 근무자가 여러 번
+    // 들어올 수 있으므로, 이름 기준으로 한 카드 안에서는 한 번만 표시한다.
+    // (시간/timeName까지 완전히 같아야만 걸러지는 조건은 세그먼트 분할로
+    // 값이 미세하게 달라지는 경우를 못 잡아내서 이름만으로 단순화)
+    final seenNames = <String>{};
+    final names = sorted
+        .where((e) => seenNames.add(e.name))
+        .map((e) => e.name)
+        .join("\n");
 
     return Container(
       width: double.infinity,
