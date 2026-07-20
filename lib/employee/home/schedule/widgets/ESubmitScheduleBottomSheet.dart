@@ -52,10 +52,16 @@ class _ESubmitScheduleBottomSheetState
       });
     } catch (e) {
       setState(() {
-        _error = e.toString();
+        _error = _stripExceptionPrefix(e.toString());
         _isLoading = false;
       });
     }
+  }
+
+  /// 원본 예외 문자열 맨 앞의 "Exception: " / "Error: " 접두어만 제거한다.
+  /// (원본 메시지 자체는 그대로 유지하고 접두어만 감춘다)
+  String _stripExceptionPrefix(String raw) {
+    return raw.replaceFirst(RegExp(r'^(Exception|Error):\s*'), '');
   }
 
   void _select(int timeDetailId) {
