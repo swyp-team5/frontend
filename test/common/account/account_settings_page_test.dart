@@ -108,6 +108,22 @@ void main() {
     expect(find.text('signed out'), findsOneWidget);
   });
 
+  testWidgets('logout clears the local session when the remote call fails', (
+    tester,
+  ) async {
+    final actions = _FakeAccountSettingsActions(logoutFails: true);
+    await _pumpPage(tester, actions);
+
+    await tester.tap(find.text('로그아웃'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(ElevatedButton, '로그아웃'));
+    await tester.pumpAndSettle();
+
+    expect(actions.logoutCount, 1);
+    expect(actions.clearCount, 1);
+    expect(find.text('signed out'), findsOneWidget);
+  });
+
   testWidgets('logout confirmation sheet follows Figma dimensions', (
     tester,
   ) async {
@@ -173,9 +189,16 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(actions.withdrawCount, 0);
-    expect(find.text('정말 탈퇴하시겠어요?'), findsOneWidget);
+    expect(find.text('착착을 탈퇴하려는\n이유에 대해서 말해주세요'), findsOneWidget);
 
-    await tester.tap(find.text('탈퇴'));
+    await tester.tap(find.text('필요한 기능이 없었어요'));
+    await tester.pump();
+    await tester.tap(find.text('회원 탈퇴하기'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('회원 탈퇴하시겠습니까?'), findsOneWidget);
+
+    await tester.tap(find.text('탈퇴하기'));
     await tester.pumpAndSettle();
 
     expect(actions.withdrawCount, 1);
@@ -197,7 +220,12 @@ Future<void> _pumpPage(
           actions.pushEnabled = value;
           actions.pushUpdateCount += 1;
         },
-        logout: () async => actions.logoutCount += 1,
+        logout: () async {
+          actions.logoutCount += 1;
+          if (actions.logoutFails) {
+            throw Exception('remote logout failed');
+          }
+        },
         withdraw: () async => actions.withdrawCount += 1,
         clearSession: () async => actions.clearCount += 1,
         signedOutBuilder: (_) => const Scaffold(body: Text('signed out')),
@@ -209,6 +237,7 @@ Future<void> _pumpPage(
 
 class _FakeAccountSettingsActions {
   final SocialAccountProvider socialProvider;
+  final bool logoutFails;
   bool pushEnabled = true;
   int pushUpdateCount = 0;
   int logoutCount = 0;
@@ -217,5 +246,6 @@ class _FakeAccountSettingsActions {
 
   _FakeAccountSettingsActions({
     this.socialProvider = SocialAccountProvider.kakao,
+    this.logoutFails = false,
   });
 }

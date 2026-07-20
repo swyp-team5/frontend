@@ -160,9 +160,7 @@ class RWorkChangeRequestListPage extends StatefulWidget {
 class _RWorkChangeRequestListPageState extends State<RWorkChangeRequestListPage> {
   static const int _pageSize = 20;
 
-  final Dio _dio = Dio(
-    BaseOptions(baseUrl: "https://chackchack.shop"),
-  );
+  final Dio _dio = ServerTokenManager.authorizedDio;
 
   final ScrollController _scrollController = ScrollController();
 

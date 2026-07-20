@@ -40,7 +40,7 @@ class _DetailViewData {
 
 class _SubstituteRequestState extends State<SubstituteRequest> {
   final _listApi = WorkChangeRequestListApi();
-  final Dio _dio = Dio(BaseOptions(baseUrl: "https://chackchack.shop"));
+  final Dio _dio = ServerTokenManager.authorizedDio;
   late Future<_DetailViewData> _future;
 
   // 거절 API 호출 중인지 여부 (버튼 중복 클릭 방지 및 로딩 표시용)

@@ -55,7 +55,7 @@ class ExchangeRequest extends StatefulWidget {
 
 class _ExchangeRequestState extends State<ExchangeRequest> {
   final WorkChangeRequestListApi _api = WorkChangeRequestListApi();
-  final Dio _dio = Dio(BaseOptions(baseUrl: "https://chackchack.shop"));
+  final Dio _dio = ServerTokenManager.authorizedDio;
 
   bool _isLoading = true;
   String? _error;

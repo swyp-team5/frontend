@@ -33,6 +33,42 @@ void main() {
     expect(adapter.callCount, 1);
   });
 
+  test('logout sends the latest rotated refresh token', () async {
+    var session = const AuthSession(
+      accessToken: 'expired-access-token',
+      refreshToken: 'refresh-1',
+      deviceId: 'device-1',
+    );
+    final adapter = _FakeAdapter((options) {
+      expect(options.data, {
+        'refreshToken': 'refresh-2',
+        'deviceId': 'device-1',
+      });
+      return ResponseBody.fromString('', 204);
+    });
+    final authorizedAdapter = _FakeAdapter((_) {
+      throw StateError('logout must not use the authorized Dio');
+    });
+    final api = AccountSettingsApi(
+      dio: Dio()..httpClientAdapter = authorizedAdapter,
+      logoutDio: Dio()..httpClientAdapter = adapter,
+      sessionLoader: () async => session,
+      accessTokenLoader: () async {
+        session = const AuthSession(
+          accessToken: 'rotated-access-token',
+          refreshToken: 'refresh-2',
+          deviceId: 'device-1',
+        );
+        return session.accessToken;
+      },
+    );
+
+    await api.logout();
+
+    expect(adapter.callCount, 1);
+    expect(authorizedAdapter.callCount, 0);
+  });
+
   test('withdrawal sends bearer access token', () async {
     final adapter = _FakeAdapter((options) {
       expect(options.method, 'DELETE');

@@ -22,24 +22,24 @@ enum SocialAccountProvider {
 
 class AccountSettingsApi {
   final Dio dio;
+  final Dio logoutDio;
   final Future<AuthSession?> Function() sessionLoader;
   final Future<String?> Function() accessTokenLoader;
 
   AccountSettingsApi({
     Dio? dio,
+    Dio? logoutDio,
     Future<AuthSession?> Function()? sessionLoader,
     Future<String?> Function()? accessTokenLoader,
-  }) : dio =
+  }) : dio = dio ?? ServerTokenManager.authorizedDio,
+       logoutDio =
+           logoutDio ??
            dio ??
            Dio(
              BaseOptions(
                baseUrl: 'https://chackchack.shop',
                connectTimeout: const Duration(seconds: 10),
                receiveTimeout: const Duration(seconds: 10),
-               headers: const {
-                 'Accept': 'application/json',
-                 'Content-Type': 'application/json',
-               },
              ),
            ),
        sessionLoader =
@@ -48,21 +48,31 @@ class AccountSettingsApi {
            accessTokenLoader ?? ServerTokenManager.getValidAccessToken;
 
   Future<void> logout() async {
-    final session = await sessionLoader();
-    if (session == null) {
-      throw Exception('로그인 정보가 없습니다.');
-    }
+    await ServerTokenManager.runExplicitLogout(() async {
+      var session = await sessionLoader();
+      if (session == null) {
+        throw Exception('로그인 정보가 없습니다.');
+      }
 
-    // 로그아웃 이후에는 이 기기로 푸시가 가면 안 되므로, 세션이 아직 유효할 때 먼저 비활성화한다.
-    await _deactivateFcmToken(session.deviceId);
+      try {
+        await accessTokenLoader();
+      } catch (error) {
+        debugPrint('로그아웃 전 액세스 토큰 갱신 실패: $error');
+      }
+      session = await sessionLoader() ?? session;
 
-    await dio.post(
-      '/api/auth/logout',
-      data: {
-        'refreshToken': session.refreshToken,
-        'deviceId': session.deviceId,
-      },
-    );
+      // 로그아웃 이후에는 이 기기로 푸시가 가면 안 되므로, 세션이 아직 유효할 때 먼저 비활성화한다.
+      await _deactivateFcmToken(session.deviceId);
+      session = await sessionLoader() ?? session;
+
+      await logoutDio.post(
+        '/api/auth/logout',
+        data: {
+          'refreshToken': session.refreshToken,
+          'deviceId': session.deviceId,
+        },
+      );
+    });
   }
 
   Future<void> withdraw() async {

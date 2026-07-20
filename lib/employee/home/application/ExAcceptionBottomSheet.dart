@@ -22,7 +22,7 @@ class ExAcceptionBottomSheet extends StatefulWidget {
 }
 
 class _ExAcceptionBottomSheetState extends State<ExAcceptionBottomSheet> {
-  final Dio _dio = Dio(BaseOptions(baseUrl: "https://chackchack.shop"));
+  final Dio _dio = ServerTokenManager.authorizedDio;
 
   // 수락 API 호출 중인지 여부 (버튼 중복 클릭 방지 및 로딩 표시용)
   bool _isLoading = false;

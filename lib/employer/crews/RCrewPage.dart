@@ -43,11 +43,7 @@ class _RCrewPageState extends State<RCrewPage> {
   int? workPlaceId;
 
   final ProfileApi profileApi = ProfileApi(
-    Dio(
-      BaseOptions(
-        baseUrl: "https://chackchack.shop",
-      ),
-    ),
+    ServerTokenManager.authorizedDio,
   );
   final CrewInvitationShareService _invitationShareService =
       CrewInvitationShareService();
@@ -103,7 +99,7 @@ class _RCrewPageState extends State<RCrewPage> {
         throw Exception("토큰 없음");
       }
 
-      final dio = Dio();
+      final dio = ServerTokenManager.authorizedDio;
 
       final response = await dio.post(
         "https://chackchack.shop/api/work-places/$workPlaceId/crew-invitations",
@@ -379,7 +375,7 @@ class _RCrewPageState extends State<RCrewPage> {
         return;
       }
 
-      final dio = Dio();
+      final dio = ServerTokenManager.authorizedDio;
 
       final response = await dio.get(
         "https://chackchack.shop/api/work-places/$workPlaceId/crews",

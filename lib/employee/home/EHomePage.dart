@@ -86,9 +86,7 @@ class _EHomePageState extends State<EHomePage> {
   int _currentSchedulePage = 0;
 
   /// 공통 Dio 인스턴스 (여러 위젯에서 재사용)
-  final Dio _dio = Dio(
-    BaseOptions(baseUrl: "https://chackchack.shop"),
-  );
+  final Dio _dio = ServerTokenManager.authorizedDio;
 
   final WorkChangeRequestListApi _workChangeRequestApi =
   WorkChangeRequestListApi();
@@ -707,8 +705,6 @@ class _EHomePageState extends State<EHomePage> {
   void initState() {
     super.initState();
 
-    _checkTokens();
-
     // ✅ _loadConfirmedSchedules()는 여기서 별도로 호출하지 않는다.
     // workPlaceId가 확정된 뒤 _loadMyWorkPlace() 내부에서 호출되므로,
     // 여기서 동시에 호출하면 workPlaceId가 아직 null인 상태로 스킵되는
@@ -728,22 +724,6 @@ class _EHomePageState extends State<EHomePage> {
   void dispose() {
     _scheduleCardPageController.dispose();
     super.dispose();
-  }
-
-  /// 토큰 저장 여부 확인 로그
-  Future<void> _checkTokens() async {
-    try {
-      final access = await ServerTokenManager.getAccessToken();
-      final refresh = await ServerTokenManager.getRefreshToken();
-
-      debugPrint("==============================");
-      debugPrint("EHomePage TOKEN CHECK");
-      debugPrint("ACCESS  : $access");
-      debugPrint("REFRESH : $refresh");
-      debugPrint("==============================");
-    } catch (e) {
-      debugPrint("토큰 확인 중 오류: $e");
-    }
   }
 
   /// 월요일~일요일 기준 남은 일수

@@ -90,11 +90,9 @@ class WorkPlaceSummary {
 }
 
 class WorkPlaceApi {
-  static const _baseUrl = 'https://chackchack.shop';
-
   final Dio dio;
 
-  WorkPlaceApi({Dio? dio}) : dio = dio ?? Dio(BaseOptions(baseUrl: _baseUrl));
+  WorkPlaceApi({Dio? dio}) : dio = dio ?? ServerTokenManager.authorizedDio;
 
   static String? normalizePhoneNumber(String? value) {
     final digits = (value ?? '').replaceAll(RegExp(r'[^0-9]'), '');

@@ -10,6 +10,8 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
 
 import 'common/deeplink/crew_invite_deep_link.dart';
+import 'common/auth/auth_session_expiry_navigator.dart';
+import 'common/auth/server_token_manager.dart';
 import 'common/fcm/AlarmListPage.dart';
 import 'common/fcm/fcm_notification_service.dart';
 import 'common/onboarding/OnboardingPage.dart';
@@ -103,6 +105,7 @@ class _MyAppState extends State<MyApp> {
   final _appLinks = AppLinks();
   StreamSubscription<Uri>? _linkSub;
   StreamSubscription<String?>? _kakaoLinkSub;
+  StreamSubscription<void>? _sessionExpiredSub;
   Timer? _deepLinkDedupeTimer;
   String? _pendingInviteCode;
   String? _lastHandledLink;
@@ -111,6 +114,13 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
+    final sessionExpiryNavigator = AuthSessionExpiryNavigator(
+      navigatorKey: navigatorKey,
+      loginBuilder: (_) => const OnboardingPage(),
+    );
+    _sessionExpiredSub = ServerTokenManager.sessionExpired.listen(
+      (_) => sessionExpiryNavigator.handleExpiry(),
+    );
     _initDeepLinks();
     _initFcmListeners();
   }
@@ -218,6 +228,7 @@ class _MyAppState extends State<MyApp> {
   void dispose() {
     _linkSub?.cancel();
     _kakaoLinkSub?.cancel();
+    _sessionExpiredSub?.cancel();
     _deepLinkDedupeTimer?.cancel();
     super.dispose();
   }

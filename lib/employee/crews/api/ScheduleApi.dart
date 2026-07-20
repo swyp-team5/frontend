@@ -9,15 +9,13 @@ import '../model/ConfirmedSchedule.dart';
 /// 지난 확정 근무, 이번 주 진행 중 일정, 다음 주 확정 일정 모두
 /// from/to 범위만 바꿔서 이 API 하나로 조회한다.
 class ScheduleApi {
-  static final Dio _dio = Dio(
-    BaseOptions(baseUrl: "https://chackchack.shop"),
-  );
+  static final Dio _dio = ServerTokenManager.authorizedDio;
 
   static Future<ConfirmedScheduleResponse> fetchConfirmedSchedules({
     required DateTime from,
     required DateTime to,
   }) async {
-    final token = await ServerTokenManager.getAccessToken();
+    final token = await ServerTokenManager.getValidAccessToken();
 
     if (token == null || token.isEmpty) {
       // 로그인 세션이 끊긴 경우. 재로그인 유도가 필요하면 여기서 처리.
