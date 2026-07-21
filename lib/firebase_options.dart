@@ -30,7 +30,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyC6Q6JuOhytW_75mDl0iQzb7YlF845iRmE',
-    appId: '1:16472809022:android:00096c2b708f37ab41fb6f',
+    appId: '1:16472809022:android:e69b23ac254b3c1941fb6f',
     messagingSenderId: '16472809022',
     projectId: 'chack-chack-fcm',
     storageBucket: 'chack-chack-fcm.firebasestorage.app',
