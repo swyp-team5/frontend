@@ -978,6 +978,14 @@ class _RHomePageState extends State<RHomePage> {
                           },
 
                           onMakeScheduleTap: () => _onMakeScheduleTap(type),
+
+                          onResetConditions: () async {
+                            await _loadWeekScheduleId();
+                            await _loadSubmitStatus();
+
+                            if (!mounted) return;
+                            setState(() {});
+                          },
                         )
                       );
                     },

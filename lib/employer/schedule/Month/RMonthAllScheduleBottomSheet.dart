@@ -1,7 +1,7 @@
 import 'package:chack_chack/employer/schedule/Month/RWorkingDetailEditPage.dart';
 import 'package:flutter/material.dart';
 
-import '../../home/schedule/api/ScheduleApiService.dart';
+import '../api/ConfirmedSchedulesApi.dart';
 import '../models/WorkersResponse.dart';
 import '../widgets/RDeleteWorkingBottomSheet.dart';
 import 'RMonthAllSchedulePage.dart';
@@ -59,27 +59,30 @@ class _RMonthAllScheduleBottomSheetState
         "${date.day.toString().padLeft(2, '0')}";
   }
 
-  /// widget.confirmedWeekScheduleId는 캘린더에서 "현재 선택된 날짜"가 속한
-  /// 시점에 조회된 값이라 화면 재진입 사이 활성 스케줄이 바뀌었을 수 있으므로,
-  /// 실제 수정/삭제 액션을 실행하기 직전에 최신 활성 weekScheduleId를 다시 조회한다.
+  DateTime _mondayOf(DateTime date) {
+    return DateTime(date.year, date.month, date.day)
+        .subtract(Duration(days: date.weekday - 1));
+  }
+
+  /// shiftDate가 속한 주의 진짜 confirmedWeekScheduleId를 조회한다.
   ///
-  /// NOTE: 예전에는 /confirmed-schedules/weekly API(weekStartDate 기준 개별 조회)를
-  /// 사용했으나, 이 API가 실제 근무 데이터가 있는 주에 대해서도 weekScheduleId를
-  /// null로 내려주는 백엔드 버그가 있어 schedule-conditions/latest로 대체함.
-  /// (사업장당 활성/차주 스케줄은 하나뿐이므로 shiftDate로 구분할 필요는 없지만,
-  ///  호출부 시그니처를 유지하기 위해 파라미터는 남겨둔다.)
+  /// ⚠️ /confirmed-schedules/weekly API는 실제 근무 데이터가 있는 주에 대해서도
+  /// weekScheduleId 필드만 null로 내려주는 백엔드 버그가 있다(confirmedWeekScheduleId는
+  /// 정상 응답됨). 그래서 weekScheduleId의 null 여부는 무시하고
+  /// confirmedWeekScheduleId만으로 판단한다. (RWorkingDetailEditPage와 동일한 방식)
   Future<int?> _resolveConfirmedWeekScheduleIdForShift(DateTime shiftDate) async {
     try {
-      final latest = await ScheduleApiService.getLatestScheduleConditions(
+      final weekly = await ConfirmedSchedulesApi.getConfirmedWeeklySchedule(
         workPlaceId: widget.workPlaceId,
+        weekStartDate: _mondayOf(shiftDate),
       );
 
       debugPrint(
         "[_resolveConfirmedWeekScheduleIdForShift] "
-            "weekScheduleId=${latest?.weekScheduleId}",
+            "confirmedWeekScheduleId=${weekly.confirmedWeekScheduleId}",
       );
 
-      return latest?.weekScheduleId;
+      return weekly.confirmedWeekScheduleId;
     } catch (e) {
       debugPrint("[_resolveConfirmedWeekScheduleIdForShift] 조회 실패: $e");
       return null;
