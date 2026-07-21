@@ -239,7 +239,7 @@ class _RScheduleCardState extends State<RScheduleCard> {
                             Text(
                               "스케줄 조건 초기화",
                               style: TextStyle(
-                                color: Colors.red,
+                                color: Color(0xFF0084FF),
                                 fontSize: 13,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -247,7 +247,7 @@ class _RScheduleCardState extends State<RScheduleCard> {
                             Icon(
                               Icons.chevron_right,
                               size: 16,
-                              color: Colors.red,
+                              color: Color(0xFF0084FF),
                             ),
                           ],
                         ),
