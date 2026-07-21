@@ -963,6 +963,8 @@ class _RHomePageState extends State<RHomePage> {
                           workPlaceId: selectedWorkPlaceId,
                           weekScheduleId: weekScheduleId,
                           notSubmittedCount: notSubmittedCount,
+                          hasConfirmedSchedule:
+                              nextWeekConfirmedWeekScheduleId != null,
 
                           onClose: () {
                             setState(() {
