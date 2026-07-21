@@ -12,6 +12,7 @@ class RScheduleCard extends StatefulWidget {
   final int? weekScheduleId;
   final int? notSubmittedCount; // ✅ 추가: 서버에서 받아온 미제출 인원 수
   final Future<void> Function()? onResetConditions; // ✅ 추가: 조건 초기화 성공 후 부모에서 갱신하도록 알림
+  final bool hasConfirmedSchedule; // ✅ 추가: 다음 주 확정 스케줄이 이미 생성됐는지 여부
 
   const RScheduleCard({
     super.key,
@@ -23,6 +24,7 @@ class RScheduleCard extends StatefulWidget {
     this.weekScheduleId,
     this.notSubmittedCount, // ✅ 추가
     this.onResetConditions, // ✅ 추가
+    this.hasConfirmedSchedule = false, // ✅ 추가
   });
 
   @override
@@ -213,7 +215,9 @@ class _RScheduleCardState extends State<RScheduleCard> {
               ),
 
             /// 스케줄 조건 초기화 (카드 우측 상단)
-            if (widget.type == HomeCardType.scheduleCreationAvailable)
+            /// 확정 스케줄이 이미 생성된 뒤에는 조건 초기화를 막기 위해 숨긴다.
+            if (widget.type == HomeCardType.scheduleCreationAvailable &&
+                !widget.hasConfirmedSchedule)
               Positioned(
                 top: 20,
                 right: 20,
