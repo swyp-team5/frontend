@@ -102,13 +102,25 @@ class AssignmentApi {
       debugPrint("🔴 [AssignmentApi.delete] status = ${e.response?.statusCode}");
       debugPrint("🔴 [AssignmentApi.delete] full response = ${e.response?.data}");
 
-      final message = e.response?.data is Map
-          ? e.response?.data["message"]
-          : null;
+      throw Exception(_deleteErrorMessage(e.response?.statusCode));
+    }
+  }
 
-      throw Exception(
-        message ?? "근무 삭제 실패 (${e.response?.statusCode})",
-      );
+  // 서버가 내려주는 raw 메시지/코드 대신, 사용자가 이해하기 쉬운 문구로 바꿔서 보여준다.
+  static String _deleteErrorMessage(int? statusCode) {
+    switch (statusCode) {
+      case 400:
+        return "삭제하려는 근무의 날짜나 시간 정보가 올바르지 않아요.";
+      case 401:
+        return "로그인이 만료됐어요. 다시 로그인해주세요.";
+      case 403:
+        return "이 근무를 삭제할 권한이 없어요.";
+      case 404:
+        return "삭제하려는 근무 정보를 찾을 수 없어요. 새로고침 후 다시 시도해주세요.";
+      case 409:
+        return "같은 날짜에 동일한 근무 파트가 이미 존재해요. 새로고침 후 다시 확인해주세요.";
+      default:
+        return "근무 삭제에 실패했어요. 잠시 후 다시 시도해주세요.";
     }
   }
 }
