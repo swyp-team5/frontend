@@ -141,24 +141,48 @@ class GoogleSocialIdentityProvider implements SocialIdentityProvider {
     }
 
     try {
+      debugPrint('================ GOOGLE LOGIN START ================');
+
       final account = await googleSignIn.signIn();
+
+      debugPrint('Google account = $account');
+
       if (account == null) {
+        debugPrint('Google sign in cancelled');
         return null;
       }
+
+      debugPrint('Google email = ${account.email}');
+      debugPrint('Google id = ${account.id}');
+
       final authentication = await account.authentication;
+
+      debugPrint('idToken = ${authentication.idToken}');
+      debugPrint('accessToken = ${authentication.accessToken}');
+      debugPrint('serverAuthCode = ${authentication.serverAuthCode}');
+
       final idToken = authentication.idToken;
+
       if (idToken == null || idToken.isEmpty) {
-        throw const SocialProviderException('Google 인증 정보를 확인하지 못했어요.');
+        debugPrint('Google idToken is null');
+        throw const SocialProviderException(
+          'Google 인증 정보를 확인하지 못했어요.',
+        );
       }
+
+      debugPrint('Google idToken length = ${idToken.length}');
+      debugPrint('================ GOOGLE LOGIN SUCCESS ================');
+
       return SocialCredential.google(
         idToken: idToken,
         device: await deviceContextProvider.load(),
       );
-    } on SocialProviderException {
+    } catch (e, s) {
+      debugPrint('================ GOOGLE LOGIN ERROR ================');
+      debugPrint('error = $e');
+      debugPrint('type = ${e.runtimeType}');
+      debugPrintStack(stackTrace: s);
       rethrow;
-    } catch (error) {
-      debugPrint('[SocialAuth][google] failure type=${error.runtimeType}');
-      throw const SocialProviderException('Google 로그인에 실패했어요.');
     }
   }
 }
@@ -221,77 +245,134 @@ class AppleSocialIdentityProvider implements SocialIdentityProvider {
 class KakaoSocialIdentityProvider implements SocialIdentityProvider {
   final DeviceContextProvider deviceContextProvider;
 
-  KakaoSocialIdentityProvider({DeviceContextProvider? deviceContextProvider})
-    : deviceContextProvider = deviceContextProvider ?? DeviceContextProvider();
+  KakaoSocialIdentityProvider({
+    DeviceContextProvider? deviceContextProvider,
+  }) : deviceContextProvider =
+      deviceContextProvider ?? DeviceContextProvider();
 
   @override
   Future<SocialCredential?> authenticate() async {
     try {
+      debugPrint('================ KAKAO LOGIN START ================');
+
       final token = await _login();
+
       if (token == null) {
+        debugPrint('Kakao login cancelled');
         return null;
       }
-      debugPrint('[SocialAuth][kakao] SDK access token acquired');
+
+      debugPrint('================ KAKAO SDK SUCCESS ================');
+      debugPrint('accessToken = ${token.accessToken}');
+      debugPrint('refreshToken exists = ${token.refreshToken != null}');
+      debugPrint('accessToken length = ${token.accessToken.length}');
+
+      final device = await deviceContextProvider.load();
+
+      debugPrint('deviceId = ${device.deviceId}');
+      debugPrint('platform = ${device.platform}');
+      debugPrint('appVersion = ${device.appVersion}');
+      debugPrint('================ KAKAO LOGIN SUCCESS ================');
+
       return SocialCredential.kakao(
         accessToken: token.accessToken,
-        device: await deviceContextProvider.load(),
+        device: device,
       );
     } on SocialProviderException {
       rethrow;
-    } catch (error) {
-      if (_isCancelled(error)) {
+    } catch (e, s) {
+      debugPrint('================ KAKAO LOGIN ERROR ================');
+      debugPrint('error = $e');
+      debugPrint('type = ${e.runtimeType}');
+      debugPrintStack(stackTrace: s);
+
+      if (_isCancelled(e)) {
         return null;
       }
-      if (error is KakaoAuthException) {
+
+      if (e is KakaoAuthException) {
         debugPrint(
-          '[SocialAuth][kakao] SDK auth failure '
-              'cause=${error.error.name} description=${error.errorDescription}',
+          'KakaoAuthException : ${e.error.name} / ${e.errorDescription}',
         );
-      } else if (error is KakaoClientException) {
+      } else if (e is KakaoClientException) {
         debugPrint(
-          '[SocialAuth][kakao] SDK client failure reason=${error.reason.name}',
+          'KakaoClientException : ${e.reason.name}',
         );
-      } else if (error is PlatformException) {
+      } else if (e is PlatformException) {
         debugPrint(
-          '[SocialAuth][kakao] SDK platform failure '
-              'code=${error.code} message=${error.message} details=${error.details}',
+          'PlatformException code=${e.code}',
         );
-      } else {
-        debugPrint('[SocialAuth][kakao] SDK failure type=${error.runtimeType}');
+        debugPrint(
+          'PlatformException message=${e.message}',
+        );
+        debugPrint(
+          'PlatformException details=${e.details}',
+        );
       }
+
       throw const SocialProviderException('카카오 로그인에 실패했어요.');
     }
   }
 
   Future<OAuthToken?> _login() async {
-    if (!await isKakaoTalkInstalled()) {
+    debugPrint('===== KAKAO SDK LOGIN =====');
+
+    final installed = await isKakaoTalkInstalled();
+    debugPrint('isKakaoTalkInstalled = $installed');
+
+    if (!installed) {
+      debugPrint('Login Method : Kakao Account');
       return _loginWithAccount();
     }
 
     try {
-      return await UserApi.instance.loginWithKakaoTalk();
-    } catch (error) {
-      if (_isCancelled(error)) {
+      debugPrint('Login Method : KakaoTalk');
+
+      final token = await UserApi.instance.loginWithKakaoTalk();
+
+      debugPrint('loginWithKakaoTalk SUCCESS');
+
+      return token;
+    } catch (e, s) {
+      debugPrint('loginWithKakaoTalk ERROR');
+      debugPrint('$e');
+      debugPrintStack(stackTrace: s);
+
+      if (_isCancelled(e)) {
         return null;
       }
+
+      debugPrint('Fallback -> loginWithKakaoAccount');
+
       return _loginWithAccount();
     }
   }
 
   Future<OAuthToken?> _loginWithAccount() async {
     try {
-      return await UserApi.instance.loginWithKakaoAccount();
-    } catch (error) {
-      if (_isCancelled(error)) {
+      final token = await UserApi.instance.loginWithKakaoAccount();
+
+      debugPrint('loginWithKakaoAccount SUCCESS');
+      debugPrint('accessToken = ${token.accessToken}');
+      debugPrint('refreshToken exists = ${token.refreshToken != null}');
+
+      return token;
+    } catch (e, s) {
+      debugPrint('loginWithKakaoAccount ERROR');
+      debugPrint('$e');
+      debugPrintStack(stackTrace: s);
+
+      if (_isCancelled(e)) {
         return null;
       }
+
       rethrow;
     }
   }
 
   bool _isCancelled(Object error) {
     return (error is KakaoClientException &&
-            error.reason == ClientErrorCause.cancelled) ||
+        error.reason == ClientErrorCause.cancelled) ||
         (error is KakaoAuthException &&
             error.error == AuthErrorCause.accessDenied);
   }
