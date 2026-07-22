@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:photo_manager/photo_manager.dart';
+import 'package:image/image.dart' as img;
 
 class UploadImageNormalizer {
   static const Set<String> _supportedExtensions = {
@@ -55,35 +55,54 @@ class UploadImageNormalizer {
     return '$safeBaseName.jpg';
   }
 
-  static Future<File?> normalizeAssetForUpload(AssetEntity asset) async {
-    final originalFile = await asset.originFile;
-    if (originalFile == null) {
-      return null;
+  static Future<File?> normalizeFileForUpload(File file) async {
+    final bytes = await file.readAsBytes();
+
+    final detectedType = detectContentType(bytes);
+
+    // 이미 지원되는 포맷이면, 실제 내용에 맞는 확장자로 파일명을 강제 통일
+    if (detectedType != null) {
+      final correctExt = _extensionForContentType(detectedType);
+      final currentExt = _extensionOf(file.path);
+
+      if (currentExt == correctExt) {
+        return file; // 확장자와 내용이 일치 → 그대로 사용
+      }
+
+      // 확장자만 다르게 붙어있는 경우 → 파일명을 실제 내용에 맞게 고쳐서 복사
+      final fixedFile = File(
+        '${Directory.systemTemp.path}'
+            '${Platform.pathSeparator}'
+            '${DateTime.now().microsecondsSinceEpoch}_fixed.$correctExt',
+      );
+      return fixedFile.writeAsBytes(bytes, flush: true);
     }
 
-    final bytes = await originalFile.readAsBytes();
-    if (detectContentType(bytes) != null &&
-        !needsJpegNormalization(originalFile.path)) {
-      return originalFile;
-    }
+    // 지원 안 되는 포맷(HEIC 등) → JPEG로 재인코딩
+    final decoded = img.decodeImage(bytes);
+    if (decoded == null) return null;
 
-    final jpegBytes = await asset.thumbnailDataWithSize(
-      ThumbnailSize(asset.width, asset.height),
-      format: ThumbnailFormat.jpeg,
-      quality: 95,
-    );
-
-    if (jpegBytes == null || jpegBytes.isEmpty) {
-      return null;
-    }
-
+    final jpegBytes = img.encodeJpg(decoded, quality: 95);
     final normalizedFile = File(
       '${Directory.systemTemp.path}'
-      '${Platform.pathSeparator}'
-      '${DateTime.now().microsecondsSinceEpoch}_'
-      '${normalizedJpegName(originalFile.path)}',
+          '${Platform.pathSeparator}'
+          '${DateTime.now().microsecondsSinceEpoch}_'
+          '${normalizedJpegName(file.path)}',
     );
     return normalizedFile.writeAsBytes(jpegBytes, flush: true);
+  }
+
+  static String _extensionForContentType(String contentType) {
+    switch (contentType) {
+      case 'image/jpeg':
+        return 'jpg';
+      case 'image/png':
+        return 'png';
+      case 'image/webp':
+        return 'webp';
+      default:
+        return 'jpg';
+    }
   }
 
   static String _extensionOf(String path) {

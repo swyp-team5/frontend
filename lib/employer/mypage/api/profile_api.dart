@@ -56,7 +56,12 @@ class ProfileApi {
     required Map<String, String> headers,
     required List<int> bytes,
   }) async {
-    await Dio().put(
+    debugPrint("uploadUrl: $uploadUrl");
+    debugPrint("headers: $headers");
+    debugPrint("bytes length: ${bytes.length}");
+    debugPrint("first 10 bytes: ${bytes.take(10).toList()}"); // JPEG면 [255, 216, 255, ...]
+
+    final response = await Dio().put(
       uploadUrl,
       data: bytes,
       options: Options(
@@ -64,6 +69,9 @@ class ProfileApi {
         responseType: ResponseType.plain,
       ),
     );
+
+    debugPrint("S3 응답 status: ${response.statusCode}");
+    debugPrint("S3 응답 데이터: ${response.data}");
   }
 
   Future<Map<String, dynamic>> getMyProfile({

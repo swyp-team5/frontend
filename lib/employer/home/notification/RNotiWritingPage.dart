@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'dart:io';
 import 'dart:typed_data';
-import 'package:photo_manager/photo_manager.dart';
 import '../../../common/auth/server_token_manager.dart';
 import '../../../common/image_upload/upload_image_normalizer.dart';
 import '../../../common/onboarding/providers/signup_provider.dart';
@@ -155,284 +155,28 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
     }
   }
 
-  Future<void> _showGalleryBottomSheet() async {
-    // 1. 권한 요청 및 확인
-    final PermissionState ps = await PhotoManager.requestPermissionExtend();
+  Future<void> _pickImageFromGallery() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
 
-    // 권한이 거부된 경우 설정창 안내 등
-    if (!ps.isAuth && ps != PermissionState.limited) {
+      if (pickedFile == null) return; // 사용자가 취소함
+
+      setState(() {
+        selectedImage = File(pickedFile.path);
+      });
+    } catch (e, stack) {
+      debugPrint("🔴 갤러리 선택 중 예외 발생: $e");
+      debugPrint("$stack");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('갤러리 접근 권한이 필요합니다. 설정에서 허용해주세요.')),
+          const SnackBar(content: Text('사진을 불러오지 못했습니다. 다시 시도해주세요.')),
         );
       }
-      return;
     }
-
-    // 2. 앨범 목록 가져오기 (전체 사진 포함)
-    final List<AssetPathEntity> albums = await PhotoManager.getAssetPathList(
-      type: RequestType.image,
-      onlyAll: true,
-    );
-
-    if (albums.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('불러올 사진이 없습니다.')),
-        );
-      }
-      return;
-    }
-
-    final AssetPathEntity recentAlbum = albums.first;
-    final List<AssetEntity> images = await recentAlbum.getAssetListPaged(
-      page: 0,
-      size: 100,
-    );
-
-    // 사진 최신 -> 오래된 순
-    images.sort(
-          (a, b) => b.createDateTime.compareTo(a.createDateTime),
-    );
-
-    if (!mounted) return;
-
-    // 바텀 시트 내부에서 선택된 이미지를 추적하기 위한 변수
-    AssetEntity? tempSelectedAsset;
-
-    // 3. 바텀 시트 띄우기
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(28),
-        ),
-      ),
-      builder: (context) {
-        AssetEntity? tempSelectedAsset;
-
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return SizedBox(
-              height: MediaQuery.of(context).size.height * 0.7,
-              child: Column(
-                children: [
-                  const SizedBox(height: 12),
-
-                  /// 상단 드래그 바
-                  Container(
-                    width: 50,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  /// 제목 + 닫기 버튼
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: SizedBox(
-                      height: 44,
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          const Center(
-                            child: Text(
-                              '최근 항목',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-
-                          Positioned(
-                            right: 0,
-                            child: GestureDetector(
-                              onTap: () {
-                                Navigator.pop(context);
-                              },
-                              child: Container(
-                                width: 30,
-                                height: 30,
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFF2F2F7),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.close,
-                                  color: Colors.grey,
-                                  size: 20,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  Expanded(
-                    child: images.isEmpty
-                        ? const Center(
-                      child: Text('사진이 없습니다.'),
-                    )
-                        : GridView.builder(
-                      padding: EdgeInsets.zero,
-                      itemCount: images.length + 1,
-                      gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 2,
-                        mainAxisSpacing: 2,
-                      ),
-                      itemBuilder: (context, index) {
-                        /// 첫 번째 셀 = 카메라
-                        if (index == 0) {
-                          return Container(
-                            color: const Color(0xFFE5E5EA),
-                            child: const Center(
-                              child: Icon(
-                                Icons.camera_alt_outlined,
-                                size: 34,
-                                color: Colors.white,
-                              ),
-                            ),
-                          );
-                        }
-
-                        final asset = images[index - 1];
-                        final isSelected =
-                            tempSelectedAsset?.id == asset.id;
-
-                        return FutureBuilder<Uint8List?>(
-                          future: asset.thumbnailDataWithSize(
-                            const ThumbnailSize(300, 300),
-                          ),
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData) {
-                              return Container(
-                                color: Colors.grey.shade200,
-                              );
-                            }
-
-                            return GestureDetector(
-                              onTap: () {
-                                setModalState(() {
-                                  tempSelectedAsset = asset;
-                                });
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  border: isSelected
-                                      ? Border.all(
-                                    color: Colors.blue,
-                                    width: 3,
-                                  )
-                                      : null,
-                                ),
-                                child: Stack(
-                                  children: [
-                                    Positioned.fill(
-                                      child: Image.memory(
-                                        snapshot.data!,
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-
-                                    /// 체크박스
-                                    Positioned(
-                                      top: 8,
-                                      right: 8,
-                                      child: Container(
-                                        width: 24,
-                                        height: 24,
-                                        decoration: BoxDecoration(
-                                          color: isSelected
-                                              ? Colors.blue
-                                              : Colors.white,
-                                          borderRadius:
-                                          BorderRadius.circular(6),
-                                          border: Border.all(
-                                            color: Colors.grey.shade300,
-                                          ),
-                                        ),
-                                        child: isSelected
-                                            ? const Icon(
-                                          Icons.check,
-                                          size: 16,
-                                          color: Colors.white,
-                                        )
-                                            : null,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 24,),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: tempSelectedAsset == null
-                            ? null
-                            : () async {
-                          final file =
-                          await UploadImageNormalizer.normalizeAssetForUpload(tempSelectedAsset!);
-
-                          if (file != null) {
-                            setState(() {
-                              selectedImage = file;
-                            });
-
-                            if (mounted) {
-                              Navigator.pop(context);
-                            }
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF007AFF),
-                          disabledBackgroundColor:
-                          const Color(0xFFE5E5EA),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius:
-                            BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          '사진 선택',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
   }
 
   Future<void> _showRegisterBottomSheet() async {
@@ -625,7 +369,7 @@ class _RNotiWritingPageState extends ConsumerState<RNotiWritingPage> {
                     children: [
                       IconButton(
                         onPressed: () async {
-                          await _showGalleryBottomSheet();
+                          await _pickImageFromGallery();
                         },
                         icon: const Icon(
                           Icons.image_outlined,

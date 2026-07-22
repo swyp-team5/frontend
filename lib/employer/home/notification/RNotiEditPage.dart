@@ -5,7 +5,7 @@ import 'package:chack_chack/employer/home/notification/widgets/NoticeImageCacheB
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:photo_manager/photo_manager.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
 
 import '../../../common/auth/server_token_manager.dart';
@@ -271,300 +271,26 @@ class _RNotiEditPageState extends ConsumerState<RNotiEditPage> {
     }
   }
 
-  Future<void> _showGalleryBottomSheet() async {
+  Future<void> _pickImageFromGallery() async {
     try {
-      final PermissionState ps = await PhotoManager.requestPermissionExtend();
-      debugPrint("🔵 permission state: $ps (isAuth: ${ps.isAuth})");
-
-      if (!ps.isAuth && ps != PermissionState.limited) {
-        debugPrint("🔴 권한 거부됨 → 갤러리 열기 중단");
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('갤러리 접근 권한이 필요합니다. 설정에서 허용해주세요.'),
-              action: SnackBarAction(
-                label: '설정으로 이동',
-                onPressed: () => PhotoManager.openSetting(),
-              ),
-            ),
-          );
-        }
-        return;
-      }
-
-      // iOS "제한된 접근"이면 사진 선택 UI를 먼저 띄운다 (Android는 no-op)
-      if (ps == PermissionState.limited) {
-        debugPrint("🟡 제한된 접근 → presentLimited 호출");
-        await PhotoManager.presentLimited();
-      }
-
-      final albums = await PhotoManager.getAssetPathList(
-        type: RequestType.image,
-        onlyAll: true,
+      final ImagePicker picker = ImagePicker();
+      final XFile? pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
       );
-      debugPrint("🔵 albums.length: ${albums.length}");
 
-      if (albums.isEmpty) {
-        debugPrint("🔴 앨범이 비어있음 → 갤러리 열기 중단");
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('불러올 수 있는 사진이 없습니다.')),
-          );
-        }
-        return;
-      }
+      if (pickedFile == null) return; // 사용자가 취소함
 
-      final images = await albums.first.getAssetListPaged(page: 0, size: 100);
-      debugPrint("🔵 images.length: ${images.length}");
-
-      images.sort((a, b) => b.createDateTime.compareTo(a.createDateTime));
-
-      if (!mounted) return;
-
-      showModalBottomSheet(
-        context: context,
-        isScrollControlled: true,
-        backgroundColor: Colors.white,
-        shape: const RoundedRectangleBorder(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        builder: (context) {
-          AssetEntity? tempSelectedAsset;
-          bool isPickingFile = false;
-
-          return StatefulBuilder(
-            builder: (context, setModalState) {
-              return SizedBox(
-                height: MediaQuery.of(context).size.height * 0.7,
-                child: Column(
-                  children: [
-                    const SizedBox(height: 12),
-                    Container(
-                      width: 50,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade300,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: SizedBox(
-                        height: 44,
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            const Center(
-                              child: Text(
-                                '최근 항목',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              right: 0,
-                              child: GestureDetector(
-                                onTap: () => Navigator.pop(context),
-                                child: Container(
-                                  width: 36,
-                                  height: 36,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFFF2F2F7),
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.close,
-                                    color: Colors.grey,
-                                    size: 22,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Expanded(
-                      child: images.isEmpty
-                          ? const Center(child: Text('사진이 없습니다.'))
-                          : GridView.builder(
-                        padding: EdgeInsets.zero,
-                        itemCount: images.length + 1,
-                        gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          crossAxisSpacing: 2,
-                          mainAxisSpacing: 2,
-                        ),
-                        itemBuilder: (context, index) {
-                          if (index == 0) {
-                            return Container(
-                              color: const Color(0xFFE5E5EA),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.camera_alt_outlined,
-                                  size: 34,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            );
-                          }
-
-                          final asset = images[index - 1];
-                          final isSelected =
-                              tempSelectedAsset?.id == asset.id;
-
-                          return FutureBuilder<Uint8List?>(
-                            future: asset.thumbnailDataWithSize(
-                              const ThumbnailSize(300, 300),
-                            ),
-                            builder: (context, snapshot) {
-                              if (!snapshot.hasData) {
-                                return Container(
-                                    color: Colors.grey.shade200);
-                              }
-
-                              return GestureDetector(
-                                onTap: () {
-                                  setModalState(() {
-                                    tempSelectedAsset = asset;
-                                  });
-                                },
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    border: isSelected
-                                        ? Border.all(
-                                        color: Colors.blue, width: 3)
-                                        : null,
-                                  ),
-                                  child: Stack(
-                                    children: [
-                                      Positioned.fill(
-                                        child: Image.memory(
-                                          snapshot.data!,
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                      Positioned(
-                                        top: 8,
-                                        right: 8,
-                                        child: Container(
-                                          width: 24,
-                                          height: 24,
-                                          decoration: BoxDecoration(
-                                            color: isSelected
-                                                ? Colors.blue
-                                                : Colors.white,
-                                            borderRadius:
-                                            BorderRadius.circular(6),
-                                            border: Border.all(
-                                              color: Colors.grey.shade300,
-                                            ),
-                                          ),
-                                          child: isSelected
-                                              ? const Icon(
-                                            Icons.check,
-                                            size: 16,
-                                            color: Colors.white,
-                                          )
-                                              : null,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton(
-                          onPressed: tempSelectedAsset == null || isPickingFile
-                              ? null
-                              : () async {
-                            setModalState(() => isPickingFile = true);
-
-                            final file =
-                            await UploadImageNormalizer.normalizeAssetForUpload(tempSelectedAsset!);
-
-                            if (file == null) {
-                              setModalState(
-                                      () => isPickingFile = false);
-                              if (mounted) {
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                        '사진을 불러오지 못했습니다. 다시 시도해주세요.'),
-                                  ),
-                                );
-                              }
-                              return;
-                            }
-
-                            // 바깥(_RNotiEditPageState)의 setState를
-                            // 호출해야 미리보기/제출 로직에 반영된다.
-                            setState(() {
-                              newSelectedImage = file;
-                              imageRemoved = false;
-                            });
-
-                            if (mounted) {
-                              Navigator.pop(context);
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF007AFF),
-                            disabledBackgroundColor: const Color(0xFFE5E5EA),
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          child: isPickingFile
-                              ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                              : const Text(
-                            '사진 선택',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          );
-        },
-      );
+      setState(() {
+        newSelectedImage = File(pickedFile.path);
+        imageRemoved = false;
+      });
     } catch (e, stack) {
-      debugPrint("🔴 갤러리 로딩 중 예외 발생: $e");
+      debugPrint("🔴 갤러리 선택 중 예외 발생: $e");
       debugPrint("$stack");
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('갤러리를 여는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.')),
+          const SnackBar(content: Text('사진을 불러오지 못했습니다. 다시 시도해주세요.')),
         );
       }
     }
@@ -668,7 +394,7 @@ class _RNotiEditPageState extends ConsumerState<RNotiEditPage> {
                   Row(
                     children: [
                       IconButton(
-                        onPressed: isSubmitting ? null : _showGalleryBottomSheet,
+                        onPressed: isSubmitting ? null : _pickImageFromGallery,
                         icon: const Icon(Icons.image_outlined, size: 28),
                       ),
                       const SizedBox(width: 8),

@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:chack_chack/common/auth/config/auth_environment.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart';
@@ -244,11 +245,16 @@ class KakaoSocialIdentityProvider implements SocialIdentityProvider {
       if (error is KakaoAuthException) {
         debugPrint(
           '[SocialAuth][kakao] SDK auth failure '
-          'cause=${error.error.name} description=${error.errorDescription}',
+              'cause=${error.error.name} description=${error.errorDescription}',
         );
       } else if (error is KakaoClientException) {
         debugPrint(
           '[SocialAuth][kakao] SDK client failure reason=${error.reason.name}',
+        );
+      } else if (error is PlatformException) {
+        debugPrint(
+          '[SocialAuth][kakao] SDK platform failure '
+              'code=${error.code} message=${error.message} details=${error.details}',
         );
       } else {
         debugPrint('[SocialAuth][kakao] SDK failure type=${error.runtimeType}');

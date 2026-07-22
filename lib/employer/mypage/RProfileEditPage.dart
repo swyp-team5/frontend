@@ -1,9 +1,9 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import 'dart:typed_data';
-import 'package:photo_manager/photo_manager.dart';
 
 import '../../common/auth/server_token_manager.dart';
 import '../../common/image_upload/upload_image_normalizer.dart';
@@ -195,302 +195,63 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
     }
   }
 
-  /// 최근 항목 목록을 (재)조회한다. "다른 사진 선택"으로 허용 목록이
-  /// 바뀐 뒤 다시 불러올 때도 재사용한다.
-  Future<List<AssetEntity>> _fetchRecentImages() async {
-    final List<AssetPathEntity> albums = await PhotoManager.getAssetPathList(
-      type: RequestType.image,
-      onlyAll: true,
-      // 정렬 옵션을 안 주면 기기 기본 순서(최신순이 아닐 수 있음)로 오기 때문에,
-      // 페이징으로 100장만 잘라오기 전에 최신순 정렬을 명시적으로 지정한다.
-      filterOption: FilterOptionGroup(
-        orders: [
-          const OrderOption(type: OrderOptionType.createDate, asc: false),
-        ],
-      ),
-    );
-
-    if (albums.isEmpty) return [];
-
-    final List<AssetEntity> images = await albums.first.getAssetListPaged(
-      page: 0,
-      size: 300,
-    );
-
-    return images;
-  }
+  // /// 최근 항목 목록을 (재)조회한다. "다른 사진 선택"으로 허용 목록이
+  // /// 바뀐 뒤 다시 불러올 때도 재사용한다.
+  // Future<List<AssetEntity>> _fetchRecentImages() async {
+  //   final List<AssetPathEntity> albums = await PhotoManager.getAssetPathList(
+  //     type: RequestType.image,
+  //     onlyAll: true,
+  //     // 정렬 옵션을 안 주면 기기 기본 순서(최신순이 아닐 수 있음)로 오기 때문에,
+  //     // 페이징으로 100장만 잘라오기 전에 최신순 정렬을 명시적으로 지정한다.
+  //     filterOption: FilterOptionGroup(
+  //       orders: [
+  //         const OrderOption(type: OrderOptionType.createDate, asc: false),
+  //       ],
+  //     ),
+  //   );
+  //
+  //   if (albums.isEmpty) return [];
+  //
+  //   final List<AssetEntity> images = await albums.first.getAssetListPaged(
+  //     page: 0,
+  //     size: 300,
+  //   );
+  //
+  //   return images;
+  // }
 
   /// 프로필 이미지 선택
-  Future<void> _showGalleryBottomSheet() async {
-    final PermissionState ps =
-    await PhotoManager.requestPermissionExtend();
+  Future<void> _pickProfileImage() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 85,
+      );
 
-    // 거부된 상태: 기기 설정으로 안내한다.
-    if (!ps.isAuth && ps != PermissionState.limited) {
+      if (pickedFile == null) return;
+
+      final rawFile = File(pickedFile.path);
+      final normalizedFile = await UploadImageNormalizer.normalizeFileForUpload(rawFile);
+
+      if (normalizedFile == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('이 사진을 불러올 수 없어요. 다른 사진을 선택해주세요.')),
+          );
+        }
+        return;
+      }
+
+      await updateProfileImage(normalizedFile);
+    } catch (e) {
+      debugPrint("🔴 [pickProfileImage] 예외: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text("갤러리 접근 권한이 필요합니다. 설정에서 허용해주세요."),
-            action: SnackBarAction(
-              label: "설정으로 이동",
-              onPressed: () => PhotoManager.openSetting(),
-            ),
-          ),
+          const SnackBar(content: Text('사진을 불러오지 못했습니다. 다시 시도해주세요.')),
         );
       }
-      return;
     }
-
-    final bool isLimited = ps == PermissionState.limited;
-    final List<AssetEntity> initialImages = await _fetchRecentImages();
-
-    if (!mounted) return;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(28),
-        ),
-      ),
-      builder: (_) {
-        AssetEntity? selectedAsset;
-        List<AssetEntity> currentImages = initialImages;
-        bool isConfirming = false;
-
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            // 제한된 접근 상태에서 허용 목록에 사진을 추가로 선택하는
-            // 시스템 화면을 다시 띄운 뒤, 새로 허용된 사진을 반영해서
-            // 최근 항목을 다시 조회한다.
-            Future<void> pickMorePhotos() async {
-              await PhotoManager.presentLimited();
-              final refreshed = await _fetchRecentImages();
-              if (!context.mounted) return;
-              setModalState(() {
-                currentImages = refreshed;
-              });
-            }
-
-            Future<void> confirmSelection() async {
-              if (selectedAsset == null || isConfirming) return;
-
-              setModalState(() => isConfirming = true);
-
-              final file = await UploadImageNormalizer.normalizeAssetForUpload(
-                selectedAsset!,
-              );
-
-              if (file == null) {
-                setModalState(() => isConfirming = false);
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        "이 사진을 불러올 수 없어요. 다른 사진을 선택하거나 잠시 후 다시 시도해주세요.",
-                      ),
-                    ),
-                  );
-                }
-                return;
-              }
-
-              await updateProfileImage(file);
-
-              if (context.mounted) {
-                Navigator.pop(context);
-              }
-            }
-
-            return SizedBox(
-              height: MediaQuery.of(context).size.height * 0.7,
-              child: Column(
-                children: [
-                  const SizedBox(height: 12),
-
-                  Container(
-                    width: 48, height: 5,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const SizedBox(width: 64),
-                        const Text(
-                          "최근 항목",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        SizedBox(
-                          width: 64,
-                          child: isLimited
-                              ? Align(
-                                  alignment: Alignment.centerRight,
-                                  child: TextButton(
-                                    onPressed: pickMorePhotos,
-                                    child: const Text(
-                                      "다른 사진",
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFF007AFF),
-                                      ),
-                                    ),
-                                  ),
-                                )
-                              : const SizedBox(),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 16),
-
-                  Expanded(
-                    child: currentImages.isEmpty
-                        ? const Center(child: Text("표시할 사진이 없어요."))
-                        : GridView.builder(
-                      padding: EdgeInsets.zero,
-                      itemCount: currentImages.length,
-                      gridDelegate:
-                      const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 2,
-                        mainAxisSpacing: 2,
-                      ),
-                      itemBuilder: (context, index) {
-                        final asset = currentImages[index];
-
-                        final isSelected =
-                            selectedAsset?.id == asset.id;
-
-                        return FutureBuilder<Uint8List?>(
-                          future: asset.thumbnailDataWithSize(
-                            const ThumbnailSize(300, 300),
-                          ),
-                          builder: (context, snapshot) {
-                            if (!snapshot.hasData) {
-                              return Container(
-                                color: Colors.grey.shade200,
-                              );
-                            }
-
-                            return GestureDetector(
-                              onTap: () {
-                                setModalState(() {
-                                  // 이미 선택된 사진을 다시 누르면 선택 해제
-                                  selectedAsset = isSelected ? null : asset;
-                                });
-                              },
-                              child: Stack(
-                                children: [
-                                  Positioned.fill(
-                                    child: Image.memory(
-                                      snapshot.data!,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-
-                                  if (isSelected)
-                                    Positioned.fill(
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          border: Border.all(
-                                            color: Colors.blue,
-                                            width: 3,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-
-                                  Positioned(
-                                    top: 8,
-                                    right: 8,
-                                    child: Container(
-                                      width: 24,
-                                      height: 24,
-                                      decoration: BoxDecoration(
-                                        color: isSelected
-                                            ? Colors.blue
-                                            : Colors.white,
-                                        borderRadius:
-                                        BorderRadius.circular(6),
-                                      ),
-                                      child: isSelected
-                                          ? const Icon(
-                                        Icons.check,
-                                        size: 16,
-                                        color: Colors.white,
-                                      )
-                                          : null,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 24,),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 54,
-                      child: ElevatedButton(
-                        onPressed: (selectedAsset == null || isConfirming)
-                            ? null
-                            : confirmSelection,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                          const Color(0xff007AFF),
-                          disabledBackgroundColor:
-                          const Color(0xffE5E5EA),
-                          shape: RoundedRectangleBorder(
-                            borderRadius:
-                            BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: isConfirming
-                            ? const SizedBox(
-                                width: 22, height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text(
-                                "사진 선택",
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 17,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      },
-    );
   }
 
   @override
@@ -940,7 +701,7 @@ class _RProfileEditPageState extends State<RProfileEditPage> {
                           right: -2,
                           bottom: -2,
                           child: InkWell(
-                            onTap: _showGalleryBottomSheet,
+                            onTap: _pickProfileImage,
                             child: Container(
                               width: 34,
                               height: 34,
