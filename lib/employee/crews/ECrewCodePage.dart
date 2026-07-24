@@ -22,9 +22,10 @@ class _ECrewCodePageState extends State<ECrewCodePage> {
   final List<FocusNode> focusNodes =
   List.generate(6, (_) => FocusNode());
 
-  /// true = 파란색(성공)
-  /// false = 빨간색(실패)
-  bool isMatched = true;
+  /// null = 정상(파란색) / not null = 에러 메시지(빨간색)
+  String? errorMessage;
+
+  bool get isMatched => errorMessage == null;
 
   bool get isCompleted =>
       controllers.every((e) => e.text.isNotEmpty);
@@ -71,7 +72,48 @@ class _ECrewCodePageState extends State<ECrewCodePage> {
       focusNodes[index - 1].requestFocus();
     }
 
-    setState(() {});
+    setState(() {
+      errorMessage = null; // 재입력을 시작하면 이전 에러 표시를 초기화
+    });
+  }
+
+  //--------------------------------------
+  // 에러 코드 -> 사용자 메시지 매핑
+  //--------------------------------------
+  String _resolveErrorMessage(DioException e) {
+    final statusCode = e.response?.statusCode;
+    final data = e.response?.data;
+
+    // 서버 응답의 에러코드 필드명이 다를 수 있어 여러 케이스를 방어적으로 처리
+    String? serverErrorCode;
+    if (data is Map) {
+      final rawCode = data['code'] ?? data['errorCode'] ?? data['error'];
+      serverErrorCode = rawCode?.toString();
+    }
+
+    switch (statusCode) {
+      case 400:
+      // 4001: 초대 코드 형식 오류 / 존재하지 않음 / 만료됨 / 사용 완료 / 잠김
+        return "유효하지 않은 초대 코드예요.\n코드가 만료되었거나 이미 사용되었을 수 있으니 다시 확인해주세요.";
+
+      case 401:
+      // 4002: access token 없음 또는 유효하지 않음
+        return "로그인이 만료되었어요.\n다시 로그인한 후 시도해주세요.";
+
+      case 403:
+      // 4003: WORKER 권한이 아님
+        return "근무자 계정만 크루에 참여할 수 있어요.";
+
+      case 409:
+      // 4005: 이미 해당 사업장 크루로 등록되어 있음
+        return "이미 등록된 크루예요.\n홈 화면에서 확인해주세요.";
+
+      default:
+        debugPrint(
+          "알 수 없는 에러 - status: $statusCode, code: $serverErrorCode, body: $data",
+        );
+        return "오류가 발생했어요. 잠시 후 다시 시도해주세요.";
+    }
   }
 
   // 코드 초대 검증
@@ -81,7 +123,7 @@ class _ECrewCodePageState extends State<ECrewCodePage> {
 
       if (token == null) {
         setState(() {
-          isMatched = false;
+          errorMessage = "로그인이 만료되었어요.\n다시 로그인한 후 시도해주세요.";
         });
         return;
       }
@@ -139,7 +181,7 @@ class _ECrewCodePageState extends State<ECrewCodePage> {
       }
 
       setState(() {
-        isMatched = true;
+        errorMessage = null;
       });
 
       if (!mounted) return;
@@ -156,13 +198,13 @@ class _ECrewCodePageState extends State<ECrewCodePage> {
       debugPrint("body = ${e.response?.data}");
 
       setState(() {
-        isMatched = false;
+        errorMessage = _resolveErrorMessage(e);
       });
     } catch (e) {
       debugPrint(e.toString());
 
       setState(() {
-        isMatched = false;
+        errorMessage = "오류가 발생했어요. 잠시 후 다시 시도해주세요.";
       });
     }
   }
@@ -192,28 +234,36 @@ class _ECrewCodePageState extends State<ECrewCodePage> {
 
             const Spacer(),
 
-            if (!isMatched)
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(
-                    Icons.info,
-                    color: Color(0xFFFF4B4B),
-                    size: 20,
-                  ),
-                  SizedBox(width: 6),
-                  Text(
-                    "초대 코드가 일치하지 않습니다",
-                    style: TextStyle(
+            if (errorMessage != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(
+                      Icons.info,
                       color: Color(0xFFFF4B4B),
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
+                      size: 20,
                     ),
-                  ),
-                ],
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(
+                        errorMessage!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Color(0xFFFF4B4B),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
 
-            if (!isMatched) const SizedBox(height: 28),
+            if (errorMessage != null) const SizedBox(height: 28),
 
             Center(
               child: ConstrainedBox(
