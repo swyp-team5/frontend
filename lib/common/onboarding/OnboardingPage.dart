@@ -411,28 +411,28 @@ class _OnboardingPageState extends State<OnboardingPage> {
             //--------------------------------------
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Text(
-                  "이미 계정이 있거나 초대받았다면 ",
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                    color: Color(0xff767676),
-                  ),
-                ),
-
-                GestureDetector(
-                  onTap: _openSocialLogin,
-                  child: const Text(
-                    "바로 시작하기",
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Color(0xff0084FF),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
+              // children: [
+              //   const Text(
+              //     "이미 계정이 있거나 초대받았다면 ",
+              //     style: TextStyle(
+              //       fontSize: 13,
+              //       fontWeight: FontWeight.w400,
+              //       color: Color(0xff767676),
+              //     ),
+              //   ),
+              //
+              //   GestureDetector(
+              //     onTap: _openSocialLogin,
+              //     child: const Text(
+              //       "바로 시작하기",
+              //       style: TextStyle(
+              //         fontSize: 13,
+              //         color: Color(0xff0084FF),
+              //         fontWeight: FontWeight.w600,
+              //       ),
+              //     ),
+              //   ),
+              // ],
             ),
 
             const SizedBox(height: 24),

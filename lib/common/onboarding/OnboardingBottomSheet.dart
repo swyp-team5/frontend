@@ -204,16 +204,16 @@ class _OnboardingBottomSheetState extends ConsumerState<OnboardingBottomSheet> {
                 fontSize: 13,
                 fontWeight: FontWeight.w400,
               ),
-              children: [
-                TextSpan(text: '이미 계정이 있거나 초대받았다면 '),
-                TextSpan(
-                  text: '바로 시작하기',
-                  style: TextStyle(
-                    color: Color(0xFF0084FF),
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
+              // children: [
+              //   TextSpan(text: '이미 계정이 있거나 초대받았다면 '),
+              //   TextSpan(
+              //     text: '바로 시작하기',
+              //     style: TextStyle(
+              //       color: Color(0xFF0084FF),
+              //       fontWeight: FontWeight.w600,
+              //     ),
+              //   ),
+              // ],
             ),
             textAlign: TextAlign.center,
           ),
