@@ -1,6 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
+import '../../employee/home/EHomePage.dart';
+import '../../employer/home/RHomePage.dart';
+import '../auth/api/test_login_api.dart';
+import '../auth/model/social_auth_models.dart';
+import '../auth/server_token_manager.dart';
+import '../auth/social/social_identity_provider.dart';
+import '../fcm/FcmSetupService.dart';
 import 'OnboardingBottomSheet.dart';
 
 class OnboardingPage extends StatefulWidget {
@@ -120,7 +127,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
                         keyboardType: TextInputType.emailAddress,
                         textInputAction: TextInputAction.next,
                         decoration: InputDecoration(
-                          labelText: '아이디 (이메일)',
+                          labelText: '아이디',
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),
@@ -252,30 +259,66 @@ class _OnboardingPageState extends State<OnboardingPage> {
     });
 
     try {
-      // TODO: 실제 로그인 API/인증 로직으로 교체하세요.
-      // 예시: final result = await AuthService.login(id: id, password: password);
-      // 실패 시 예외를 던지거나 result에서 성공 여부를 확인하세요.
+      // 소셜 로그인과 동일한 방식으로 deviceId/platform/appVersion을 얻는다.
+      final device = await DeviceContextProvider().load();
 
-      await Future.delayed(const Duration(milliseconds: 600)); // 임시 딜레이
+      final response = await TestLoginApi().login(
+        loginId: id,
+        password: password,
+        device: device,
+      );
+
+      if (response.status != AuthStatus.loginSuccess ||
+          response.member == null ||
+          response.accessToken == null ||
+          response.refreshToken == null) {
+        throw const TestLoginException('로그인에 실패했습니다.');
+      }
+
+      // 소셜 로그인과 동일하게 기기별 세션으로 토큰 저장
+      await ServerTokenManager.saveTokens(
+        accessToken: response.accessToken!,
+        refreshToken: response.refreshToken!,
+        deviceId: device.deviceId,
+      );
+
+      // FCM 토큰 등록 (실패해도 로그인 흐름은 계속 진행)
+      unawaited(
+        FcmSetupService.registerCurrentDevice(
+          deviceId: device.deviceId,
+          platform: device.platform,
+          appVersion: device.appVersion,
+        ).catchError((error) {
+          debugPrint('[FCM][TestLogin] token registration failed: $error');
+        }),
+      );
 
       if (!mounted) return;
 
       Navigator.of(sheetContext).pop(); // 모달 닫기
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('로그인 성공: $id')),
-      );
-
-      // TODO: 로그인 성공 후 다음 화면으로 이동
-      // Navigator.of(context).pushReplacement(
-      //   MaterialPageRoute(builder: (_) => const HomePage()),
-      // );
-    } catch (e) {
+      _openHome(response.member!);
+    } on TestLoginException catch (error) {
+      setSheetState(() {
+        setSubmitting(false);
+        setError(error.message);
+      });
+    } catch (error) {
       setSheetState(() {
         setSubmitting(false);
         setError('로그인에 실패했습니다. 아이디/비밀번호를 확인해주세요.');
       });
     }
+  }
+
+  void _openHome(AuthMember member) {
+    final builder = switch (member.role) {
+      AuthMemberRole.owner => (BuildContext _) => const RHomePage(),
+      AuthMemberRole.worker => (BuildContext _) => const EHomePage(),
+    };
+
+    Navigator.of(
+      context,
+    ).pushAndRemoveUntil(MaterialPageRoute(builder: builder), (_) => false);
   }
 
   @override
